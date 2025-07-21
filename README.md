@@ -1,3 +1,6 @@
+# Note from phantomcortex:
+You probably shouldn't use this repo... it's a playground, not something intended to be used currently.
+
 # image-template
 
 # Purpose
