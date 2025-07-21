@@ -87,9 +87,9 @@ dnf5 install -y zoxide \
 dnf5 -y copr enable monkeygold/nautilus-open-any-terminal
 dnf5 -y install nautilus-open-any-terminal
 # extras
-dnf5 -y install blender \
-            ardour \
-            audacity-freeworld 
+dnf5 -y install blender 
+#dnf5 -y install ardour 
+#dnf5 -y install audacity-freeworld 
 
 # remove annoying gnome things
 dnf5 -y remove \
