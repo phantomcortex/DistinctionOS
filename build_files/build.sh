@@ -81,16 +81,15 @@ dnf5 install -y zoxide \
         cargo \
         zsh \
         zsh-autosuggestions \
-        zsh-syntax-highlighting
-    #gpu compute 
-    dnf5 -y install \
-        rocm-hip \
-        rocm-opencl \
-        rocm-clinfo \
-        rocm-smi && \
+        zsh-syntax-highlighting \
+        blackbox-terminal
         
+dnf5 -y copr enable monkeygold/nautilus-open-any-terminal
+dnf5 -y install nautilus-open-any-terminal
 # extras
-dn5 -y install blender 
+dnf5 -y install blender \
+            ardour \
+            audacity-freeworld 
 
 # remove annoying gnome things
 dnf5 -y remove \
