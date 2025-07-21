@@ -48,8 +48,8 @@ dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
 # The alternative is to run it in a container
 
-# Brave Browser (Could use it with flatpak? Yes. Am I going to? No.)
-dnf5 -y install curl dnf-plugins-core
+# Brave Browser (Could I use it with flatpak? Yes. Am I going to? No.)
+dnf5 -y install dnf-plugins-core
 dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
 dnf5 -y install brave-browser
 
@@ -72,74 +72,9 @@ dnf5 install -y zoxide \
             gnome-shell-extension-restart-to \
             gnome-shell-extension-burn-my-windows 
             
+    # various things
     dnf5 -y install \
-        https://github.com/bazzite-org/cicpoffs/releases/download/master/cicpoffs.rpm 
-   
-    # various things - from bazzite and my own things
-    dnf5 -y install \
-        bazaar \
-        libdex-0.9.1 \
-        iwd \
-        lato-fonts \
-        fira-code-fonts \
-        python3-pip \
-        libadwaita \
-        duperemove \
-        cpulimit \
-        sqlite \
-        xwininfo \
-        xrandr \
-        compsize \
-        ryzenadj \
-        ddcutil \
-        input-remapper \
-        libinput-utils \
-        i2c-tools \
-        lm_sensors \
-        fw-ectool \
-        fw-fanctrl \
-        udica \
-        python3-icoextract \
-        tailscale \
-        webapp-manager \
-        btop \
-        duf \
-        lshw \
-        xdotool \
-        wmctrl \
-        libcec \
-        yad \
-        f3 \
-        pulseaudio-utils \
-        lzip \
-        p7zip \
-        p7zip-plugins \
-        libxcrypt-compat \
-        vulkan-tools \
-        extest.i686 \
-        xwiimote-ng \
-        fastfetch \
-        glow \
-        gum \
-        vim \
         nvim \
-        cockpit-networkmanager \
-        cockpit-podman \
-        cockpit-selinux \
-        cockpit-system \
-        cockpit-navigator \
-        cockpit-storaged \
-        topgrade \
-        ydotool \
-        stress-ng \
-        snapper \
-        btrfs-assistant \
-        qemu \
-        libvirt \
-        lsb_release \
-        uupd \
-        ds-inhibit \
-        wlr-randr \ 
         zstd \
         zenity \
         rust \
@@ -147,7 +82,6 @@ dnf5 install -y zoxide \
         zsh \
         zsh-autosuggestions \
         zsh-syntax-highlighting
-        
     #gpu compute 
     dnf5 -y install \
         rocm-hip \
