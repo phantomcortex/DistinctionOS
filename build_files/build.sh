@@ -38,7 +38,7 @@ gpgkey=https://repo.cider.sh/RPM-GPG-KEY
 EOF
 
 dnf makecache 
-dnf -y install cider
+dnf -y install Cider
 
 # maybe install Crossover?
 mkdir -p /var/opt/crossover
