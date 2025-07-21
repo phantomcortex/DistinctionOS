@@ -82,7 +82,6 @@ dnf5 install -y zoxide \
         iwd \
         lato-fonts \
         fira-code-fonts \
-        # nerd-fonts \ #orphaned?
         python3-pip \
         libadwaita \
         duperemove \
@@ -156,6 +155,9 @@ dnf5 install -y zoxide \
         rocm-clinfo \
         rocm-smi && \
         
+# extras
+dn5 -y install blender 
+
 # remove annoying gnome things
 dnf5 -y remove \
             gnome-classic-session \
