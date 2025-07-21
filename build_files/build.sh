@@ -10,8 +10,8 @@ set -ouex pipefail
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/39/x86_64/repoview/index.html&protocol=https&redirect=1
 
 # this installs a package from fedora repos
-dnf5 install -y steam steam-devices
-#technically a RPM-Fusion repo
+#dnf5 install -y steam steam-devices 
+# pre-installed on bluefin
 
 #ublue-os staging
 dnf5 -y copr enable ublue-os/staging
@@ -23,7 +23,7 @@ dnf5 -y copr enable ublue-os/packages
 dnf5 -y copr enable bazzite-org/bazzite
 dnf5 -y copr enable bazzite-org/bazzite-multilib
 dnf5 -y copr enable bazzite-org/rom-properties 
-dnf5 -y install rom-properites rom-properties-gtk3
+dnf5 -y install rom-properties rom-properties-gtk3
 
 # import Cider Music app (Apple Music)
 rpm --import https://repo.cider.sh/RPM-GPG-KEY
