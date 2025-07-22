@@ -10,10 +10,7 @@ set -ouex pipefail
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/39/x86_64/repoview/index.html&protocol=https&redirect=1
 
 # this installs a package from fedora repos
-echo "==========================================="
-dnf makecache
-dnf search audacity
-exit 1
+
 
 dnf5 -y copr enable bazzite-org/rom-properties 
 dnf5 -y install rom-properties rom-properties-gtk3
@@ -46,7 +43,9 @@ dnf5 -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release
 ls /etc/yum.repos.d/ | grep rpmfusion
 dnf5 -y install blender 
 dnf5 -y install ardour8 
-dnf5 -y install audacity-freeworld 
+echo "==========================================="
+#Looks like github isn't able to ship audacity-freeworld for some reason... so I'll have to do it manually
+dnf5 -y install https://mirror.fcix.net/rpmfusion/free/fedora/releases/42/Everything/x86_64/os/Packages/a/audacity-freeworld-3.7.3-1.fc42.x86_64.rpm
 dnf5 -y install libheif-tools heif-pixbuf-loader libheif-freeworld
 dnf5 -y remove totem
 dnf5 -y install totem-video-thumbnailer clapper mpv decibels
