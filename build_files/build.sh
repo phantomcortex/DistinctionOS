@@ -10,21 +10,54 @@ set -ouex pipefail
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/39/x86_64/repoview/index.html&protocol=https&redirect=1
 
 # this installs a package from fedora repos
-#dnf5 install -y steam steam-devices 
-# pre-installed on bluefin
 
-#ublue-os staging
-dnf5 -y copr enable ublue-os/staging
-
-#ublue-os packages
-dnf5 -y copr enable ublue-os/packages
-
-#bazzite things ~ not sure what needs what
-dnf5 -y copr enable bazzite-org/bazzite
-dnf5 -y copr enable bazzite-org/bazzite-multilib
 dnf5 -y copr enable bazzite-org/rom-properties 
 dnf5 -y install rom-properties rom-properties-gtk3
 
+
+#==========================
+# internal package non-sense
+dnf5 install -y zoxide \
+            gnome-randr-rust \
+            gnome-shell-extension-just-perfection \
+            gnome-shell-extension-restart-to \
+            gnome-shell-extension-burn-my-windows 
+            
+    # various things
+    dnf5 -y install \
+        nvim \
+        rust \
+        cargo \
+        zsh \
+        zsh-autosuggestions \
+        zsh-syntax-highlighting \
+        blackbox-terminal
+        
+dnf5 -y copr enable monkeygold/nautilus-open-any-terminal
+dnf5 -y install nautilus-open-any-terminal
+# extras
+dnf5 -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+
+dnf5 -y install blender 
+dnf5 -y install ardour8 
+dnf5 -y install audacity-freeworld 
+dnf5 -y install libheif-tools heif-pixbuf-loader libheif-freeworld
+dnf5 -y remove totem
+dnf5 -y install totem-video-thumbnailer clapper mpv decibels
+dnf5 -y install gnome-tweaks dconf
+
+
+# remove annoying gnome things
+dnf5 -y remove \
+            gnome-classic-session \
+            gnome-tour \
+            gnome-extensions-app \
+            gnome-system-monitor \
+            gnome-initial-setup \
+            gnome-shell-extension-background-logo \
+            gnome-shell-extension-apps-menu \
+            firefox && \
+            
 # import Cider Music app (Apple Music)
 rpm --import https://repo.cider.sh/RPM-GPG-KEY
 
@@ -68,65 +101,10 @@ dnf5 -y install dysk
 dnf5 -y copr enable atim/nushell
 dnf5 -y install nushell
 
-#remove old kernel?
-dnf5 -y upgrade
-#dnf5 -y remove kernel kernel-devel-matched kernel-devel kernel-modules kernel-modules-core kernel-modules-extra kernel-core kernel-devel 
-#dnf5 -y copr enable bieszczaders/kernel-cachyos
-dnf5 -y copr enable bieszczaders/kernel-cachyos-lto
-#dnf5 -y install kernel-cachyos kernel-cachyos-devel-matched
-dnf5 -y install kernel-cachyos-lto kernel-cachyos-lto-devel-matched
-setsebool -P domain_kernel_load_modules on
-#echo "==========================="
-ls /usr/lib/modules
-#echo "==========================="
-dnf list --installed | grep kernel
-# Note: bluefin ships with a slightly older kernel 
-# but shipping the cachyos kernel will be delayed until I can confirm secure-boot works with and without the custom kernel
 dnf5 -y copr enable atim/xpadneo
 dnf5 -y install xpadneo
 # Note: I've previously used sentry's xpadneo kmod but it's not signed so secure boot won't work
 # it's unclear if atim's xpadneo is signed, but I doubt it severely.
-#==========================
-# internal package non-sense
-dnf5 install -y zoxide \
-            gnome-randr-rust \
-            gnome-shell-extension-just-perfection \
-            gnome-shell-extension-restart-to \
-            gnome-shell-extension-burn-my-windows 
-            
-    # various things
-    dnf5 -y install \
-        nvim \
-        rust \
-        cargo \
-        zsh-autosuggestions \
-        zsh-syntax-highlighting \
-        blackbox-terminal
-        
-dnf5 -y copr enable monkeygold/nautilus-open-any-terminal
-dnf5 -y install nautilus-open-any-terminal
-# extras
-dnf5 -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-
-dnf5 -y install blender 
-dnf5 -y install ardour8 
-dnf5 -y install audacity-freeworld 
-dnf5 -y install libheif-tools heif-pixbuf-loader libheif-freeworld
-dnf5 -y remove totem
-dnf5 -y install totem-video-thumbnailer clapper mpv decibels
-dnf5 -y install gnome-tweaks dconf
-
-
-# remove annoying gnome things
-dnf5 -y remove \
-            gnome-classic-session \
-            gnome-tour \
-            gnome-extensions-app \
-            gnome-system-monitor \
-            gnome-initial-setup \
-            gnome-shell-extension-background-logo \
-            gnome-shell-extension-apps-menu \
-            firefox && \
 # since i use brave and firefox just collects dust we're just gonna get rid of it
 # Use a COPR Example:
 #
