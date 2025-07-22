@@ -43,8 +43,6 @@ dnf -y install Cider
 # maybe install Crossover?
 mkdir -p /var/opt/crossover
 mkdir -p /opt/crossover #Might be a requirement for crossover
-ls /opt
-ls /var/opt
 ln -s /opt/crossover /var/opt/crossover
 dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
@@ -55,6 +53,10 @@ dnf5 -y install dnf-plugins-core
 dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
 dnf5 -y install brave-browser
 
+ls /opt
+ls /opt/crossover
+ls /var/opt
+ls /var/opt/crossover
 # internal copr repos
 dnf5 -y copr enable ilyaz/LACT
 dnf5 -y install lact
@@ -63,6 +65,8 @@ dnf5 -y install dysk
 dnf5 -y copr enable atim/nushell
 dnf5 -y install nushell
 
+#remove old kernel?
+dnf5 -y remove kernel kernel-devel-matched
 dnf5 -y copr enable bieszczaders/kernel-cachyos
 #dnf5 -y copr enable bieszczaders/kernel-cachyos-lto
 dnf5 -y install kernel-cachyos kernel-cachyos-devel-matched
@@ -77,11 +81,7 @@ dnf5 -y install xpadneo
 # internal package non-sense
 dnf5 install -y zoxide \
             gnome-randr-rust \
-            gnome-shell-extension-appindicator \
-            gnome-shell-extension-user-theme \
             gnome-shell-extension-just-perfection \
-            gnome-shell-extension-blur-my-shell \
-            gnome-shell-extension-caffeine \
             gnome-shell-extension-restart-to \
             gnome-shell-extension-burn-my-windows 
             
