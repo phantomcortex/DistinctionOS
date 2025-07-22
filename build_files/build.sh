@@ -105,7 +105,7 @@ dnf5 -y install ardour8
 dnf5 -y install audacity-freeworld 
 dnf5 -y install libheif-tools heif-pixbuf-loader libheif-freeworld
 dnf5 -y remove totem
-dnf5 -y install totem-thumbnailer clapper mpv decibels
+dnf5 -y install totem-video-thumbnailer clapper mpv decibels
 
 
 # remove annoying gnome things
