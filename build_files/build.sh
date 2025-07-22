@@ -36,8 +36,10 @@ dnf5 install -y zoxide \
 dnf5 -y copr enable monkeygold/nautilus-open-any-terminal
 dnf5 -y install nautilus-open-any-terminal
 # extras
-dnf5 -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-
+#dnf5 -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+ls /etc/yum.repos.d/ | grep rpmfusion
+dnf5 -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-42.noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-42.noarch.rpm
+ls /etc/yum.repos.d/ | grep rpmfusion
 dnf5 -y install blender 
 dnf5 -y install ardour8 
 dnf5 -y install audacity-freeworld 
