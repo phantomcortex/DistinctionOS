@@ -10,6 +10,10 @@ set -ouex pipefail
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/39/x86_64/repoview/index.html&protocol=https&redirect=1
 
 # this installs a package from fedora repos
+echo "==========================================="
+dnf makecache
+dnf search audacity
+exit 1
 
 dnf5 -y copr enable bazzite-org/rom-properties 
 dnf5 -y install rom-properties rom-properties-gtk3
