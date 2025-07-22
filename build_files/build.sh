@@ -41,9 +41,11 @@ dnf makecache
 dnf -y install Cider
 
 # maybe install Crossover?
-#mkdir -p /var/opt/crossover
+mkdir -p /var/opt/crossover
 mkdir -p /opt/crossover #Might be a requirement for crossover
-#ln -s /opt/crossover /var/opt/crossover
+ls /opt
+ls /var/opt
+ln -s /opt/crossover /var/opt/crossover
 dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
 # The alternative is to run it in a container
