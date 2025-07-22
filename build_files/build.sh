@@ -69,15 +69,16 @@ dnf5 -y copr enable atim/nushell
 dnf5 -y install nushell
 
 #remove old kernel?
-dnf5 -y remove kernel kernel-devel-matched kernel-devel kernel-modules kernel-modules-core kernel-modules-extra kernel-core kernel-devel 
-dnf5 -y copr enable bieszczaders/kernel-cachyos
+dnf5 -y upgrade
+#dnf5 -y remove kernel kernel-devel-matched kernel-devel kernel-modules kernel-modules-core kernel-modules-extra kernel-core kernel-devel 
+#dnf5 -y copr enable bieszczaders/kernel-cachyos
 #dnf5 -y copr enable bieszczaders/kernel-cachyos-lto
-dnf5 -y install kernel-cachyos kernel-cachyos-devel-matched
-setsebool -P domain_kernel_load_modules on
+#dnf5 -y install kernel-cachyos kernel-cachyos-devel-matched
+#setsebool -P domain_kernel_load_modules on
 #dnf5 -y install kernel-cachyos-lto kernel-cachyos-lto-devel-matched
-echo "==========================="
+#echo "==========================="
 ls /usr/lib/modules
-echo "==========================="
+#echo "==========================="
 dnf list --installed | grep kernel
 # Note: bluefin ships with a slightly older kernel 
 # but shipping the cachyos kernel will be delayed until I can confirm secure-boot works with and without the custom kernel
