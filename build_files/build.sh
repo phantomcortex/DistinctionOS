@@ -39,14 +39,15 @@ dnf5 -y install nautilus-open-any-terminal
 # extras
 #dnf5 -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 ls /etc/yum.repos.d/ | grep rpmfusion
-dnf5 -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-42.noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-42.noarch.rpm
+dnf5 -y reinstall https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-42.noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-42.noarch.rpm
 ls /etc/yum.repos.d/ | grep rpmfusion
 dnf5 -y install blender 
 dnf5 -y install ardour8 
 echo "==========================================="
 #Looks like github isn't able to ship audacity-freeworld for some reason... so I'll have to do it manually
 dnf5 -y install https://mirror.fcix.net/rpmfusion/free/fedora/releases/42/Everything/x86_64/os/Packages/a/audacity-freeworld-3.7.3-1.fc42.x86_64.rpm
-dnf5 -y install libheif-tools heif-pixbuf-loader libheif-freeworld
+#and refuses to install anything from rpmfusion free or nonfree
+dnf5 -y install libheif-tools heif-pixbuf-loader https://ftp-stud.hs-esslingen.de/pub/Mirrors/rpmfusion.org/free/fedora/releases/42/Everything/x86_64/os/Packages/l/libheif-freeworld-1.19.7-1.fc42.x86_64.rpm
 dnf5 -y remove totem
 dnf5 -y install totem-video-thumbnailer clapper mpv decibels
 dnf5 -y install gnome-tweaks dconf
