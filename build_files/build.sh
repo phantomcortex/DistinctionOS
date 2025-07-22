@@ -60,6 +60,17 @@ dnf5 -y copr enable fernando-debian/dysk
 dnf5 -y install dysk
 dnf5 -y copr enable atim/nushell
 dnf5 -y install nushell
+
+#dnf5 -y copr enable bieszczaders/kernel-cachyos
+#dnf5 -y copr enable bieszczaders/kernel-cachyos-lto
+#dnf5 -y install kernel-cachyos kernel-cachyos-devel-matched
+#dnf5 -y install kernel-cachyos-lto kernel-cachyos-lto-devel-matched
+# Note: bluefin ships with a slightly older kernel 
+# but shipping the cachyos kernel will be delayed until I can confirm secure-boot works with and without the custom kernel
+#dnf5 -y copr enable atim/xpadneo
+#dnf5 -y install xpadneo
+# Note: I've previously used sentry's xpadneo kmod but it's not signed so secure boot won't work
+# it's unclear if atim's xpadneo is signed, but I doubt it severely.
 #==========================
 # internal package non-sense
 dnf5 install -y zoxide \
@@ -87,9 +98,15 @@ dnf5 install -y zoxide \
 dnf5 -y copr enable monkeygold/nautilus-open-any-terminal
 dnf5 -y install nautilus-open-any-terminal
 # extras
+dnf5 -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+
 dnf5 -y install blender 
-#dnf5 -y install ardour 
-#dnf5 -y install audacity-freeworld 
+dnf5 -y install ardour8 
+dnf5 -y install audacity-freeworld 
+dnf5 -y install libheif-tools heif-pixbuf-loader libheif-freeworld
+dnf5 -y remove totem
+dnf5 -y install totem-thumbnailer clapper mpv decibels
+
 
 # remove annoying gnome things
 dnf5 -y remove \
@@ -99,7 +116,9 @@ dnf5 -y remove \
             gnome-system-monitor \
             gnome-initial-setup \
             gnome-shell-extension-background-logo \
-            gnome-shell-extension-apps-menu && \
+            gnome-shell-extension-apps-menu \
+            firefox && \
+# since i use brave and firefox just collects dust we're just gonna get rid of it
 # Use a COPR Example:
 #
 # dnf5 -y copr enable ublue-os/staging
