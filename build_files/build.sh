@@ -41,9 +41,9 @@ dnf makecache
 dnf -y install Cider
 
 # maybe install Crossover?
-mkdir -p /var/opt/crossover
-mkdir -p /opt/crossover
-ln -s /opt/crossover /var/opt/crossover
+#mkdir -p /var/opt/crossover
+#mkdir -p /opt/crossover
+#ln -s /opt/crossover /var/opt/crossover
 dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
 # The alternative is to run it in a container
@@ -61,14 +61,14 @@ dnf5 -y install dysk
 dnf5 -y copr enable atim/nushell
 dnf5 -y install nushell
 
-#dnf5 -y copr enable bieszczaders/kernel-cachyos
+dnf5 -y copr enable bieszczaders/kernel-cachyos
 #dnf5 -y copr enable bieszczaders/kernel-cachyos-lto
-#dnf5 -y install kernel-cachyos kernel-cachyos-devel-matched
+dnf5 -y install kernel-cachyos kernel-cachyos-devel-matched
 #dnf5 -y install kernel-cachyos-lto kernel-cachyos-lto-devel-matched
 # Note: bluefin ships with a slightly older kernel 
 # but shipping the cachyos kernel will be delayed until I can confirm secure-boot works with and without the custom kernel
-#dnf5 -y copr enable atim/xpadneo
-#dnf5 -y install xpadneo
+dnf5 -y copr enable atim/xpadneo
+dnf5 -y install xpadneo
 # Note: I've previously used sentry's xpadneo kmod but it's not signed so secure boot won't work
 # it's unclear if atim's xpadneo is signed, but I doubt it severely.
 #==========================
@@ -106,6 +106,7 @@ dnf5 -y install audacity-freeworld
 dnf5 -y install libheif-tools heif-pixbuf-loader libheif-freeworld
 dnf5 -y remove totem
 dnf5 -y install totem-video-thumbnailer clapper mpv decibels
+dnf5 -y install gnome-tweaks dconf
 
 
 # remove annoying gnome things
