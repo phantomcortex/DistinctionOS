@@ -72,10 +72,10 @@ dnf5 -y install nushell
 dnf5 -y upgrade
 #dnf5 -y remove kernel kernel-devel-matched kernel-devel kernel-modules kernel-modules-core kernel-modules-extra kernel-core kernel-devel 
 #dnf5 -y copr enable bieszczaders/kernel-cachyos
-#dnf5 -y copr enable bieszczaders/kernel-cachyos-lto
+dnf5 -y copr enable bieszczaders/kernel-cachyos-lto
 #dnf5 -y install kernel-cachyos kernel-cachyos-devel-matched
-#setsebool -P domain_kernel_load_modules on
-#dnf5 -y install kernel-cachyos-lto kernel-cachyos-lto-devel-matched
+dnf5 -y install kernel-cachyos-lto kernel-cachyos-lto-devel-matched
+setsebool -P domain_kernel_load_modules on
 #echo "==========================="
 ls /usr/lib/modules
 #echo "==========================="
