@@ -43,8 +43,8 @@ dnf makecache
 # maybe install Crossover?
 mkdir -p /var/opt/cxoffice
 mkdir -p /opt/cxoffice #Might be a requirement for crossover
-ln -s /opt/crossover /var/opt/crossover
-dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
+ln -s /opt/cxoffice /var/opt/cxoffice
+#dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
 # The alternative is to run it in a container
 
@@ -55,10 +55,10 @@ dnf5 -y install brave-browser
 
 ls /opt
 ls /opt/cxoffice
-tree -uh -L 2 /opt/cxoffice
+echo "============================"
 ls /var/opt
 ls /var/opt/cxoffice
-tree -uh -L 2 /var/opt/cxoffice
+echo "============================"
 
 # internal copr repos
 dnf5 -y copr enable ilyaz/LACT
@@ -74,7 +74,10 @@ dnf5 -y copr enable bieszczaders/kernel-cachyos
 #dnf5 -y copr enable bieszczaders/kernel-cachyos-lto
 dnf5 -y install kernel-cachyos kernel-cachyos-devel-matched
 #dnf5 -y install kernel-cachyos-lto kernel-cachyos-lto-devel-matched
-ls /usr/lib/modules 
+echo "==========================="
+ls /usr/lib/modules
+echo "==========================="
+dnf list --installed | grep kernel
 exit 1
 # Note: bluefin ships with a slightly older kernel 
 # but shipping the cachyos kernel will be delayed until I can confirm secure-boot works with and without the custom kernel
