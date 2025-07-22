@@ -69,10 +69,11 @@ dnf5 -y copr enable atim/nushell
 dnf5 -y install nushell
 
 #remove old kernel?
-dnf5 -y remove kernel kernel-devel-matched
+dnf5 -y remove kernel kernel-devel-matched kernel-devel kernel-modules kernel-modules-core kernel-modules-extra kernel-core kernel-devel 
 dnf5 -y copr enable bieszczaders/kernel-cachyos
 #dnf5 -y copr enable bieszczaders/kernel-cachyos-lto
 dnf5 -y install kernel-cachyos kernel-cachyos-devel-matched
+setsebool -P domain_kernel_load_modules on
 #dnf5 -y install kernel-cachyos-lto kernel-cachyos-lto-devel-matched
 echo "==========================="
 ls /usr/lib/modules
