@@ -38,13 +38,13 @@ gpgkey=https://repo.cider.sh/RPM-GPG-KEY
 EOF
 
 dnf makecache 
-#dnf -y install Cider
+dnf -y install Cider
 
 # maybe install Crossover?
 mkdir -p /var/opt/cxoffice
 mkdir -p /opt/cxoffice #Might be a requirement for crossover
 ln -s /opt/cxoffice /var/opt/cxoffice
-#dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
+dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
 # The alternative is to run it in a container
 
@@ -79,7 +79,6 @@ echo "==========================="
 ls /usr/lib/modules
 echo "==========================="
 dnf list --installed | grep kernel
-exit 1
 # Note: bluefin ships with a slightly older kernel 
 # but shipping the cachyos kernel will be delayed until I can confirm secure-boot works with and without the custom kernel
 dnf5 -y copr enable atim/xpadneo
