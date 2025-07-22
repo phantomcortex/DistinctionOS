@@ -38,11 +38,11 @@ gpgkey=https://repo.cider.sh/RPM-GPG-KEY
 EOF
 
 dnf makecache 
-dnf -y install Cider
+#dnf -y install Cider
 
 # maybe install Crossover?
-mkdir -p /var/opt/crossover
-mkdir -p /opt/crossover #Might be a requirement for crossover
+mkdir -p /var/opt/cxoffice
+mkdir -p /opt/cxoffice #Might be a requirement for crossover
 ln -s /opt/crossover /var/opt/crossover
 dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
@@ -54,9 +54,12 @@ dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.
 dnf5 -y install brave-browser
 
 ls /opt
-ls /opt/crossover
+ls /opt/cxoffice
+tree -uh -L 2 /opt/cxoffice
 ls /var/opt
-ls /var/opt/crossover
+ls /var/opt/cxoffice
+tree -uh -L 2 /var/opt/cxoffice
+
 # internal copr repos
 dnf5 -y copr enable ilyaz/LACT
 dnf5 -y install lact
@@ -71,6 +74,8 @@ dnf5 -y copr enable bieszczaders/kernel-cachyos
 #dnf5 -y copr enable bieszczaders/kernel-cachyos-lto
 dnf5 -y install kernel-cachyos kernel-cachyos-devel-matched
 #dnf5 -y install kernel-cachyos-lto kernel-cachyos-lto-devel-matched
+ls /usr/lib/modules 
+exit 1
 # Note: bluefin ships with a slightly older kernel 
 # but shipping the cachyos kernel will be delayed until I can confirm secure-boot works with and without the custom kernel
 dnf5 -y copr enable atim/xpadneo
@@ -88,11 +93,8 @@ dnf5 install -y zoxide \
     # various things
     dnf5 -y install \
         nvim \
-        zstd \
-        zenity \
         rust \
         cargo \
-        zsh \
         zsh-autosuggestions \
         zsh-syntax-highlighting \
         blackbox-terminal
