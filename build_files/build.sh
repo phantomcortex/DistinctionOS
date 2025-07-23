@@ -80,24 +80,18 @@ dnf makecache
 dnf -y install Cider
 
 # maybe install Crossover?
-mkdir -p /var/opt/cxoffice
-mkdir -p /opt/cxoffice #Might be a requirement for crossover
-ln -s /opt/cxoffice /var/opt/cxoffice
-dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
+#mkdir -p /var/opt/cxoffice
+#mkdir -p /opt/cxoffice #Might be a requirement for crossover
+#ln -s /opt/cxoffice /var/opt/cxoffice
+#dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
-# The alternative is to run it in a container
+# Crossover doesn't seem to appear on my bazzite image nor does anything installed to /opt
 
 # Brave Browser (Could I use it with flatpak? Yes. Am I going to? No.)
 dnf5 -y install dnf-plugins-core
 dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
 dnf5 -y install brave-browser
 
-ls /opt
-ls /opt/cxoffice
-echo "============================"
-ls /var/opt
-ls /var/opt/cxoffice
-echo "============================"
 
 # internal copr repos
 dnf5 -y copr enable ilyaz/LACT
@@ -111,7 +105,10 @@ dnf5 -y copr enable atim/xpadneo
 dnf5 -y install xpadneo
 # Note: I've previously used sentry's xpadneo kmod but it's not signed so secure boot won't work
 # it's unclear if atim's xpadneo is signed, but I doubt it severely.
-# since i use brave and firefox just collects dust we're just gonna get rid of it
+
+#Install custom kora-icon-theme
+dnf5 -y install https://github.com/phantomcortex/kora/releases/download/1.6.5.12/kora-icon-theme-1.6.5.12-1.fc42.noarch.rpm
+
 # Use a COPR Example:
 #
 # dnf5 -y copr enable ublue-os/staging
