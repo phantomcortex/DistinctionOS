@@ -88,9 +88,10 @@ dnf -y install Cider
 # Crossover doesn't seem to appear on my bazzite image nor does anything installed to /opt
 
 # Brave Browser (Could I use it with flatpak? Yes. Am I going to? No.)
-dnf5 -y install dnf-plugins-core
-dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
-dnf5 -y install brave-browser
+#dnf5 -y install dnf-plugins-core
+#dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
+#dnf5 -y install brave-browser
+#pretty much anything in /opt is ka-put
 
 
 # internal copr repos
