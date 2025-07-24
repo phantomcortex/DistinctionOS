@@ -38,9 +38,9 @@ dnf5 -y copr enable monkeygold/nautilus-open-any-terminal
 dnf5 -y install nautilus-open-any-terminal
 # extras
 #dnf5 -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-ls /etc/yum.repos.d/ | grep rpmfusion
+ls /etc/yum.repos.d/ | grep rpmfusion #
 dnf5 -y reinstall https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-42.noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-42.noarch.rpm
-ls /etc/yum.repos.d/ | grep rpmfusion
+ls /etc/yum.repos.d/ | grep rpmfusion #
 dnf5 -y install blender 
 dnf5 -y install ardour8 
 echo "==========================================="
@@ -51,6 +51,7 @@ dnf5 -y install libheif-tools heif-pixbuf-loader https://ftp-stud.hs-esslingen.d
 dnf5 -y remove totem
 dnf5 -y install totem-video-thumbnailer clapper mpv decibels
 dnf5 -y install gnome-tweaks dconf
+dnf5 -y install tealdeer 
 
 
 # remove annoying gnome things
@@ -98,6 +99,12 @@ ls /opt
 mv /opt/* /usr/share/factory/var/opt/
 echo -e "\e[31mDEBUG:\e[0m"
 ls /usr/share/factory/var/opt
+#Testing in a VM shows that crossover and brave are installed to /usr/share/factory/var/opt however, -
+# they aren't copied over to /opt [!] I'm missing systemd tmpfiles!
+tee /etc/tmpfiles.d/systemd-tmpfiles-setup.service << 'EOF'
+C+    /var/opt        -    -    -    -
+EOF
+#Hopefully on startup this will just overwrite existing copies
 
 # internal copr repos
 dnf5 -y copr enable ilyaz/LACT
