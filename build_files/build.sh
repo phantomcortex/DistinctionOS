@@ -52,7 +52,25 @@ dnf5 -y remove totem
 dnf5 -y install totem-video-thumbnailer clapper mpv decibels
 dnf5 -y install gnome-tweaks dconf
 dnf5 -y install tealdeer 
+#silverblue specfic
+dnf5 -y install \ 
+            rocm-hip \
+            rocm-smi \ 
+            rocm-opencl \
+            libavcodec-freeworld \
+            btop \
+            ffmpegthumbnailer \
+            gstreamer1-plugins-ugly \
+            gstreamer1-plugins-good-extras \
+            gstreamer1-plugins-bad-freeworld \
+            gstreamer1-plugins-vaapi 
 
+#x
+dnf5 -y install \
+            x265
+#ffmpeg includes non-free/patent encumbered codecs
+#should allow for ffmpeg & libavcodec-freeworld to be installed simultaneously
+dnf5 -y install ffmpeg --allowerasing
 
 # remove annoying gnome things
 dnf5 -y remove \
