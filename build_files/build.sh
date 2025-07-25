@@ -44,10 +44,41 @@ ls /etc/yum.repos.d/ | grep rpmfusion #
 dnf5 -y install blender 
 dnf5 -y install ardour8 
 echo "==========================================="
-#Looks like github isn't able to ship audacity-freeworld for some reason... so I'll have to do it manually
-dnf5 -y install https://mirror.fcix.net/rpmfusion/free/fedora/releases/42/Everything/x86_64/os/Packages/a/audacity-freeworld-3.7.3-1.fc42.x86_64.rpm
-#and refuses to install anything from rpmfusion free or nonfree
-dnf5 -y install libheif-tools heif-pixbuf-loader https://ftp-stud.hs-esslingen.de/pub/Mirrors/rpmfusion.org/free/fedora/releases/42/Everything/x86_64/os/Packages/l/libheif-freeworld-1.19.7-1.fc42.x86_64.rpm
+
+AUDACITY_FREEWORLD="audacity-freeworld" #this exists due to dnf failing to find certain rpmfusion packages sometimes
+AUDACITY_RPM_URL="https://mirror.fcix.net/rpmfusion/free/fedora/releases/42/Everything/x86_64/os/Packages/a/audacity-freeworld-3.7.3-1.fc42.x86_64.rpm"
+
+echo "Attempting to install '${AUDACITY_FREEWORLD}' via standard DNF..."
+if dnf5 -y install "$AUDACITY_FREEWORLD"; then
+    echo "✅ Package '${AUDACITY_FREEWORLD}' installed successfully."
+else
+    echo "⚠️ Standard DNF install failed. Attempting direct RPM install from URL..."
+    if dnf5 -y install "$AUDACITY_RPM_URL"; then
+        echo "✅ Package installed successfully from URL."
+    else
+        echo "❌ Failed to install '${AUDACITY_FREEWORLD}' via both methods."
+        exit 1
+    fi
+fi
+
+LIBHEIF_FREEWORLD="libheif-freeworld" # might need to have something that bumps the version 
+LIBHEIF_RPM_URL="https://ftp-stud.hs-esslingen.de/pub/Mirrors/rpmfusion.org/free/fedora/releases/42/Everything/x86_64/os/Packages/l/libheif-freeworld-1.19.7-1.fc42.x86_64.rpm"
+
+echo "Attempting to install '${LIBHEIF_FREEWORLD}' via standard DNF..."
+if dnf5 -y install "$LIBHEIF_FREEWORLD"; then
+    echo "✅ Package '${LIBHEIF_FREEWORLD}' installed successfully."
+else
+    echo "⚠️ Standard DNF install failed. Attempting direct RPM install from URL..."
+    if dnf5 -y install "$LIBHEIF_RPM_URL"; then
+        echo "✅ Package installed successfully from URL."
+    else
+        echo "❌ Failed to install '${LIBHEIF_FREEWORLD}' via both methods."
+        exit 1
+    fi
+fi
+
+
+dnf5 -y install libheif-tools heif-pixbuf-loader 
 dnf5 -y remove totem
 dnf5 -y install totem-video-thumbnailer clapper mpv decibels
 dnf5 -y install gnome-tweaks dconf
