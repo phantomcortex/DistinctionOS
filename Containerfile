@@ -60,8 +60,8 @@ RUN --mount=type=cache,dst=/var/cache \
     eval "$(/ctx/dnf5-setopt setopt '*negativo17*' priority=4 exclude='mesa-* *xone*')" && \
     dnf5 -y config-manager setopt "*rpmfusion*".priority=5 "*rpmfusion*".exclude="mesa-*" && \
     dnf5 -y config-manager setopt "*fedora*".exclude="mesa-* kernel-core-* kernel-modules-* kernel-uki-virt-*" && \
-    dnf5 -y config-manager setopt "*staging*".exclude="scx-scheds kf6-* mesa* mutter* rpm-ostree* systemd* gnome-shell gnome-settings-daemon gnome-control-center gnome-software libadwaita tuned*" && \
-    /ctx/cleanup
+    dnf5 -y config-manager setopt "*staging*".exclude="scx-scheds kf6-* mesa* mutter* rpm-ostree* systemd* gnome-shell gnome-settings-daemon gnome-control-center gnome-software libadwaita tuned*"
+    
 
 # Install kernel
 RUN --mount=type=cache,dst=/var/cache \
@@ -71,8 +71,8 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 -y config-manager setopt "*rpmfusion*".enabled=0 && \
     dnf5 -y copr enable bieszczaders/kernel-cachyos-addons && \
     dnf5 -y copr disable bieszczaders/kernel-cachyos-addons && \
-    dnf5 -y swap --repo copr:copr.fedorainfracloud.org:bazzite-org:bazzite bootc bootc && \
-    /ctx/cleanup
+    dnf5 -y swap --repo copr:copr.fedorainfracloud.org:bazzite-org:bazzite bootc bootc 
+    
 
 # Install new packages
 RUN --mount=type=cache,dst=/var/cache \
@@ -177,8 +177,8 @@ RUN --mount=type=cache,dst=/var/cache \
     mkdir -p /tmp/scopebuddy && \
     tar --no-same-owner --no-same-permissions --no-overwrite-dir -xvzf /tmp/scopebuddy.tar.gz -C /tmp/scopebuddy && \
     rm -f /tmp/scopebuddy.tar.gz && \
-    cp -r /tmp/scopebuddy/ScopeBuddy-*/bin/* /usr/bin/ && \
-    /ctx/cleanup
+    cp -r /tmp/scopebuddy/ScopeBuddy-*/bin/* /usr/bin/ 
+    
 
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
@@ -225,8 +225,8 @@ RUN --mount=type=cache,dst=/var/cache \
     curl -Lo /usr/bin/latencyflex https://raw.githubusercontent.com/bazzite-org/LatencyFleX-Installer/main/install.sh && \
     chmod +x /usr/bin/latencyflex && \
     curl -Lo /usr/bin/winetricks https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks && \
-    chmod +x /usr/bin/winetricks && \
-    /ctx/cleanup
+    chmod +x /usr/bin/winetricks 
+    
 
 # Configure KDE & GNOME
 RUN --mount=type=cache,dst=/var/cache \
@@ -278,8 +278,8 @@ RUN --mount=type=cache,dst=/var/cache \
         unzip /tmp/tilingshell/tilingshell@ferrarodomenico.com.zip -d /usr/share/gnome-shell/extensions/tilingshell@ferrarodomenico.com && \
         curl -Lo /usr/share/thumbnailers/exe-thumbnailer.thumbnailer https://raw.githubusercontent.com/jlu5/icoextract/master/exe-thumbnailer.thumbnailer && \
         systemctl enable dconf-update.service \
-    ; fi && \
-    /ctx/cleanup
+    ; fi 
+    
 
 # ublue-os packages
 # Homebrew & Bash Prexec
@@ -289,7 +289,7 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=tmpfs,dst=/tmp \
     dnf5 install -y ublue-brew && \
     curl -Lo /usr/share/bash-prexec https://raw.githubusercontent.com/ublue-os/bash-preexec/master/bash-preexec.sh && \
-    /ctx/cleanup
+    
 
 # Cleanup & Finalize
 COPY system_files/overrides /
