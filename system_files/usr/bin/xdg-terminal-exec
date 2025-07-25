@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+
+if command -v /usr/bin/blackbox-terminal > /dev/null; then
+  if [[ -z "$@" ]]; then
+    /usr/bin/blackbox-terminal
+  else
+    /usr/bin/blackbox-terminal -c "$@"
+  fi
+else
+  /usr/bin/gnome-terminal -- "$@"
+fi
