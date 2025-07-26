@@ -200,8 +200,8 @@ RUN --mount=type=cache,dst=/var/cache \
         VK_hdr_layer && \
     echo -e "\033[31mINSTALL PIPEWIRE STRONG\033[0m" && \
     dnf5 -y --enablerepo=fedora --setopt=install_weak_deps=True reinstall --allowerasing \
-        pipewire pipewire-alsa pipewire-jack-audio-connection-kit \
-    dnf5 -y versionlock add \
+        pipewire pipewire-alsa pipewire-jack-audio-connection-kit && \
+    dnf5 versionlock add \
         pipewire pipewire-alsa pipewire-jack-audio-connection-kit && \
     echo -e "\033[31mPIPEWIRE VERSION LOCK\033[0m" && \
     echo -e "\033[31mINSTALL STEAM STRONG\033[0m" && \
