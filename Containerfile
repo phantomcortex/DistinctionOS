@@ -208,19 +208,17 @@ RUN --mount=type=cache,dst=/var/cache \
         libobs_vkcapture.i686 \
         libobs_glcapture.i686 \
         VK_hdr_layer && \
+    echo -e "\033[31mInstall Pipewire Strong\033[0m" && \
+    dnf5 -y --setopt=install_weak_deps=True install \
+        pipewire pipewire-alsa \
+    echo -e "\033[31mInstall Steam Weak\033[0m" && \
     dnf5 -y --setopt=install_weak_deps=False install \
         steam \
-        lutris && \
+    echo -e "\033[31mInstall Steam Strong\033[0m" && \
+    dnf5 -y --setopt=install_weak_deps=True install \
+        steam \
     dnf5 -y remove \
         gamemode && \
-    curl -Lo /tmp/latencyflex.tar.xz $(curl https://api.github.com/repos/ishitatsuyuki/LatencyFleX/releases/latest | jq -r '.assets[] | select(.name| test(".*.tar.xz$")).browser_download_url') && \
-    mkdir -p /tmp/latencyflex && \
-    tar --no-same-owner --no-same-permissions --no-overwrite-dir --strip-components 1 -xvf /tmp/latencyflex.tar.xz -C /tmp/latencyflex && \
-    rm -f /tmp/latencyflex.tar.xz && \
-    mkdir -p /usr/lib64/latencyflex && \
-    cp -r /tmp/latencyflex/wine/usr/lib/wine/* /usr/lib64/latencyflex/ && \
-    curl -Lo /usr/bin/latencyflex https://raw.githubusercontent.com/bazzite-org/LatencyFleX-Installer/main/install.sh && \
-    chmod +x /usr/bin/latencyflex && \
     curl -Lo /usr/bin/winetricks https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks && \
     chmod +x /usr/bin/winetricks 
     
@@ -242,8 +240,6 @@ RUN --mount=type=cache,dst=/var/cache \
             mutter && \
         dnf5 -y install \
             nautilus-gsconnect \
-            steamdeck-backgrounds \
-            steamdeck-gnome-presets \
             gnome-randr-rust \
             gnome-shell-extension-appindicator \
             gnome-shell-extension-user-theme \
@@ -289,7 +285,7 @@ RUN --mount=type=cache,dst=/var/cache \
     
 
 # Cleanup & Finalize
-COPY system_files/overrides /
+COPY system_files/ /
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
@@ -306,7 +302,6 @@ RUN --mount=type=cache,dst=/var/cache \
     sed -i 's@/usr/bin/bazzite-steam %U@/usr/bin/bazzite-steam -silent %U@g' /etc/skel/.config/autostart/steam.desktop && \
     sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/nvtop.desktop && \
     sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/btop.desktop && \
-    sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/yad-icon-browser.desktop && \
     sed -i 's/#UserspaceHID.*/UserspaceHID=true/' /etc/bluetooth/input.conf && \
     sed -i "s/^SCX_SCHEDULER=.*/SCX_SCHEDULER=scx_bpfland/" /etc/default/scx && \
     sed -i "s|grub_probe\} --target=device /\`|grub_probe} --target=device /sysroot\`|g" /usr/bin/grub2-mkconfig && \
@@ -384,6 +379,7 @@ RUN --mount=type=cache,dst=/var/cache \
     curl -Lo /usr/lib/sysctl.d/99-bore-scheduler.conf https://github.com/CachyOS/CachyOS-Settings/raw/master/usr/lib/sysctl.d/99-bore-scheduler.conf && \
     curl -Lo /etc/distrobox/docker.ini https://github.com/ublue-os/toolboxes/raw/refs/heads/main/apps/docker/distrobox.ini && \
     curl -Lo /etc/distrobox/incus.ini https://github.com/ublue-os/toolboxes/raw/refs/heads/main/apps/incus/distrobox.ini && \
+    echo -e "\033[31mctx binaries - might fail\033[0m" && \
     /ctx/image-info && \
     /ctx/build-initramfs && \
     /ctx/finalize
