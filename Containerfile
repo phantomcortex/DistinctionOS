@@ -210,13 +210,10 @@ RUN --mount=type=cache,dst=/var/cache \
         VK_hdr_layer && \
     echo -e "\033[31mInstall Pipewire Strong\033[0m" && \
     dnf5 -y --setopt=install_weak_deps=True install \
-        pipewire pipewire-alsa \
+        pipewire pipewire-alsa && \
     echo -e "\033[31mInstall Steam Weak\033[0m" && \
     dnf5 -y --setopt=install_weak_deps=False install \
-        steam \
-    echo -e "\033[31mInstall Steam Strong\033[0m" && \
-    dnf5 -y --setopt=install_weak_deps=True install \
-        steam \
+        steam && \
     dnf5 -y remove \
         gamemode && \
     curl -Lo /usr/bin/winetricks https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks && \
