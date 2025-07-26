@@ -187,6 +187,7 @@ RUN --mount=type=cache,dst=/var/cache \
         libobs_vkcapture.i686 \
         libobs_glcapture.i686 \
         VK_hdr_layer && \
+    dnf5 config-manager --add-repo=https://negativo17.org/repos/epel-steam.repo && \
     echo -e "\033[31mINSTALL STEAM STRONG\033[0m" && \
     dnf5 -y --setopt=install_weak_deps=True install \
         steam && \
@@ -323,10 +324,7 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 config-manager setopt "*charm*".enabled=0 && \
     eval "$(/ctx/dnf5-setopt setopt '*negativo17*' enabled=0)" && \
     sed -i 's#/var/lib/selinux#/etc/selinux#g' /usr/lib/python3.*/site-packages/setroubleshoot/util.py && \
-    sed -i 's|^ExecStart=.*|ExecStart=/usr/libexec/rtkit-daemon --no-canary|' /usr/lib/systemd/system/rtkit-daemon.service && \
-    sed -i 's/balanced=balanced$/balanced=balanced-bazzite/' /etc/tuned/ppd.conf && \
-    sed -i 's/performance=throughput-performance$/performance=throughput-performance-bazzite/' /etc/tuned/ppd.conf && \
-    sed -i 's/balanced=balanced-battery$/balanced=balanced-battery-bazzite/' /etc/tuned/ppd.conf && \
+    sed -i 's|^ExecStart=.*|ExecStart=/usr/libexec/rtkit-daemon --no-canary|' /usr/lib/systemd/system/rtkit-daemon.service && \ 
     ln -s /usr/bin/true /usr/bin/pulseaudio && \
     mkdir -p /etc/flatpak/remotes.d && \
     curl -Lo /etc/flatpak/remotes.d/flathub.flatpakrepo https://dl.flathub.org/repo/flathub.flatpakrepo && \
@@ -338,12 +336,10 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl enable input-remapper.service && \
     systemctl enable bazzite-flatpak-manager.service && \
     systemctl disable rpm-ostreed-automatic.timer && \
-    systemctl enable uupd.timer && \
     systemctl enable incus-workaround.service && \
     systemctl enable bazzite-hardware-setup.service && \
     systemctl disable tailscaled.service && \
     systemctl enable dev-hugepages1G.mount && \
-    systemctl enable ds-inhibit.service && \
     systemctl --global enable podman.socket && \
     systemctl --global enable systemd-tmpfiles-setup.service && \
     systemctl disable waydroid-container.service && \
