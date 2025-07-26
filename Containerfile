@@ -104,10 +104,7 @@ RUN --mount=type=cache,dst=/var/cache \
         libinput-utils \
         i2c-tools \
         lm_sensors \
-        fw-ectool \
-        fw-fanctrl \
         udica \
-        ladspa-caps-plugins \
         python3-icoextract \
         tailscale \
         webapp-manager \
@@ -118,8 +115,6 @@ RUN --mount=type=cache,dst=/var/cache \
         wmctrl \
         libcec \
         yad \
-        f3 \
-        pulseaudio-utils \
         lzip \
         p7zip \
         p7zip-plugins \
@@ -127,7 +122,6 @@ RUN --mount=type=cache,dst=/var/cache \
         libxcrypt-compat \
         vulkan-tools \
         extest.i686 \
-        xwiimote-ng \
         fastfetch \
         glow \
         gum \
@@ -191,14 +185,10 @@ RUN --mount=type=cache,dst=/var/cache \
         gamescope-libs.x86_64 \
         gamescope-libs.i686 \
         gamescope-shaders \
-        jupiter-sd-mounting-btrfs \
         umu-launcher \
         dbus-x11 \
         xdg-user-dirs \
         gobject-introspection \
-        libFAudio.x86_64 \
-        libFAudio.i686 \
-        latencyflex-vulkan-layer \
         vkBasalt.x86_64 \
         vkBasalt.i686 \
         mangohud.x86_64 \
@@ -208,11 +198,14 @@ RUN --mount=type=cache,dst=/var/cache \
         libobs_vkcapture.i686 \
         libobs_glcapture.i686 \
         VK_hdr_layer && \
-    echo -e "\033[31mInstall Pipewire Strong\033[0m" && \
+    echo -e "\033[31mINSTALL PIPEWIRE STRONG\033[0m" && \
+    dnf5 -y --enablerepo=fedora --setopt=install_weak_deps=True reinstall --allowerasing \
+        pipewire pipewire-alsa pipewire-jack-audio-connection-kit \
+    dnf5 -y versionlock add \
+        pipewire pipewire-alsa pipewire-jack-audio-connection-kit \
+    echo -e "\033[31mPIPEWIRE VERSION LOCK\033[0m" && \
+    echo -e "\033[31mINSTALL STEAM STRONG\033[0m" && \
     dnf5 -y --setopt=install_weak_deps=True install \
-        pipewire pipewire-alsa && \
-    echo -e "\033[31mInstall Steam Weak\033[0m" && \
-    dnf5 -y --setopt=install_weak_deps=False install \
         steam && \
     dnf5 -y remove \
         gamemode && \
