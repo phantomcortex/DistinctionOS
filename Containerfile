@@ -187,10 +187,6 @@ RUN --mount=type=cache,dst=/var/cache \
         libobs_vkcapture.i686 \
         libobs_glcapture.i686 \
         VK_hdr_layer && \
-    dnf5 config-manager --add-repo=https://negativo17.org/repos/epel-steam.repo && \
-    echo -e "\033[31mINSTALL STEAM STRONG\033[0m" && \
-    dnf5 -y --setopt=install_weak_deps=True install \
-        steam && \
     dnf5 -y remove \
         gamemode && \
     curl -Lo /usr/bin/winetricks https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks && \
@@ -319,6 +315,9 @@ RUN --mount=type=cache,dst=/var/cache \
     do \
         dnf5 -y copr disable $copr; \
     done && unset -v copr && \
+    echo -e "\033[31mINSTALL STEAM STRONG\033[0m" && \
+    dnf5 -y --setopt=install_weak_deps=True install \
+        steam && \
     dnf5 config-manager setopt "*tailscale*".enabled=0 && \
     dnf5 config-manager setopt "terra-mesa".enabled=0 && \
     dnf5 config-manager setopt "*charm*".enabled=0 && \
