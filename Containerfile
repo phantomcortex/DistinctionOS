@@ -141,17 +141,11 @@ RUN --mount=type=cache,dst=/var/cache \
         ydotool \
         stress-ng \
         snapper \
-        btrfs-assistant \
         edk2-ovmf \
         qemu \
         libvirt \
         lsb_release \
         uupd \
-        ds-inhibit \
-        rocm-hip \
-        rocm-opencl \
-        rocm-clinfo \
-        waydroid \
         cage \
         wlr-randr && \
     curl -Lo /tmp/ls-iommu.tar.gz $(curl https://api.github.com/repos/HikariKnight/ls-iommu/releases/latest | jq -r '.assets[] | select(.name| test(".*x86_64.tar.gz$")).browser_download_url') && \
