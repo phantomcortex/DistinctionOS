@@ -115,7 +115,6 @@ RUN --mount=type=cache,dst=/var/cache \
         lzip \
         p7zip \
         p7zip-plugins \
-        rar \
         libxcrypt-compat \
         vulkan-tools \
         extest.i686 \
