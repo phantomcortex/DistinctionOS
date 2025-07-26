@@ -27,7 +27,7 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=tmpfs,dst=/tmp \
     mkdir -p /var/roothome && \
     echo -e "\033[31mINSTALL PIPEWIRE STRONG\033[0m" && \
-    dnf5 -y --setopt=install_weak_deps=True reinstall --allowerasing \
+    dnf5 -y --setopt=install_weak_deps=True install --allowerasing \
         pipewire pipewire-alsa pipewire-jack-audio-connection-kit && \
     dnf5 -y versionlock add \
         pipewire pipewire-alsa pipewire-jack-audio-connection-kit && \
