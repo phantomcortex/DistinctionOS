@@ -53,7 +53,7 @@ RUN --mount=type=cache,dst=/var/cache \
         https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
     dnf5 -y config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-steam.repo && \
     dnf5 -y config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-rar.repo && \
-    dnf5 -y config-manager setopt "*bazzite*".priority=1 && \
+    dnf5 -y config-manager setopt "*bazzite*".priority=1 "*bazzite*".exclude="pipewire*" && \
     dnf5 -y config-manager setopt "*terra*".priority=3 "*terra*".exclude="nerd-fonts topgrade" && \
     dnf5 -y config-manager setopt "terra-mesa".enabled=true && \
     dnf5 -y config-manager setopt "terra-nvidia".enabled=false && \
@@ -83,7 +83,6 @@ RUN --mount=type=cache,dst=/var/cache \
         https://github.com/bazzite-org/cicpoffs/releases/download/master/cicpoffs.rpm && \
     echo -e "\033[31mMain\033[0m" && \
     dnf5 -y install \
-        bazaar \
         libdex-0.9.1 \
         iwd \
         google-noto-sans-cjk-fonts \
@@ -98,7 +97,6 @@ RUN --mount=type=cache,dst=/var/cache \
         xwininfo \
         xrandr \
         compsize \
-        ryzenadj \
         ddcutil \
         input-remapper \
         libinput-utils \
@@ -126,13 +124,6 @@ RUN --mount=type=cache,dst=/var/cache \
         glow \
         gum \
         vim \
-        cockpit-networkmanager \
-        cockpit-podman \
-        cockpit-selinux \
-        cockpit-system \
-        cockpit-navigator \
-        cockpit-storaged \
-        topgrade \
         ydotool \
         stress-ng \
         snapper \
@@ -199,7 +190,7 @@ RUN --mount=type=cache,dst=/var/cache \
         libobs_glcapture.i686 \
         VK_hdr_layer && \
     echo -e "\033[31mINSTALL PIPEWIRE STRONG\033[0m" && \
-    dnf5 -y --enablerepo=fedora --setopt=install_weak_deps=True reinstall --allowerasing \
+    dnf5 -y --setopt=install_weak_deps=True reinstall --allowerasing \
         pipewire pipewire-alsa pipewire-jack-audio-connection-kit && \
     dnf5 versionlock add \
         pipewire pipewire-alsa pipewire-jack-audio-connection-kit && \
