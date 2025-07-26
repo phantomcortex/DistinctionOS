@@ -26,6 +26,12 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     mkdir -p /var/roothome && \
+    echo -e "\033[31mINSTALL PIPEWIRE STRONG\033[0m" && \
+    dnf5 -y --setopt=install_weak_deps=True reinstall --allowerasing \
+        pipewire pipewire-alsa pipewire-jack-audio-connection-kit && \
+    dnf5 -y versionlock add \
+        pipewire pipewire-alsa pipewire-jack-audio-connection-kit && \
+    echo -e "\033[31mPIPEWIRE VERSION LOCK\033[0m" && \
     dnf5 -y install dnf5-plugins && \
     for copr in \
         bazzite-org/bazzite \
@@ -46,18 +52,11 @@ RUN --mount=type=cache,dst=/var/cache \
         dnf5 -y copr enable $copr; \
         dnf5 -y config-manager setopt copr:copr.fedorainfracloud.org:${copr////:}.priority=98 ;\
     done && unset -v copr && \
-    dnf5 -y install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release{,-extras} && \
     dnf5 -y config-manager addrepo --overwrite --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo && \
     dnf5 -y install \
         https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
         https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
-    dnf5 -y config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-steam.repo && \
-    dnf5 -y config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-rar.repo && \
-    dnf5 -y config-manager setopt "*bazzite*".priority=1 "*bazzite*".exclude="pipewire*" && \
-    dnf5 -y config-manager setopt "*terra*".priority=3 "*terra*".exclude="nerd-fonts topgrade" && \
-    dnf5 -y config-manager setopt "terra-mesa".enabled=true && \
-    dnf5 -y config-manager setopt "terra-nvidia".enabled=false && \
-    eval "$(/ctx/dnf5-setopt setopt '*negativo17*' priority=4 exclude='mesa-* *xone*')" && \
+        dnf5 -y config-manager setopt "*bazzite*".priority=1 "*bazzite*".exclude="pipewire* " && \
     dnf5 -y config-manager setopt "*rpmfusion*".priority=5 "*rpmfusion*".exclude="mesa-*" && \
     dnf5 -y config-manager setopt "*fedora*".exclude="mesa-* kernel-core-* kernel-modules-* kernel-uki-virt-*" && \
     dnf5 -y config-manager setopt "*staging*".exclude="scx-scheds kf6-* mesa* mutter* rpm-ostree* systemd* gnome-shell gnome-settings-daemon gnome-control-center gnome-software libadwaita tuned*"
@@ -189,12 +188,6 @@ RUN --mount=type=cache,dst=/var/cache \
         libobs_vkcapture.i686 \
         libobs_glcapture.i686 \
         VK_hdr_layer && \
-    echo -e "\033[31mINSTALL PIPEWIRE STRONG\033[0m" && \
-    dnf5 -y --setopt=install_weak_deps=True reinstall --allowerasing \
-        pipewire pipewire-alsa pipewire-jack-audio-connection-kit && \
-    dnf5 versionlock add \
-        pipewire pipewire-alsa pipewire-jack-audio-connection-kit && \
-    echo -e "\033[31mPIPEWIRE VERSION LOCK\033[0m" && \
     echo -e "\033[31mINSTALL STEAM STRONG\033[0m" && \
     dnf5 -y --setopt=install_weak_deps=True install \
         steam && \
