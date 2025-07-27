@@ -45,8 +45,11 @@ ls /usr/share/gnome-shell/extensions/ |grep -E 'tophat|gnome-ui-tune|burn-my-win
 
 echo -e "\033[31mVERIFY THEMES\033[0m"
 ls /usr/share/themes/ |grep -e 'Orchis'
+echo -e "\033[31mVERIFY ICONS\033[0m"
 ls /usr/share/icons/ |grep -E 'capitaine|Deppin'
+echo -e "\033[31mVERIFY BACKGROUNDS\033[0m"
 ls /usr/share/backgrounds |grep -e 'skyrim'
+echo -e "\033[31mLIST KERNEL\033[0m"
 ls /lib/modules/ 
 # cleanup
 rm -rf /tmp/gnome-shell
