@@ -2,6 +2,10 @@
 
 set -ouex pipefail
 
+RED='\033[0;31m'
+NC='\033[0m'
+ORANGE='\033[0;33m'
+CRITICAL='\033[31;5m'
 ### Install packages
 
 # Packages can be installed from any enabled yum repo on the image.
@@ -11,20 +15,16 @@ set -ouex pipefail
 
 # this installs a package from fedora repos
 
+# Define the COPR repo and package
 
-dnf5 -y copr enable bazzite-org/rom-properties 
-dnf5 -y install rom-properties rom-properties-gtk3
+if ! dnf repolist | grep -q "copr:copr.fedorainfracloud.org:bazzite-org:rom-properties"; then
+  dnf5 copr enable -y bazzite-org/rom-properties
+  dnf5 -y install rom-properties
+fi
 
 
 #==========================
 # internal package non-sense
-dnf5 install -y \ 
-            gnome-randr-rust \
-            gnome-shell-extension-just-perfection \
-            gnome-shell-extension-restart-to \
-            gnome-shell-extension-burn-my-windows \
-            gnome-shell-extension-blur-my-shell \
-            gnome-shell-extension-user-theme
 
 dnf5 -y remove \
             gnome-classic-session \
@@ -122,8 +122,12 @@ dnf5 -y remove \
             gnome-initial-setup \
             gnome-shell-extension-background-logo \
             gnome-shell-extension-apps-menu \
-            firefox && \
-            
+
+
+#remove waydroid because I don't use it and don't plan to
+dnf5 -y remove \
+    waydroid
+
 # import Cider Music app (Apple Music)
 rpm --import https://repo.cider.sh/RPM-GPG-KEY
 
@@ -148,22 +152,24 @@ dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
 # Crossover doesn't seem to appear on my bazzite image nor does anything installed to /opt
 
-# Brave Browser (Could I use it with flatpak? Yes. Am I going to? No.)
-dnf5 -y install dnf-plugins-core
-dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
-dnf5 -y install brave-browser
+# Brave Browser 
+#dnf5 -y install dnf-plugins-core
+#dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
+#dnf5 -y install brave-browser
 
 echo -e "\e[31mDEBUG:\e[0m"
+# is opt2 a good solution? definitly not. I'd still strongly prefer crossover to be natively installed rather a container
+# I'll have to think of a cleaner solution
 ls /opt
-mv /opt/* /usr/share/factory/var/opt/
+mv /opt/* /opt2
 echo -e "\e[31mDEBUG:\e[0m"
-ls /usr/share/factory/var/opt
-#Testing in a VM shows that crossover and brave are installed to /usr/share/factory/var/opt however, -
-# they aren't copied over to /opt [!] I'm missing systemd tmpfiles!
-tee /etc/tmpfiles.d/systemd-tmpfiles-setup.service << 'EOF'
-C+    /var/opt        -    -    -    -
-EOF
-#Hopefully on startup this will just overwrite existing copies
+
+ls /opt2
+# 
+if ! rpm -q python3-icoextract &>/dev/null; then
+    echo -e "Installing python3-icoextract..."
+    dnf5 install -y python3-icoextract
+fi
 
 # internal copr repos
 dnf5 -y copr enable ilyaz/LACT
@@ -177,10 +183,13 @@ dnf5 -y copr enable atim/xpadneo
 dnf5 -y install xpadneo
 # Note: I've previously used sentry's xpadneo kmod but it's not signed so secure boot won't work
 # it's unclear if atim's xpadneo is signed, but I doubt it severely.
+#
 
-#Install custom kora-icon-theme
-dnf5 -y install https://github.com/phantomcortex/kora/releases/download/1.6.5.12/kora-icon-theme-1.6.5.12-1.fc42.noarch.rpm
-
+#swap certain bazzite flatpak apps for native rpms 
+dnf5 -y install \
+  file-roller \
+  loupe \
+  evince 
 # Use a COPR Example:
 #
 # dnf5 -y copr enable ublue-os/staging

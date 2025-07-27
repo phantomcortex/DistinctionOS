@@ -23,6 +23,20 @@ unzip gnome-ui-tune@itstime.tech.shell-extension.zip -d "$EXTENSIONS_DIR/gnome-u
 curl -L https://github.com/fflewddur/tophat/releases/download/v22/tophat@fflewddur.github.io.v22.shell-extension.zip -o $TMP 
 unzip tophat@fflewddur.github.io.v22.shell-extension.zip -d "$EXTENSIONS_DIR/tophat@fflewddur.github.io"
 
+dnf5 -y install wget2 wget1 
+mkdir -p /tmp/tilingshell 
+
+#Install custom kora-icon-theme
+dnf5 -y install https://github.com/phantomcortex/kora/releases/download/1.6.5.12/kora-icon-theme-1.6.5.12-1.fc42.noarch.rpm
+echo -e "\033[31mKORA CUSTOM\033[0m" && \
+
+curl -s https://api.github.com/repos/domferr/tilingshell/releases/latest | \
+            jq -r '.assets | sort_by(.created_at) | .[] | select (.name|test("^tilingshell@.*zip$")) | .browser_download_url' | \
+            wget -qi - -O /tmp/tilingshell/tilingshell@ferrarodomenico.com.zip && \
+        unzip /tmp/tilingshell/tilingshell@ferrarodomenico.com.zip -d /usr/share/gnome-shell/extensions/tilingshell@ferrarodomenico.com && \
+        curl -Lo /usr/share/thumbnailers/exe-thumbnailer.thumbnailer https://raw.githubusercontent.com/jlu5/icoextract/master/exe-thumbnailer.thumbnailer && \
+        systemctl enable dconf-update.service \
+
 # verify
 echo -e "\033[31mVERIFY GNOME EXTENSIONS\033[0m" && \
 ls /usr/share/gnome-shell/extensions/
