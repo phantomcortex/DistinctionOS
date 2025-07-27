@@ -183,27 +183,15 @@ EOF
 dnf makecache 
 dnf -y install Cider
 
-# Gonna try something courtesy of this pull: https://github.com/ublue-os/image-template/pull/100
-mkdir -p /usr/share/factory/var/opt
 #==
 mkdir -p /var/opt/cxoffice
 mkdir -p /opt/cxoffice 
-dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
+dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpmfusion
 # Crossover Requires a license file so It needs to be writable
-# Crossover doesn't seem to appear on my bazzite image nor does anything installed to /opt
-
-# Brave Browser 
-#dnf5 -y install dnf-plugins-core
-#dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
-#dnf5 -y install brave-browser
-
-echo -e "\e[31mDEBUG:\e[0m"
-# is opt2 a good solution? definitly not. I'd still strongly prefer crossover to be natively installed rather a container
-# I'll have to think of a cleaner solution
+mkdir -p /usr/share/factory/var/opt
+mv /opt/cxoffice /usr/share/factor/var/opt
+ls /usr/share/factory/var/opt
 ls /opt
-mv /opt/cxoffice /opt2/cxoffice
-echo -e "\e[31mDEBUG:\e[0m"
-ls /opt2
 
 # internal copr repos
 dnf5 -y copr enable ilyaz/LACT
