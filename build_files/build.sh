@@ -18,14 +18,26 @@ dnf5 -y install rom-properties rom-properties-gtk3
 
 #==========================
 # internal package non-sense
-dnf5 install -y zoxide \
+dnf5 install -y \ 
             gnome-randr-rust \
             gnome-shell-extension-just-perfection \
             gnome-shell-extension-restart-to \
-            gnome-shell-extension-burn-my-windows 
+            gnome-shell-extension-burn-my-windows \
+            gnome-shell-extension-blur-my-shell \
+            gnome-shell-extension-user-theme
+
+dnf5 -y remove \
+            gnome-classic-session \
+            gnome-tour \
+            gnome-extensions-app \
+            gnome-system-monitor \
+            gnome-initial-setup \
+            gnome-shell-extension-background-logo \
+            gnome-shell-extension-apps-menu && \
             
     # various things
     dnf5 -y install \
+        zoxide \
         nvim \
         rust \
         cargo \
