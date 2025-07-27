@@ -146,13 +146,9 @@ done
 
 remove_packages=(waydroid \
   sunshine \
-  gnome-classic-session \
-  gnome-tour \
-  gnome-extensions-app \
-  gnome-system-monitor \
-  gnome-initial-setup \
-  gnome-shell-extension-background-logo \
-  gnome-shell-extension-apps-menu)
+  gnome-shell-extension-compiz-windows-effect \
+  gnome-shell-extension-compiz-alike-magic-lamp-effect \
+  openssh-askpass)
 
 for pkg in "${remove_packages[@]}"; do
   if rpm -q "$pkg" &>/dev/null; then
