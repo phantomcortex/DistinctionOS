@@ -138,7 +138,8 @@ install_packages=(python3-icoextract \
   VirtualBox \
   zfs-fuse \
   apfs-fuse \
-  ardour8)
+  ardour8
+  ffmpeg)
 
 for pkg in "${install_packages[@]}"; do
     if ! rpm -q "$pkg" &>/dev/null; then
@@ -158,15 +159,11 @@ remove_packages=(waydroid \
   gnome-shell-extension-apps-menu)
 
 for pkg in "${remove_packages[@]}"; do
-  if ! rpm -q "$pkg" &>/dev/null; then
+  if rpm -q "$pkg" &>/dev/null; then
     echo "Removing $pkg..."
     dnf5 -y remove "$pkg"
   fi 
 done 
-
-#ffmpeg includes non-free/patent encumbered codecs
-#should allow for ffmpeg & libavcodec-freeworld to be installed simultaneously
-dnf5 -y install ffmpeg --allowerasing
 
 # import Cider Music app (Apple Music)
 rpm --import https://repo.cider.sh/RPM-GPG-KEY
@@ -184,11 +181,10 @@ dnf makecache
 dnf -y install Cider
 
 #==
-mkdir -p /var/opt/cxoffice
+mkdir /usr/share/factory/var/opt
 mkdir -p /opt/cxoffice 
 dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
-mkdir -p /usr/share/factory/var/opt
 mv /opt/cxoffice /usr/share/factor/var/opt
 ls /usr/share/factory/var/opt
 ls /opt
