@@ -38,8 +38,6 @@ RUN --mount=type=cache,dst=/var/cache \
         bazzite-org/bazzite-multilib \
         ublue-os/staging \
         ublue-os/packages \
-        bazzite-org/LatencyFleX \
-        bazzite-org/obs-vkcapture \
         ycollet/audinux \
         bazzite-org/rom-properties \
         bazzite-org/webapp-manager \
@@ -56,12 +54,11 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 -y install \
         https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
         https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
-        dnf5 -y config-manager setopt "*bazzite*".priority=1 "*bazzite*".exclude="pipewire* " && \
+    dnf5 -y config-manager setopt "*bazzite*".priority=1 && \
     dnf5 -y config-manager setopt "*rpmfusion*".priority=5 "*rpmfusion*".exclude="mesa-*" && \
     dnf5 -y config-manager setopt "*fedora*".exclude="mesa-* kernel-core-* kernel-modules-* kernel-uki-virt-*" && \
     dnf5 -y config-manager setopt "*staging*".exclude="scx-scheds kf6-* mesa* mutter* rpm-ostree* systemd* gnome-shell gnome-settings-daemon gnome-control-center gnome-software libadwaita tuned*"
     
-
 # Install kernel
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
@@ -97,8 +94,6 @@ RUN --mount=type=cache,dst=/var/cache \
         xrandr \
         compsize \
         ddcutil \
-        input-remapper \
-        libinput-utils \
         i2c-tools \
         lm_sensors \
         udica \
@@ -129,13 +124,11 @@ RUN --mount=type=cache,dst=/var/cache \
         qemu \
         libvirt \
         lsb_release \
-        uupd \
         cage \
         wlr-randr && \
     echo -e "\033[31mStep 2\033[0m" && \
     curl -Lo /tmp/ls-iommu.tar.gz $(curl https://api.github.com/repos/HikariKnight/ls-iommu/releases/latest | jq -r '.assets[] | select(.name| test(".*x86_64.tar.gz$")).browser_download_url') && \
     mkdir -p /tmp/ls-iommu && \
-    sed -i 's|uupd|& --disable-module-distrobox|' /usr/lib/systemd/system/uupd.service && \
     echo -e "\033[31mStep 3\033[0m" && \
     dnf5 -y --setopt=install_weak_deps=False install \
         rocm-hip \
@@ -159,6 +152,9 @@ RUN --mount=type=cache,dst=/var/cache \
     rm -f /tmp/scopebuddy.tar.gz && \
     cp -r /tmp/scopebuddy/ScopeBuddy-*/bin/* /usr/bin/ 
     
+# scopebuddy: https://docs.bazzite.gg/Advanced/scopebuddy/
+# ls-iommu: https://github.com/HikariKnight/ls-iommu
+# steam-proton-mf-wmv: https://github.com/scaronni/steam-proton-mf-wmv
 
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
@@ -187,8 +183,6 @@ RUN --mount=type=cache,dst=/var/cache \
         libobs_vkcapture.i686 \
         libobs_glcapture.i686 \
         VK_hdr_layer && \
-    dnf5 -y remove \
-        gamemode && \
     curl -Lo /usr/bin/winetricks https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks && \
     chmod +x /usr/bin/winetricks 
     
@@ -198,16 +192,6 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
-        dnf5 -y swap \
-        --repo terra-extras \
-            gnome-shell gnome-shell && \
-        dnf5 versionlock add \
-            gnome-shell && \
-        dnf5 -y swap \
-        --repo copr:copr.fedorainfracloud.org:bazzite-org:bazzite-multilib \
-            mutter mutter && \
-        dnf5 versionlock add \
-            mutter && \
         dnf5 -y install \
             nautilus-gsconnect \
             gnome-randr-rust \
@@ -240,8 +224,7 @@ RUN --mount=type=cache,dst=/var/cache \
             wget -qi - -O /tmp/tilingshell/tilingshell@ferrarodomenico.com.zip && \
         unzip /tmp/tilingshell/tilingshell@ferrarodomenico.com.zip -d /usr/share/gnome-shell/extensions/tilingshell@ferrarodomenico.com && \
         curl -Lo /usr/share/thumbnailers/exe-thumbnailer.thumbnailer https://raw.githubusercontent.com/jlu5/icoextract/master/exe-thumbnailer.thumbnailer && \
-        systemctl enable dconf-update.service \
-    ; fi 
+        systemctl enable dconf-update.service \ 
     
 
 # ublue-os packages
@@ -264,12 +247,7 @@ RUN --mount=type=cache,dst=/var/cache \
     mkdir -p /var/tmp && chmod 1777 /var/tmp && \
     cp --no-dereference --preserve=links /usr/lib/libdrm.so.2 /usr/lib/libdrm.so && \
     cp --no-dereference --preserve=links /usr/lib64/libdrm.so.2 /usr/lib64/libdrm.so && \
-    sed -i 's@/usr/bin/steam@/usr/bin/bazzite-steam@g' /usr/share/applications/steam.desktop && \
-    sed -i 's@Exec=steam steam://open/bigpicture@Exec=/usr/bin/bazzite-steam-bpm@g' /usr/share/applications/steam.desktop && \
-    sed -i 's|^Exec=lutris %U$|Exec=env PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python lutris %U|' /usr/share/applications/net.lutris.Lutris.desktop && \
-    mkdir -p /etc/skel/.config/autostart/ && \
-    cp "/usr/share/applications/steam.desktop" "/etc/skel/.config/autostart/steam.desktop" && \
-    sed -i 's@/usr/bin/bazzite-steam %U@/usr/bin/bazzite-steam -silent %U@g' /etc/skel/.config/autostart/steam.desktop && \
+    mkdir -p /etc/skel/.config/autostart/ && \ 
     sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/nvtop.desktop && \
     sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/btop.desktop && \
     sed -i 's/#UserspaceHID.*/UserspaceHID=true/' /etc/bluetooth/input.conf && \
@@ -281,8 +259,6 @@ RUN --mount=type=cache,dst=/var/cache \
     find "/etc/dconf/db/distro.d/" -maxdepth 1 -type f -exec cp {} "/usr/share/ublue-os/dconfs/desktop-silverblue/" \; && \
     dconf-override-converter to-dconf "/usr/share/ublue-os/dconfs/desktop-silverblue/zz0-"*"-bazzite-desktop-silverblue-"*".gschema.override" && \
     sed -i 's/\[org.gtk.Settings.FileChooser\]/\[org\/gtk\/settings\/file-chooser\]/g; s/\[org.gtk.gtk4.Settings.FileChooser\]/\[org\/gtk\/gtk4\/settings\/file-chooser\]/g' "/usr/share/ublue-os/dconfs/desktop-silverblue/zz0-00-bazzite-desktop-silverblue-global" && \
-    rm "/usr/share/ublue-os/dconfs/desktop-silverblue/zz0-"*"-bazzite-desktop-silverblue-"*".gschema.override" \
-    ; fi && \
     mkdir -p /tmp/bazzite-schema-test && \
     find "/usr/share/glib-2.0/schemas/" -type f ! -name "*.gschema.override" -exec cp {} "/tmp/bazzite-schema-test/" \; && \
     cp "/usr/share/glib-2.0/schemas/zz0-"*".gschema.override" "/tmp/bazzite-schema-test/" && \
@@ -304,8 +280,6 @@ RUN --mount=type=cache,dst=/var/cache \
         bazzite-org/bazzite-multilib \
         ublue-os/staging \
         ublue-os/packages \
-        bazzite-org/LatencyFleX \
-        bazzite-org/obs-vkcapture \
         ycollet/audinux \
         bazzite-org/rom-properties \
         bazzite-org/webapp-manager \
@@ -318,10 +292,11 @@ RUN --mount=type=cache,dst=/var/cache \
     echo -e "\033[31mINSTALL STEAM STRONG\033[0m" && \
     dnf5 -y --setopt=install_weak_deps=True install \
         steam && \
+    dnf versionlock add \
+        steam && \
     dnf5 config-manager setopt "*tailscale*".enabled=0 && \
     dnf5 config-manager setopt "terra-mesa".enabled=0 && \
-    dnf5 config-manager setopt "*charm*".enabled=0 && \
-    eval "$(/ctx/dnf5-setopt setopt '*negativo17*' enabled=0)" && \
+    dnf5 config-manager setopt "*charm*".enabled=0 && \ 
     sed -i 's#/var/lib/selinux#/etc/selinux#g' /usr/lib/python3.*/site-packages/setroubleshoot/util.py && \
     sed -i 's|^ExecStart=.*|ExecStart=/usr/libexec/rtkit-daemon --no-canary|' /usr/lib/systemd/system/rtkit-daemon.service && \ 
     ln -s /usr/bin/true /usr/bin/pulseaudio && \
@@ -333,15 +308,12 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl disable scx.service && \
     systemctl disable scx_loader.service && \
     systemctl enable input-remapper.service && \
-    systemctl enable bazzite-flatpak-manager.service && \
+    #systemctl enable bazzite-flatpak-manager.service && \
     systemctl disable rpm-ostreed-automatic.timer && \
-    systemctl enable incus-workaround.service && \
-    systemctl enable bazzite-hardware-setup.service && \
     systemctl disable tailscaled.service && \
-    systemctl enable dev-hugepages1G.mount && \
+    #systemctl enable dev-hugepages1G.mount && \
     systemctl --global enable podman.socket && \
     systemctl --global enable systemd-tmpfiles-setup.service && \
-    systemctl disable waydroid-container.service && \
     systemctl disable force-wol.service && \
     curl -Lo /etc/dxvk-example.conf https://raw.githubusercontent.com/doitsujin/dxvk/master/dxvk.conf && \
     curl -Lo /usr/lib/sysctl.d/99-bore-scheduler.conf https://github.com/CachyOS/CachyOS-Settings/raw/master/usr/lib/sysctl.d/99-bore-scheduler.conf && \
@@ -357,6 +329,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
     /ctx/build.sh && \
+    /ctx/remote_grabber.sh && \
     ostree container commit
     
 ### LINTING
