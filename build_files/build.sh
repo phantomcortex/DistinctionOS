@@ -131,7 +131,6 @@ packages=(python3-icoextract \
   libheif-tools \
   heif-pixbuf-loader \
   gstreamer1-plugins-good-extras \
-  gstreamer1-plugins-vaapi \
   ffmpegthumbnailer \ 
   x265 \ 
   file-roller \
