@@ -147,6 +147,7 @@ packages=(python3-icoextract \
   blackbox-terminal \
   clapper \
   totem-video-thumbnailer \
+  VirtualBox \
   ardour8)
 
 for pkg in "${packages[@]}"; do
@@ -171,12 +172,13 @@ dnf5 -y remove \
             gnome-system-monitor \
             gnome-initial-setup \
             gnome-shell-extension-background-logo \
-            gnome-shell-extension-apps-menu \
+            gnome-shell-extension-apps-menu
 
 
 #remove waydroid because I don't use it and don't plan to
 dnf5 -y remove \
-    waydroid
+    waydroid \
+    sunshine
 
 # import Cider Music app (Apple Music)
 rpm --import https://repo.cider.sh/RPM-GPG-KEY
