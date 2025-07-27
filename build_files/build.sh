@@ -179,7 +179,6 @@ dnf -y install Cider
 
 #==Crossover
 rm -rf /opt
-=======
 #==
 
 mkdir -p /usr/share/factory/var/opt
