@@ -160,11 +160,7 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
-    dnf5 -y swap \
-    --repo copr:copr.fedorainfracloud.org:bazzite-org:bazzite \
-        ibus ibus && \
-    dnf5 versionlock add \
-        ibus && \
+    echo -e "\033[31mGAME UTILITES\033[0m" && \
     dnf5 -y install \
         gamescope.x86_64 \
         gamescope-libs.x86_64 \
@@ -178,10 +174,6 @@ RUN --mount=type=cache,dst=/var/cache \
         vkBasalt.i686 \
         mangohud.x86_64 \
         mangohud.i686 \
-        libobs_vkcapture.x86_64 \
-        libobs_glcapture.x86_64 \
-        libobs_vkcapture.i686 \
-        libobs_glcapture.i686 \
         VK_hdr_layer && \
     curl -Lo /usr/bin/winetricks https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks && \
     chmod +x /usr/bin/winetricks 
@@ -192,6 +184,7 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
+        echo -e "\033[31mGNOME CONFIGURE\033[0m" && \
         dnf5 -y install \
             nautilus-gsconnect \
             gnome-randr-rust \
@@ -233,6 +226,7 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
+    echo -e "\033[31mHOMEBREW\033[0m" && \
     dnf5 install -y ublue-brew && \
     curl -Lo /usr/share/bash-prexec https://raw.githubusercontent.com/ublue-os/bash-preexec/master/bash-preexec.sh && \
     
@@ -243,6 +237,7 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
+    echo -e "\033[31mFINALIZE\033[0m" && \
     rm -f /etc/profile.d/toolbox.sh && \
     mkdir -p /var/tmp && chmod 1777 /var/tmp && \
     cp --no-dereference --preserve=links /usr/lib/libdrm.so.2 /usr/lib/libdrm.so && \
@@ -307,7 +302,7 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl disable brew-update.timer && \
     systemctl disable scx.service && \
     systemctl disable scx_loader.service && \
-    systemctl enable input-remapper.service && \
+    #systemctl enable input-remapper.service && \
     #systemctl enable bazzite-flatpak-manager.service && \
     systemctl disable rpm-ostreed-automatic.timer && \
     systemctl disable tailscaled.service && \
@@ -328,8 +323,11 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
+    echo -e "\033[31mBUILD SCRIPT\033[0m" && \
     /ctx/build.sh && \
+    echo -e "\033[31mREMOTE GRABBER\033[0m" && \
     /ctx/remote_grabber.sh && \
+    echo -e "\033[31mOSTREE COMMIT\033[0m" && \
     ostree container commit
     
 ### LINTING

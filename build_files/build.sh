@@ -83,11 +83,9 @@ dnf5 -y remove totem
 dnf5 -y install totem-video-thumbnailer clapper mpv decibels
 dnf5 -y install gnome-tweaks dconf
 dnf5 -y install tealdeer 
+dnf5 -y install gtk-murrine-engine sassc
 #silverblue specfic
 dnf5 -y install \ 
-            rocm-hip \
-            rocm-smi \ 
-            rocm-opencl \
             libavcodec-freeworld \
             btop \
             ffmpegthumbnailer \
