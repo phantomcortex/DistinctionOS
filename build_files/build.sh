@@ -2,10 +2,6 @@
 
 set -ouex pipefail
 
-RED='\033[0;31m'
-NC='\033[0m'
-ORANGE='\033[0;33m'
-CRITICAL='\033[31;5m'
 ### Install packages
 
 # Packages can be installed from any enabled yum repo on the image.
@@ -180,15 +176,17 @@ EOF
 dnf makecache 
 dnf -y install Cider
 
-#==
-mkdir /usr/share/factory/var/opt
+#==Crossover
+rm -rf /opt
+mkdir -p /usr/share/factory/var/opt
 mkdir -p /opt/cxoffice 
 dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
 mv /opt/cxoffice /usr/share/factor/var/opt
 ls /usr/share/factory/var/opt
 ls /opt
-
+rm -rf /opt
+ln -s /opt /var/opt
 # internal copr repos
 dnf5 -y copr enable ilyaz/LACT
 dnf5 -y install lact
