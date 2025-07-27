@@ -22,10 +22,6 @@ if ! dnf repolist | grep -q "copr:copr.fedorainfracloud.org:bazzite-org:rom-prop
   dnf5 -y install rom-properties
 fi
 
-
-#==========================
-# internal package non-sense
-
 dnf5 -y remove \
             gnome-classic-session \
             gnome-tour \
@@ -33,30 +29,14 @@ dnf5 -y remove \
             gnome-system-monitor \
             gnome-initial-setup \
             gnome-shell-extension-background-logo \
-            gnome-shell-extension-apps-menu && \
-            
-    # various things
-    dnf5 -y install \
-        zoxide \
-        nvim \
-        rust \
-        cargo \
-        zsh \
-        zsh-autosuggestions \
-        zsh-syntax-highlighting \
-        blackbox-terminal
-        
+            gnome-shell-extension-apps-menu
+                
 dnf5 -y copr enable monkeygold/nautilus-open-any-terminal
 dnf5 -y install nautilus-open-any-terminal
 # extras
-#dnf5 -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-ls /etc/yum.repos.d/ | grep rpmfusion #
+dnf repolist | grep rpmfusion
 dnf5 -y reinstall https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-42.noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-42.noarch.rpm
-ls /etc/yum.repos.d/ | grep rpmfusion #
-dnf5 -y install blender 
-dnf5 -y install ardour8 
-echo "==========================================="
-
+dnf repolist | grep rpmfusion
 AUDACITY_FREEWORLD="audacity-freeworld" #this exists due to dnf failing to find certain rpmfusion packages sometimes
 AUDACITY_RPM_URL="https://mirror.fcix.net/rpmfusion/free/fedora/releases/42/Everything/x86_64/os/Packages/a/audacity-freeworld-3.7.3-1.fc42.x86_64.rpm"
 
@@ -89,22 +69,48 @@ else
     fi
 fi
 
-
-dnf5 -y install libheif-tools heif-pixbuf-loader 
 dnf5 -y remove totem
-dnf5 -y install totem-video-thumbnailer clapper mpv decibels
-dnf5 -y install gnome-tweaks dconf
-dnf5 -y install tealdeer 
-dnf5 -y install gtk-murrine-engine sassc
-#silverblue specfic
-dnf5 -y install \ 
-            libavcodec-freeworld \
-            btop \
-            ffmpegthumbnailer \
-            gstreamer1-plugins-ugly \
-            gstreamer1-plugins-good-extras \
-            gstreamer1-plugins-bad-freeworld \
-            gstreamer1-plugins-vaapi 
+# for 
+#
+packages=(python3-icoextract \
+  rom-properties-gtk3 \
+  tealdeer \
+  gtk-murrine-engine \
+  gnome-tweaks \
+  dconf \
+  mpv \
+  decibels \
+  libheif-tools \
+  heif-pixbuf-loader \
+  libavcodec-freeworld \
+  gstreamer1-plugins-ugly \
+  gstreamer1-plugins-good-extras \
+  gstreamer1-plugins-bad-freeworld \
+  gstreamer1-plugins-vaapi \
+  ffmpegthumbnailer \ 
+  x265 \ 
+  file-roller \
+  evince \
+  loupe \
+  blender
+  zoxide \
+  nvim \
+  rust \
+  cargo \
+  zsh \
+  zsh-autosuggestions \
+  zsh-syntax-highlighting \
+  blackbox-terminal \
+  clapper \
+  totem-video-thumbnailer \
+  ardour8)
+
+for pkg in "${packages[@]}"; do
+    if ! rpm -q "$pkg" &>/dev/null; then
+        echo "Installing $pkg..."
+        dnf5 -y install "$pkg"
+    fi
+done
 
 #x
 dnf5 -y install \
@@ -183,13 +189,12 @@ dnf5 -y copr enable atim/xpadneo
 dnf5 -y install xpadneo
 # Note: I've previously used sentry's xpadneo kmod but it's not signed so secure boot won't work
 # it's unclear if atim's xpadneo is signed, but I doubt it severely.
+# depending on if it install kmod to to the kernel correctly 
+# I might have to run some extra commands to make sure this kernel module is loaded
 #
+#########################################################################
 
-#swap certain bazzite flatpak apps for native rpms 
-dnf5 -y install \
-  file-roller \
-  loupe \
-  evince 
+
 # Use a COPR Example:
 #
 # dnf5 -y copr enable ublue-os/staging
