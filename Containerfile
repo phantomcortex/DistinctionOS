@@ -184,33 +184,7 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
-        echo -e "\033[31mGNOME CONFIGURE\033[0m" && \
-        dnf5 -y install \
-            nautilus-gsconnect \
-            gnome-randr-rust \
-            gnome-shell-extension-appindicator \
-            gnome-shell-extension-user-theme \
-            gnome-shell-extension-gsconnect \
-            gnome-shell-extension-just-perfection \
-            gnome-shell-extension-blur-my-shell \
-            gnome-shell-extension-hanabi \
-            gnome-shell-extension-bazzite-menu \
-            gnome-shell-extension-hotedge \
-            gnome-shell-extension-caffeine \
-            gnome-shell-extension-restart-to \
-            gnome-shell-extension-burn-my-windows \
-            rom-properties-gtk3 \
-            ibus-mozc \
-            firewall-config && \
-        dnf5 -y remove \
-            gnome-software \
-            gnome-classic-session \
-            gnome-tour \
-            gnome-extensions-app \
-            gnome-system-monitor \
-            gnome-initial-setup \
-            gnome-shell-extension-background-logo \
-            gnome-shell-extension-apps-menu && \
+        echo -e "\033[31mGNOME CONFIGURE\033[0m" && \ 
         mkdir -p /tmp/tilingshell && \
         curl -s https://api.github.com/repos/domferr/tilingshell/releases/latest | \
             jq -r '.assets | sort_by(.created_at) | .[] | select (.name|test("^tilingshell@.*zip$")) | .browser_download_url' | \
