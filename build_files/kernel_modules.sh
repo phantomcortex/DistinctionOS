@@ -8,10 +8,13 @@ KERNEL=$(ls /lib/modules/ | grep bazzite | sort -V | tail -1)
 
 # Set up the build environment properly
 export KERNELDIR="/lib/modules/${KERNEL}/build"
+mkdir -p /var/log/akmods/
+touch /var/log/akmods/akmods.log
+
 #tmp
 dnf5 -y copr enable atim/xpadneo
 dnf5 -y install xpadneo
-akmods --rebuild --kernels $KERNEL --akmod xpadneo
+akmods --kernels $KERNEL --akmod xpadneo
 #echo -e "\033[31mDKMS ADD\033[0m"
 #dkms add /usr/src/akmods/xpadneo-kmod-0.9.7
 #echo -e "\033[31mDKMS BUILD\033[0m"

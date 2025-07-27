@@ -2,14 +2,17 @@
 #
 EXTENSIONS_DIR="/usr/share/gnome-shell/extensions"
 TMP="/tmp/gnome-shell"
+
 #pip-on-top
-git clone "https://github.com/Rafostar/gnome-shell-extension-pip-on-top.git" "$EXTENSION_DIR/pip-on-top@rafostar.github.com"
+git clone "https://github.com/Rafostar/gnome-shell-extension-pip-on-top.git" -o "$EXTENSION_DIR/pip-on-top@rafostar.github.com"
 glib-compile-schemas "$EXTENSION_DIR/pip-on-top@rafostar.github.com/schemas"
 mkdir -p $TMP
+
 echo -e "\033[31mGNOME SHELL EXTENSIONS\033[0m" && \
 # burn-my-windows
 curl -L https://github.com/Schneegans/Burn-My-Windows/releases/download/v46/burn-my-windows@schneegans.github.com.zip -o $TMP
 unzip -o $TMP/burn-my-windows@schneegans.github.com.zip -d $EXTENSION_DIR/burn-my-windows@schneegans.github.com
+
 # clipboard-indicator
 git clone https://github.com/Tudmotu/gnome-shell-extension-clipboard-indicator.git "$EXTENSIONS_DIR/clipboard-indicator@tudmotu.com"
 
