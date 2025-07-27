@@ -21,7 +21,7 @@ if [ ! -d "/lib/modules/${KERNEL}/build" ]; then
 fi
 
 # Now attempt the akmods rebuild
-akmods --kernels "${KERNEL}" --rebuild
-
+akmods --kernels "${KERNEL}" --rebuild --force
+exit 1
 #dracut --force --kver "${KERNEL}"
 
