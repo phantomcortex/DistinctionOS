@@ -34,9 +34,9 @@ dnf5 -y remove \
 dnf5 -y copr enable monkeygold/nautilus-open-any-terminal
 dnf5 -y install nautilus-open-any-terminal
 # extras
-dnf repolist | grep rpmfusion
+ls /etc/yum.repos.d/
 dnf5 -y reinstall https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-42.noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-42.noarch.rpm
-dnf repolist | grep rpmfusion
+
 AUDACITY_FREEWORLD="audacity-freeworld" #this exists due to dnf failing to find certain rpmfusion packages sometimes
 AUDACITY_RPM_URL="https://mirror.fcix.net/rpmfusion/free/fedora/releases/42/Everything/x86_64/os/Packages/a/audacity-freeworld-3.7.3-1.fc42.x86_64.rpm"
 
@@ -53,7 +53,7 @@ else
     fi
 fi
 
-LIBHEIF_FREEWORLD="libheif-freeworld" # might need to have something that bumps the version 
+LIBHEIF_FREEWORLD="libheif-freeworld"
 LIBHEIF_RPM_URL="https://ftp-stud.hs-esslingen.de/pub/Mirrors/rpmfusion.org/free/fedora/releases/42/Everything/x86_64/os/Packages/l/libheif-freeworld-1.19.7-1.fc42.x86_64.rpm"
 
 echo "Attempting to install '${LIBHEIF_FREEWORLD}' via standard DNF..."
@@ -65,6 +65,54 @@ else
         echo "✅ Package installed successfully from URL."
     else
         echo "❌ Failed to install '${LIBHEIF_FREEWORLD}' via both methods."
+        exit 1
+    fi
+fi
+
+LIBAVCODEC_FREEWORLD="libavcodec-freeworld"
+LIBAVCODEC_RPM_URL="https://muug.ca/mirror/rpmfusion/free/fedora/releases/42/Everything/x86_64/os/Packages/l/libavcodec-freeworld-7.1.1-5.fc42.x86_64.rpm"
+
+echo "Attempting to install '${LIBAVCODEC_FREEWORLD}' via standard DNF..."
+if dnf5 -y install "$LIBAVCODEC_FREEWORLD"; then
+    echo "✅ Package '${LIBAVCODEC_FREEWORLD}' installed successfully."
+else
+    echo "⚠️ Standard DNF install failed. Attempting direct RPM install from URL..."
+    if dnf5 -y install "$LIBAVCODEC_RPM_URL"; then
+        echo "✅ Package installed successfully from URL."
+    else
+        echo "❌ Failed to install '${LIBAVCODEC_FREEWORLD}' via both methods."
+        exit 1
+    fi
+fi
+
+GSP_UGLY="gstreamer1-plugins-ugly"
+GSP_UGLY_RPM_URL="https://muug.ca/mirror/rpmfusion/free/fedora/releases/42/Everything/x86_64/os/Packages/g/gstreamer1-plugins-ugly-1.26.0-1.fc42.x86_64.rpm"
+
+echo "Attempting to install '${GSP_UGLY}' via standard DNF..."
+if dnf5 -y install "$GSP_UGLY"; then
+    echo "✅ Package '${GSP_UGLY}' installed successfully."
+else
+    echo "⚠️ Standard DNF install failed. Attempting direct RPM install from URL..."
+    if dnf5 -y install "$GSP_UGLY_RPM_URL"; then
+        echo "✅ Package installed successfully from URL."
+    else
+        echo "❌ Failed to install '${GSP_UGLY}' via both methods."
+        exit 1
+    fi
+fi
+
+GSP_BAD_FREEWORLD="gstreamer1-plugins-bad-freeworld"
+GSP_BAD_FREEWORLD_RPM_URL="https://muug.ca/mirror/rpmfusion/free/fedora/releases/42/Everything/x86_64/os/Packages/g/gstreamer1-plugins-bad-freeworld-1.26.0-1.fc42.x86_64.rpm"
+
+echo "Attempting to install '${GSP_BAD_FREEWORLD}' via standard DNF..."
+if dnf5 -y install "$GSP_BAD_FREEWORLD"; then
+    echo "✅ Package '${GSP_BAD_FREEWORLD}' installed successfully."
+else
+    echo "⚠️ Standard DNF install failed. Attempting direct RPM install from URL..."
+    if dnf5 -y install "$GSP_BAD_FREEWORLD_RPM_URL"; then
+        echo "✅ Package installed successfully from URL."
+    else
+        echo "❌ Failed to install '${GSP_BAD_FREEWORLD}' via both methods."
         exit 1
     fi
 fi
@@ -82,10 +130,7 @@ packages=(python3-icoextract \
   decibels \
   libheif-tools \
   heif-pixbuf-loader \
-  libavcodec-freeworld \
-  gstreamer1-plugins-ugly \
   gstreamer1-plugins-good-extras \
-  gstreamer1-plugins-bad-freeworld \
   gstreamer1-plugins-vaapi \
   ffmpegthumbnailer \ 
   x265 \ 
