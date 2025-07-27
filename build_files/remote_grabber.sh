@@ -39,6 +39,7 @@ curl -s https://api.github.com/repos/domferr/tilingshell/releases/latest | \
         systemctl enable dconf-update.service \
 
 # verify
+dnf5 -y install akmod
 echo -e "\033[31mVERIFY GNOME EXTENSIONS\033[0m"
 ls /usr/share/gnome-shell/extensions/
 ls /usr/share/gnome-shell/extensions/ |grep -E 'tophat|gnome-ui-tune|burn-my-windows'
