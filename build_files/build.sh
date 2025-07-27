@@ -186,7 +186,7 @@ dnf -y install Cider
 #==
 mkdir -p /var/opt/cxoffice
 mkdir -p /opt/cxoffice 
-dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpmfusion
+dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
 mkdir -p /usr/share/factory/var/opt
 mv /opt/cxoffice /usr/share/factor/var/opt
