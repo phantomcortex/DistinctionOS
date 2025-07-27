@@ -131,8 +131,8 @@ packages=(python3-icoextract \
   libheif-tools \
   heif-pixbuf-loader \
   gstreamer1-plugins-good-extras \
-  ffmpegthumbnailer \ 
-  x265 \ 
+  ffmpegthumbnailer \
+  x265 \
   file-roller \
   evince \
   loupe \
