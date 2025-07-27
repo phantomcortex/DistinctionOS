@@ -31,9 +31,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     echo -e "\033[31mBUILD SCRIPT\033[0m" && \
     /ctx/build.sh && \
     echo -e "\033[31mREMOTE GRABBER\033[0m" && \
-    /ctx/remote_grabber.sh && \
-    echo -e "\033[31mCOPY SYSTEM FILES\033[0m" && \
-    cp -r /ctx/system_files /
+    /ctx/remote_grabber.sh && \ 
     echo -e "\033[31mOSTREE COMMIT\033[0m" && \
     ostree container commit
     
