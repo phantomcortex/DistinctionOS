@@ -211,7 +211,7 @@ echo -e "\e[31mDEBUG:\e[0m"
 # is opt2 a good solution? definitly not. I'd still strongly prefer crossover to be natively installed rather a container
 # I'll have to think of a cleaner solution
 ls /opt
-mv /opt/* /opt2
+mv /opt/cxoffice /opt2
 echo -e "\e[31mDEBUG:\e[0m"
 
 ls /opt2

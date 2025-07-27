@@ -21,7 +21,7 @@ unzip $TMP/gnome-ui-tune@itstime.tech.shell-extension.zip -d "$EXTENSIONS_DIR/gn
 
 #Tophat - gnome top panel resource monitor
 curl -L https://github.com/fflewddur/tophat/releases/download/v22/tophat@fflewddur.github.io.v22.shell-extension.zip -o $TMP/tophat.zip
-unzip $TMP/tophat@fflewddur.github.io.v22.shell-extension.zip -d "$EXTENSIONS_DIR/tophat@fflewddur.github.io"
+unzip $TMP/tophat.zip -d "$EXTENSIONS_DIR/tophat@fflewddur.github.io"
 
 dnf5 -y install wget2 wget1 
 mkdir -p /tmp/tilingshell 
