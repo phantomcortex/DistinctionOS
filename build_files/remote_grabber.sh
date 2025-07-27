@@ -16,11 +16,11 @@ git clone https://github.com/Tudmotu/gnome-shell-extension-clipboard-indicator.g
 git clone https://github.com/marcinjakubowski/date-menu-formatter.git "$EXTENSIONS_DIR/date-menu-formatter@tudmotu.com"
 
 
-curl -L https://github.com/axxapy/gnome-ui-tune/releases/download/v1.10.2/gnome-ui-tune@itstime.tech.shell-extension.zip -o $TMP
+curl -L https://github.com/axxapy/gnome-ui-tune/releases/download/v1.10.2/gnome-ui-tune@itstime.tech.shell-extension.zip -o $TMP/gnome-ui-tune@itstime.tech.shell-extension.zip
 unzip gnome-ui-tune@itstime.tech.shell-extension.zip -d "$EXTENSIONS_DIR/gnome-ui-tune@itstime.tech"
 
 #Tophat - gnome top panel resource monitor
-curl -L https://github.com/fflewddur/tophat/releases/download/v22/tophat@fflewddur.github.io.v22.shell-extension.zip -o $TMP 
+curl -L https://github.com/fflewddur/tophat/releases/download/v22/tophat@fflewddur.github.io.v22.shell-extension.zip -o $TMP/tophat@fflewddur.github.io.v22.shell-extension.zip
 unzip tophat@fflewddur.github.io.v22.shell-extension.zip -d "$EXTENSIONS_DIR/tophat@fflewddur.github.io"
 
 dnf5 -y install wget2 wget1 
@@ -38,8 +38,13 @@ curl -s https://api.github.com/repos/domferr/tilingshell/releases/latest | \
         systemctl enable dconf-update.service \
 
 # verify
-echo -e "\033[31mVERIFY GNOME EXTENSIONS\033[0m" && \
+echo -e "\033[31mVERIFY GNOME EXTENSIONS\033[0m"
 ls /usr/share/gnome-shell/extensions/
+ls /usr/share/gnome-shell/extensions/ | grep -E 'tophat|gnome-ui-tune|burn-my-windows'
+
+echo -e "\033[31mVERIFY THEMES\033[0m"
+ls /usr/share/themes/ | grep -e 'Orchis'
+ls /usr/share/icons/ | grep -E 'capitaine|Deppin'
 # cleanup
 rm -rf /tmp/gnome-shell
 
