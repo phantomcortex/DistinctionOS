@@ -21,8 +21,8 @@ curl -L https://github.com/axxapy/gnome-ui-tune/releases/download/v1.10.2/gnome-
 unzip $TMP/gnome-ui-tune@itstime.tech.shell-extension.zip -d "$EXTENSIONS_DIR/gnome-ui-tune@itstime.tech"
 
 #Tophat - gnome top panel resource monitor
-curl -L https://github.com/fflewddur/tophat/releases/download/v22/tophat@fflewddur.github.io.v22.shell-extension.zip -o $TMP/tophat.zip
-unzip $TMP/tophat.zip -d "$EXTENSIONS_DIR/tophat@fflewddur.github.io"
+curl -L https://github.com/fflewddur/tophat/releases/download/v22/tophat@fflewddur.github.io.v22.shell-extension.zip -o $TMP/tophat@fflewddur.github.io.v22.shell-extension.zip
+unzip $TMP/tophat@fflewddur.github.io.v22.shell-extension.zip -d "$EXTENSIONS_DIR/tophat@fflewddur.github.io"
 
 dnf5 -y install wget1 
 mkdir -p /tmp/tilingshell 
@@ -42,7 +42,8 @@ curl -s https://api.github.com/repos/domferr/tilingshell/releases/latest | \
 dnf5 -y install akmod
 echo -e "\033[31mVERIFY GNOME EXTENSIONS\033[0m"
 ls /usr/share/gnome-shell/extensions/
-ls /usr/share/gnome-shell/extensions/ |grep -E 'tophat|gnome-ui-tune|burn-my-windows'
+echo "......................."
+ls /usr/share/gnome-shell/extensions/ |grep -E 'tophat|gnome-ui-tune|burn-my-windows|tophat'
 
 echo -e "\033[31mVERIFY THEMES\033[0m"
 ls /usr/share/themes/ |grep -e 'Orchis'
@@ -54,6 +55,7 @@ echo -e "\033[31mLIST KERNEL\033[0m"
 ls /lib/modules/ 
 # cleanup
 rm -rf /tmp/gnome-shell
+rm -rf /tophat*
 
 
 
