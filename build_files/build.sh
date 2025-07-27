@@ -21,22 +21,10 @@ if ! dnf repolist | grep -q "copr:copr.fedorainfracloud.org:bazzite-org:rom-prop
   dnf5 copr enable -y bazzite-org/rom-properties
   dnf5 -y install rom-properties
 fi
-
-dnf5 -y remove \
-            gnome-classic-session \
-            gnome-tour \
-            gnome-extensions-app \
-            gnome-system-monitor \
-            gnome-initial-setup \
-            gnome-shell-extension-background-logo \
-            gnome-shell-extension-apps-menu
-                
+                        
 dnf5 -y copr enable monkeygold/nautilus-open-any-terminal
 dnf5 -y install nautilus-open-any-terminal
 # extras
-ls /etc/yum.repos.d/
-dnf5 -y reinstall https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-42.noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-42.noarch.rpm
-
 AUDACITY_FREEWORLD="audacity-freeworld" #this exists due to dnf failing to find certain rpmfusion packages sometimes
 AUDACITY_RPM_URL="https://mirror.fcix.net/rpmfusion/free/fedora/releases/42/Everything/x86_64/os/Packages/a/audacity-freeworld-3.7.3-1.fc42.x86_64.rpm"
 
@@ -120,7 +108,7 @@ fi
 dnf5 -y remove totem
 # for 
 #
-packages=(python3-icoextract \
+install_packages=(python3-icoextract \
   rom-properties-gtk3 \
   tealdeer \
   gtk-murrine-engine \
@@ -148,37 +136,37 @@ packages=(python3-icoextract \
   clapper \
   totem-video-thumbnailer \
   VirtualBox \
+  zfs-fuse \
+  apfs-fuse \
   ardour8)
 
-for pkg in "${packages[@]}"; do
+for pkg in "${install_packages[@]}"; do
     if ! rpm -q "$pkg" &>/dev/null; then
         echo "Installing $pkg..."
         dnf5 -y install "$pkg"
     fi
 done
 
-#x
-dnf5 -y install \
-            x265
+remove_packages=(waydroid \
+  sunshine \
+  gnome-classic-session \
+  gnome-tour \
+  gnome-extensions-app \
+  gnome-system-monitor \
+  gnome-initial-setup \
+  gnome-shell-extension-background-logo \
+  gnome-shell-extension-apps-menu)
+
+for pkg in "${remove_packages[@]}"; do
+  if ! rpm -q "$pkg" &>/dev/null; then
+    echo "Removing $pkg..."
+    dnf5 -y remove "$pkg"
+  fi 
+done 
+
 #ffmpeg includes non-free/patent encumbered codecs
 #should allow for ffmpeg & libavcodec-freeworld to be installed simultaneously
 dnf5 -y install ffmpeg --allowerasing
-
-# remove annoying gnome things
-dnf5 -y remove \
-            gnome-classic-session \
-            gnome-tour \
-            gnome-extensions-app \
-            gnome-system-monitor \
-            gnome-initial-setup \
-            gnome-shell-extension-background-logo \
-            gnome-shell-extension-apps-menu
-
-
-#remove waydroid because I don't use it and don't plan to
-dnf5 -y remove \
-    waydroid \
-    sunshine
 
 # import Cider Music app (Apple Music)
 rpm --import https://repo.cider.sh/RPM-GPG-KEY
