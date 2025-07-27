@@ -16,7 +16,7 @@ CRITICAL='\033[31;5m'
 # this installs a package from fedora repos
 
 # Define the COPR repo and package
-dnf5 -y config-manager setopt "*rpmfusion*".enabled=1 
+dnf5 -y config-manager setopt "*rpmfusion*".enabled=1 #bazzite seems to have some of rpmfusion repos disabled from their based images; Words cannot accurately describe how much this infuriated me  
 if ! dnf repolist | grep -q "copr:copr.fedorainfracloud.org:bazzite-org:rom-properties"; then
   dnf5 copr enable -y bazzite-org/rom-properties
   dnf5 -y install rom-properties
