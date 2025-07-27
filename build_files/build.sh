@@ -215,13 +215,7 @@ echo -e "\e[31mDEBUG:\e[0m"
 ls /opt
 mv /opt/cxoffice /opt2
 echo -e "\e[31mDEBUG:\e[0m"
-
 ls /opt2
-# 
-if ! rpm -q python3-icoextract &>/dev/null; then
-    echo -e "Installing python3-icoextract..."
-    dnf5 install -y python3-icoextract
-fi
 
 # internal copr repos
 dnf5 -y copr enable ilyaz/LACT
