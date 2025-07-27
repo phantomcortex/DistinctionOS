@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 EXTENSIONS_DIR="/usr/share/gnome-shell/extensions"
 TMP="/tmp/gnome-shell"
@@ -40,11 +41,13 @@ curl -s https://api.github.com/repos/domferr/tilingshell/releases/latest | \
 # verify
 echo -e "\033[31mVERIFY GNOME EXTENSIONS\033[0m"
 ls /usr/share/gnome-shell/extensions/
-ls /usr/share/gnome-shell/extensions/ | grep -E 'tophat|gnome-ui-tune|burn-my-windows'
+ls /usr/share/gnome-shell/extensions/ |grep -E 'tophat|gnome-ui-tune|burn-my-windows'
 
 echo -e "\033[31mVERIFY THEMES\033[0m"
-ls /usr/share/themes/ | grep -e 'Orchis'
-ls /usr/share/icons/ | grep -E 'capitaine|Deppin'
+ls /usr/share/themes/ |grep -e 'Orchis'
+ls /usr/share/icons/ |grep -E 'capitaine|Deppin'
+ls /usr/share/backgrounds |grep -e 'skyrim'
+ls /lib/modules/ 
 # cleanup
 rm -rf /tmp/gnome-shell
 
