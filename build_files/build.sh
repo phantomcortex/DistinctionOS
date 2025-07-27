@@ -176,13 +176,17 @@ EOF
 dnf makecache 
 dnf -y install Cider
 
+<<<<<<< HEAD
 #==Crossover
 rm -rf /opt
+=======
+#==
+>>>>>>> f6d806a6b53850986246d860e8b1cd9e89d59c14
 mkdir -p /usr/share/factory/var/opt
 mkdir -p /opt/cxoffice 
 dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
-mv /opt/cxoffice /usr/share/factor/var/opt
+mv /opt/cxoffice /usr/share/factory/var/opt
 ls /usr/share/factory/var/opt
 ls /opt
 rm -rf /opt
