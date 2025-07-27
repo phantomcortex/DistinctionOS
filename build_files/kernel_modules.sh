@@ -11,7 +11,10 @@ export KERNELDIR="/lib/modules/${KERNEL}/build"
 #tmp
 dnf5 -y copr enable atim/xpadneo
 dnf5 -y install xpadneo
-
-dkms add /usr/src/akmods/xpadneo-kmod-0.9.7
-dkms build xpadneo/0.9.7 -k "${KERNEL}"
-dkms install xpadneo/0.9.7 -k "${KERNEL}"
+akmods --rebuild --kernels $KERNEL --akmod xpadneo
+#echo -e "\033[31mDKMS ADD\033[0m"
+#dkms add /usr/src/akmods/xpadneo-kmod-0.9.7
+#echo -e "\033[31mDKMS BUILD\033[0m"
+#dkms build xpadneo/0.9.7 -k "${KERNEL}"
+#echo -e "\033[31mDKMS INSTALL\033[0m"
+#dkms install xpadneo/0.9.7 -k "${KERNEL}"

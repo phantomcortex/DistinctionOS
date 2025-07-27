@@ -194,8 +194,8 @@ dnf5 -y install dysk
 dnf5 -y copr enable atim/nushell
 dnf5 -y install nushell
 
-dnf5 -y copr enable atim/xpadneo
-dnf5 -y install xpadneo
+#dnf5 -y copr enable atim/xpadneo
+#dnf5 -y install xpadneo
 # Note: I've previously used sentry's xpadneo kmod but it's not signed so secure boot won't work
 # it's unclear if atim's xpadneo is signed, but I doubt it severely.
 # depending on if it install kmod to to the kernel correctly 
