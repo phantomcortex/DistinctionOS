@@ -38,3 +38,46 @@ legacy-tray-enabled=false
 # Modifying shortcut actions for custom0, custom1, custom2, etc. are recognized as relocatable schemas
 [org.gnome.settings-daemon.plugins.media-keys]
 custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/']
+
+[org.gnome.settings-daemon.plugins.power]
+idle-dim=false
+sleep-inactive-ac-type='nothing'
+
+[org.gnome.nautilus.compression]
+default-compression-format='7z'
+
+[org.gnome.nautilus.window-state]
+initial-size=(1600,1100)
+initial-size-file-chooser=(1280,1100)
+
+[org.gnome.desktop.applications.terminal]
+exec='blackbox-terminal'
+exec-arg='-c'
+
+[org.gnome.desktop.privacy]
+disable-camera=true
+disable-microphone=true
+
+[org.gnome.file-roller.ui]
+window-height=750
+window-width=850
+
+[org.gnome.file-roller.file-selector]
+show-hidden=true
+window-size=(800,700)
+
+[org.gnome.file-roller.dialogs.extract]
+height=800
+width=1000
+recreate-folders=true
+
+[org.gnome.file-roller.dialogs.new]
+default-extension='tar.zst'
+
+[org.gnome.TextEditor]
+custom-font='0xProto Bold 12'
+highlight-current-line=true
+show-line-numbers=true
+style-scheme='peninsula-dark'
+use-system-font=false
+

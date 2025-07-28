@@ -19,7 +19,9 @@ git clone https://github.com/Tudmotu/gnome-shell-extension-clipboard-indicator.g
 #date-menu-formatter
 git clone https://github.com/marcinjakubowski/date-menu-formatter.git "$EXTENSIONS_DIR/date-menu-formatter@tudmotu.com"
 
-
+# 'User Avatar in Quick Settings'
+git clone https://github.com/d-go/quick-settings-avatar.git "$EXTENSIONS_DIR/quick-settings-avatar@d-go"
+# 'Gnome 4x UI Improvments'
 curl -L https://github.com/axxapy/gnome-ui-tune/releases/download/v1.10.2/gnome-ui-tune@itstime.tech.shell-extension.zip -o $TMP/gnome-ui-tune@itstime.tech.shell-extension.zip
 unzip $TMP/gnome-ui-tune@itstime.tech.shell-extension.zip -d "$EXTENSIONS_DIR/gnome-ui-tune@itstime.tech"
 
@@ -55,6 +57,8 @@ ls /usr/share/icons/ |grep -E 'capitaine|Deppin'
 echo -e "\033[31mVERIFY BACKGROUNDS\033[0m"
 ls /usr/share/backgrounds |grep -e 'skyrim'
 
+echo -e "\033[31mCOMPILE GLIB SCHEMAS033[0m"
+glib-compile-schemas /usr/share/glib-2.0/schemas/
 # cleanup
 rm -rf /tmp/gnome-shell
 
