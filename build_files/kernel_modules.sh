@@ -1,20 +1,20 @@
 #!/bin/bash
 
-echo -e "\033[31mREGENERATE INITRAMFS\033[0m"
-dnf5 -y install dkms make
+echo -e "\033[31mINSTALL MODULES\033[0m"
+dnf5 -y install dkms 
 # First, ensure the proper kernel-devel package is available
 # You'll need the Bazzite kernel headers specifically
 KERNEL=$(ls /lib/modules/ | grep bazzite | sort -V | tail -1)
 
 # Set up the build environment properly
 export KERNELDIR="/lib/modules/${KERNEL}/build"
-#mkdir -p /var/log/akmods/
-#touch /var/log/akmods/akmods.log
-PREV_DIR=$(pwd)
+
+PREV_DIR=$(pwd) && echo -e ("\033[33m$pwd\033[0m")
 git clone https://github.com/atar-axis/xpadneo.git /tmp/xpadneo
 cd /tmp/xpadneo/hid-xpadneo
 #modified straight from xpadneo's makefile
 
+echo -e ("\033[37m$tee\033[0m")
 tee makefile << 'EOF'
 KERNEL_SOURCE_DIR ?= /lib/modules/$(shell ls /lib/modules/ | tail -1)/build
 LD := ld.bfd
@@ -41,19 +41,23 @@ reinstall: modules
 dkms.conf: dkms.conf.in ../VERSION
 	sed 's/"@DO_NOT_CHANGE@"/"$(shell cat ../VERSION)"/g' <"$<" >"$@" 
 EOF
-
+echo -e "\033[31mMAKE MODULES\033[0m"
 make modules 
+echo -e "\033[31mMODULES_INSTALL\033[0m"
 make modules_install
-#make -C $KERNELDIR INSTALL_MOD_DIR="kernel/drivers/hid" LD=$(LD) M=$(shell pwd)/src VERSION="$(shell cat ../VERSION)" $@
+echo -e "\033[31mMODULES DONE\033[0m"
+sleep 5
+
+FILE1="/lib/modules/${KERNEL}/extra/xpadneo/xpadneo.ko.zst"
+FILE2="/lib/modules/${KERNEL}/kernel/drivers/hid/hid-xpadneo.ko"
+
+if [[ -f "$FILE1" || -f "$FILE2" ]]; then
+    # Orange text: ANSI escape code 38;5;208
+    echo -e "\033[38;5;208mXPADNEO INSTALLED\033[0m"
+  else
+    echo -e "\033[33;5mXPADNEO FAILED TO INSTALL\033[0m" && exit 1  
+fi
+
+
 cd $PREV_DIR
-exit 2
-#tmp
-#dnf5 -y copr enable atim/xpadneo
-#dnf5 -y install xpadneo
-#akmods --kernels $KERNEL --akmod xpadneo
-#echo -e "\033[31mDKMS ADD\033[0m"
-#dkms add /usr/src/akmods/xpadneo-kmod-0.9.7
-#echo -e "\033[31mDKMS BUILD\033[0m"
-#dkms build xpadneo/0.9.7 -k "${KERNEL}"
-#echo -e "\033[31mDKMS INSTALL\033[0m"
-#dkms install xpadneo/0.9.7 -k "${KERNEL}"
+
