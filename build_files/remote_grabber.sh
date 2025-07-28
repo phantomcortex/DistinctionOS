@@ -2,16 +2,16 @@
 #
 EXTENSIONS_DIR="/usr/share/gnome-shell/extensions"
 TMP="/tmp/gnome-shell"
-
-#pip-on-top
-git clone "https://github.com/Rafostar/gnome-shell-extension-pip-on-top.git" -o "$EXTENSION_DIR/pip-on-top@rafostar.github.com"
-glib-compile-schemas "$EXTENSION_DIR/pip-on-top@rafostar.github.com/schemas"
 mkdir -p $TMP
 
-echo -e "\033[31mGNOME SHELL EXTENSIONS\033[0m" && \
+#pip-on-top
+git clone "https://github.com/Rafostar/gnome-shell-extension-pip-on-top.git" "$EXTENSIONS_DIR/pip-on-top@rafostar.github.com"
+glib-compile-schemas "$EXTENSIONS_DIR/pip-on-top@rafostar.github.com/schemas"
+
+echo -e "\033[31mGNOME SHELL EXTENSIONS\033[0m"
 # burn-my-windows
-curl -L https://github.com/Schneegans/Burn-My-Windows/releases/download/v46/burn-my-windows@schneegans.github.com.zip -o $TMP
-unzip -o $TMP/burn-my-windows@schneegans.github.com.zip -d $EXTENSION_DIR/burn-my-windows@schneegans.github.com
+curl -L https://github.com/Schneegans/Burn-My-Windows/releases/download/v46/burn-my-windows@schneegans.github.com.zip -o $TMP/burn-my-windows@schneegans.github.com.zip
+unzip -o $TMP/burn-my-windows@schneegans.github.com.zip -d $EXTENSIONS_DIR/burn-my-windows@schneegans.github.com
 
 # clipboard-indicator
 git clone https://github.com/Tudmotu/gnome-shell-extension-clipboard-indicator.git "$EXTENSIONS_DIR/clipboard-indicator@tudmotu.com"
@@ -32,7 +32,7 @@ mkdir -p /tmp/tilingshell
 
 #Install custom kora-icon-theme
 dnf5 -y install https://github.com/phantomcortex/kora/releases/download/1.6.5.12/kora-icon-theme-1.6.5.12-1.fc42.noarch.rpm
-echo -e "\033[31mKORA CUSTOM\033[0m" && \
+echo -e "\033[31mKORA CUSTOM\033[0m"
 
 curl -s https://api.github.com/repos/domferr/tilingshell/releases/latest | \
             jq -r '.assets | sort_by(.created_at) | .[] | select (.name|test("^tilingshell@.*zip$")) | .browser_download_url' | \
@@ -57,8 +57,6 @@ ls /usr/share/backgrounds |grep -e 'skyrim'
 
 # cleanup
 rm -rf /tmp/gnome-shell
-rm -rf /tophat*
-
 
 
 echo -e "\033[31m=======================================================================================================================================================================================================================================================================================================================================================================================\033[0m"
