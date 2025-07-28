@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo -e "\033[31mINSTALL MODULES\033[0m"
+echo -e ("\033[31mINSTALL MODULES\033[0m")
 dnf5 -y install dkms 
 # First, ensure the proper kernel-devel package is available
 # You'll need the Bazzite kernel headers specifically
@@ -41,11 +41,11 @@ reinstall: modules
 dkms.conf: dkms.conf.in ../VERSION
 	sed 's/"@DO_NOT_CHANGE@"/"$(shell cat ../VERSION)"/g' <"$<" >"$@" 
 EOF
-echo -e "\033[31mMAKE MODULES\033[0m"
+echo -e ("\033[31mMAKE MODULES\033[0m")
 make modules 
-echo -e "\033[31mMODULES_INSTALL\033[0m"
+echo -e ("\033[31mMODULES_INSTALL\033[0m")
 make modules_install
-echo -e "\033[31mMODULES DONE\033[0m"
+echo -e ("\033[31mMODULES DONE\033[0m")
 sleep 5
 
 FILE1="/lib/modules/${KERNEL}/extra/xpadneo/xpadneo.ko.zst"
