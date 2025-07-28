@@ -148,7 +148,9 @@ remove_packages=(waydroid \
   sunshine \
   gnome-shell-extension-compiz-windows-effect \
   gnome-shell-extension-compiz-alike-magic-lamp-effect \
-  openssh-askpass)
+  openssh-askpass \
+  dkms \
+  make)
 
 for pkg in "${remove_packages[@]}"; do
   if rpm -q "$pkg" &>/dev/null; then
