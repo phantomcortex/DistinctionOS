@@ -14,8 +14,36 @@ PREV_DIR=$(pwd)
 git clone https://github.com/atar-axis/xpadneo.git /tmp/xpadneo
 cd /tmp/xpadneo/hid-xpadneo
 #modified straight from xpadneo's makefile
+
+tee makefile << 'EOF'
+KERNEL_SOURCE_DIR ?= /lib/modules/$(shell ls /lib/modules/ | tail -1)/build
+LD := ld.bfd
+
+all: modules
+
+.INTERMEDIATE: ../VERSION
+
+../VERSION:
+	$(MAKE) -C .. $(@:../%=%)
+
+# convenience rules for local development
+
+clean modules modules_install: ../VERSION
+	$(MAKE) -C $(KERNEL_SOURCE_DIR) INSTALL_MOD_DIR="kernel/drivers/hid" LD=$(LD) M=$(shell pwd)/src VERSION="$(shell cat ../VERSION)" $@
+
+reinstall: modules
+	sudo make modules_install
+	sudo rmmod hid-xpadneo || true
+	sudo modprobe hid-xpadneo $(MOD_PARAMS)
+
+# DKMS support rules
+
+dkms.conf: dkms.conf.in ../VERSION
+	sed 's/"@DO_NOT_CHANGE@"/"$(shell cat ../VERSION)"/g' <"$<" >"$@" 
+EOF
 make -C $KERNELDIR INSTALL_MOD_DIR="kernel/drivers/hid" LD=$(LD) M=$(shell pwd)/src VERSION="$(shell cat ../VERSION)" $@
 cd $PREV_DIR
+exit 2
 #tmp
 #dnf5 -y copr enable atim/xpadneo
 #dnf5 -y install xpadneo
