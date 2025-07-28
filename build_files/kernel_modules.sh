@@ -41,7 +41,10 @@ reinstall: modules
 dkms.conf: dkms.conf.in ../VERSION
 	sed 's/"@DO_NOT_CHANGE@"/"$(shell cat ../VERSION)"/g' <"$<" >"$@" 
 EOF
-make -C $KERNELDIR INSTALL_MOD_DIR="kernel/drivers/hid" LD=$(LD) M=$(shell pwd)/src VERSION="$(shell cat ../VERSION)" $@
+
+make modules 
+make modules_install
+#make -C $KERNELDIR INSTALL_MOD_DIR="kernel/drivers/hid" LD=$(LD) M=$(shell pwd)/src VERSION="$(shell cat ../VERSION)" $@
 cd $PREV_DIR
 exit 2
 #tmp
