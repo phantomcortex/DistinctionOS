@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo -e "\033[31mREGENERATE INITRAMFS\033[0m"
-dnf5 -y install dkms
+dnf5 -y install dkms make
 # First, ensure the proper kernel-devel package is available
 # You'll need the Bazzite kernel headers specifically
 KERNEL=$(ls /lib/modules/ | grep bazzite | sort -V | tail -1)
@@ -13,8 +13,8 @@ export KERNELDIR="/lib/modules/${KERNEL}/build"
 PREV_DIR=$(pwd)
 git clone https://github.com/atar-axis/xpadneo.git /tmp/xpadneo
 cd /tmp/xpadneo/hid-xpadneo
-make modules
-make modules_install
+#modified straight from xpadneo's makefile
+make -C $KERNELDIR INSTALL_MOD_DIR="kernel/drivers/hid" LD=$(LD) M=$(shell pwd)/src VERSION="$(shell cat ../VERSION)" $@
 cd $PREV_DIR
 #tmp
 #dnf5 -y copr enable atim/xpadneo
