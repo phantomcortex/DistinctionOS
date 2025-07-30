@@ -81,3 +81,5 @@ show-line-numbers=true
 style-scheme='peninsula-dark'
 use-system-font=false
 
+[org.gnome.shell]
+favorite-apps=['brave-browser.desktop','org.gnome.Nautilus.desktop','com.raggesilver.BlackBox.desktop','Cider.desktop', 'org.gnome.TextEditor.desktop', 'io.missioncenter.MissionCenter.desktop']

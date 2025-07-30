@@ -59,6 +59,7 @@ ls /usr/share/backgrounds |grep -e 'skyrim'
 
 echo -e "\033[31mCOMPILE GLIB SCHEMAS033[0m"
 glib-compile-schemas /usr/share/glib-2.0/schemas/
+
 # cleanup
 rm -rf /tmp/gnome-shell
 
