@@ -139,12 +139,17 @@ install_packages=(python3-icoextract \
   dysk \
   nushell)
 
+: <<'END_COMMENT'
 for repo in "${copr_repos[@]}"; do
   if ! dnf repolist |grep -e '$repo'
       dnf5 copr enable -y "$repo"
       echo "enabling copr $repo"
   fi 
 done
+END_COMMENT
+dnf5 copr enable -y ilyaz/LACT
+dnf5 copr enable -y fernando-debian/dysk
+dnf5 copr enable -y atim/nushell
 
 for pkg in "${install_packages[@]}"; do
     if ! rpm -q "$pkg" &>/dev/null; then
