@@ -135,7 +135,7 @@ install_packages=(python3-icoextract \
   apfs-fuse \
   ardour8 \
   ffmpeg \
-  LACT \
+  lact \
   dysk \
   nushell)
 
