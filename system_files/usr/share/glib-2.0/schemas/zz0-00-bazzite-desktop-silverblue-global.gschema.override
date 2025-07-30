@@ -75,7 +75,7 @@ recreate-folders=true
 default-extension='tar.zst'
 
 [org.gnome.TextEditor]
-custom-font='0xProto Bold 12'
+custom-font='0xProto Nerd Font Bold 12'
 highlight-current-line=true
 show-line-numbers=true
 style-scheme='peninsula-dark'
