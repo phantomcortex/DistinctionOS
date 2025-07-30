@@ -12,7 +12,7 @@ set -ouex pipefail
 # this installs a package from fedora repos
 
 # Define the COPR repo and package
-dnf5 -y config-manager setopt "*rpmfusion*".enabled=1 #bazzite seems to have some of rpmfusion repos disabled from their based images; Words cannot accurately describe how much this infuriated me  
+dnf5 -y config-manager setopt "*rpmfusion*".enabled=1 #bazzite seems to have some of rpmfusion repos disabled from their base images; Words cannot accurately describe how much this infuriated me  
 if ! dnf repolist | grep -q "copr:copr.fedorainfracloud.org:bazzite-org:rom-properties"; then
   dnf5 copr enable -y bazzite-org/rom-properties
   dnf5 -y install rom-properties
@@ -101,9 +101,8 @@ else
     fi
 fi
 
-dnf5 -y remove totem
-# for 
-#
+copr_repos=('ilyaz/LACT' 'fernando-debian/dysk' 'atim/nushell')
+
 install_packages=(python3-icoextract \
   rom-properties-gtk3 \
   tealdeer \
@@ -134,13 +133,25 @@ install_packages=(python3-icoextract \
   VirtualBox \
   zfs-fuse \
   apfs-fuse \
-  ardour8
-  ffmpeg)
+  ardour8 \
+  ffmpeg \
+  LACT \
+  dysk \
+  nushell)
+
+for repo in "${copr_repos[@]}"; do
+  if ! dnf repolist |grep -e '$repo'
+      dnf5 copr enable -y "$repo"
+      echo "enabling copr $repo"
+  fi 
+done
 
 for pkg in "${install_packages[@]}"; do
     if ! rpm -q "$pkg" &>/dev/null; then
         echo "Installing $pkg..."
         dnf5 -y install "$pkg"
+    else
+      echo "$pkg Already Installed ✅"
     fi
 done
 
@@ -173,37 +184,37 @@ EOF
 dnf makecache 
 dnf -y install Cider
 
+sed -i 's@Icon=Cider@/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share/applications/Cider.desktop
 
 #==Crossover
 rm -rf /opt
-#==
+# remove link so installing crossover is possible
 
 mkdir -p /usr/share/factory/var/opt
 mkdir -p /opt/cxoffice 
 dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
-mv /opt/cxoffice /usr/share/factory/var/opt
+mv /opt/cxoffice /usr/share/factory/var/opt # While 
 ls /usr/share/factory/var/opt
 ls /opt
 rm -rf /opt
+# relink
 ln -s /opt /var/opt
-# internal copr repos
-dnf5 -y copr enable ilyaz/LACT
-dnf5 -y install lact
-dnf5 -y copr enable fernando-debian/dysk
-dnf5 -y install dysk
-dnf5 -y copr enable atim/nushell
-dnf5 -y install nushell
-
-#dnf5 -y copr enable atim/xpadneo
-#dnf5 -y install xpadneo
-# Note: I've previously used sentry's xpadneo kmod but it's not signed so secure boot won't work
-# it's unclear if atim's xpadneo is signed, but I doubt it severely.
-# depending on if it install kmod to to the kernel correctly 
-# I might have to run some extra commands to make sure this kernel module is loaded
-#
-#########################################################################
-
+# TODO: maybe add premade distrobox with crossover or something similar?
+# could somehow do a first boot install of crossover without baking it into the image
+# part of me still wants crossover to baked in and somehow...
+# could do a system service that hard-links to /var/opt while it could imaged /opt_ro or something
+# one could ask: Is it practical? Worth the effort? could this cause issues?  
+# I'm sure UniversalBlue would heavily discourge playing 'Operation' with the image.
+# baking in Crossover(&others) pros:
+# - no Setup, ready immediately
+# - no need to messing with distrobox and learn a another tool 
+# - uses system binaries and libararies means if something manages to break rolling back is an option, and fairly easy to find the package that breaks 
+# Cons:
+# - perhaps needless complexity? 
+# (however once it's built and 'built-correctly' it'd probably stay in a good state unless theres improvments to be made.)
+# - build system could break if codeweavers changes their site in a manner in which I can no longer just 'yoink' Crossover from their site
+# - it's also a question of 'could it have unintended side effects?'
 
 # Use a COPR Example:
 #
