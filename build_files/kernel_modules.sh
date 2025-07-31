@@ -74,7 +74,7 @@ echo -e "\033[31mINSTALL CUSTOM KERNEL\033[0m"
 echo -e "\033[31mDEBUG:\033[0m"
 dnf list --installed |grep -E 'kernel|bazzite'
 dnf copr enable -y bieszczaders/kernel-cachyos-lto
-dnf install -y kernel-cachyos-lto kernel-cachyos-lto-devel-matched
+dnf install -y kernel-cachyos-lto kernel-cachyos-lto-devel-matched && dnf versionlock add kernel-cachyos-lto kernel-cachyos-lto-devel-matched
 cp /lib/modules/${KERNEL}/extras/hid-xpadneo.ko.zst /lib/modules/${ls /lib/modules/ |grep cachyos}/extras/
 
 FILE1="/lib/modules/${ls /lib/modules |grep cachyos}/extra/xpadneo/xpadneo.ko.zst"
@@ -87,9 +87,9 @@ if [[ -f "$FILE1" || -f "$FILE2" ]]; then
 fi
 echo -e "\033[31mDEBUG:\033[0m" && ls /lib/modules
 echo -e "\033[33mREMOVING OTHER KERNELS\033[0m"
-dnf list --installed | awk '{print $1}' | grep '^kernel' | xargs -r dnf remove -y
+#dnf list --installed | awk '{print $1}' | grep '^kernel' | xargs -r dnf remove -y 
 echo -e "\033[31mDEBUG:\033[0m" && ls /lib/modules
-
+dnf -y remove kernel kernel-core kernel-devel kernel-devel-matched kernel-modules kernel-modules-core kernel-modules-extra kernel-tools
 
 cd $PREV_DIR
 
