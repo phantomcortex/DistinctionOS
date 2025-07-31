@@ -192,6 +192,7 @@ dnf -y install Cider
 sed -i 's@Icon=Cider@/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share/applications/Cider.desktop
 
 #==Crossover
+: '
 rm -rf /opt
 # remove link so installing crossover is possible
 
@@ -205,6 +206,7 @@ ls /opt
 rm -rf /opt
 # relink
 ln -s /opt /var/opt
+'
 # TODO: maybe add premade distrobox with crossover or something similar?
 # could somehow do a first boot install of crossover without baking it into the image
 # part of me still wants crossover to baked in and somehow...
@@ -222,7 +224,8 @@ ln -s /opt /var/opt
 # - it's also a question of 'could it have unintended side effects?'
 
 # Use a COPR Example:
-#
+echo -e "\033[31mDNF CHECK UPDATE\033[0m"
+dnf5 check-update --refresh
 # dnf5 -y copr enable ublue-os/staging
 # dnf5 -y install package
 # Disable COPRs so they don't end up enabled on the final image:
