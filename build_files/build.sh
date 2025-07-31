@@ -153,7 +153,6 @@ install_packages=(python3-icoextract \
   llvm \
   m4 \
   kmodtool \
-  kvmfr \
   kmod-kvmfr \
   binutils \
   make \
