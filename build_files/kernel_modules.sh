@@ -1,10 +1,6 @@
 #!/bin/bash
 
-echo -e "\033[31mINSTALL CUSTOM KERNEL\033[0m"
-# Remove all packages whose name starts with 'kernel'
-dnf list installed | awk '{print $1}' | grep '^kernel' | xargs -r dnf remove -y
-dnf copr enable -y bieszczaders/kernel-cachyos-lto
-dnf install -y kernel-cachyos-lto kernel-cachyos-lto-devel-matched
+
 
 dnf5 -y install dkms
 : '
@@ -19,7 +15,7 @@ Light Gray   0;37     White         1;37
 '
 # First, ensure the proper kernel-devel package is available
 # You'll need the Bazzite kernel headers specifically
-KERNEL=$(ls /lib/modules/ | grep cachyos | sort -V | tail -1)
+KERNEL=$(ls /lib/modules/ | grep bazzite | sort -V | tail -1)
 
 # Set up the build environment properly
 export KERNELDIR="/lib/modules/${KERNEL}/build"
@@ -72,6 +68,27 @@ if [[ -f "$FILE1" || -f "$FILE2" ]]; then
   else
     echo -e "\033[33;5mXPADNEO FAILED TO INSTALL\033[0m" && exit 1  
 fi
+
+echo -e "\033[31mINSTALL CUSTOM KERNEL\033[0m"
+# Remove all packages whose name starts with 'kernel'
+echo -e "\033[31mDEBUG:\033[0m"
+dnf list --installed |grep -E 'kernel|bazzite'
+dnf copr enable -y bieszczaders/kernel-cachyos-lto
+dnf install -y kernel-cachyos-lto kernel-cachyos-lto-devel-matched
+cp /lib/modules/${KERNEL}/extras/hid-xpadneo.ko.zst /lib/modules/${ls /lib/modules/ |grep cachyos}/extras/
+
+FILE1="/lib/modules/${ls /lib/modules |grep cachyos}/extra/xpadneo/xpadneo.ko.zst"
+FILE2="/lib/modules/${ls /lib/modules |grep cachyos}/kernel/drivers/hid/hid-xpadneo.ko"
+if [[ -f "$FILE1" || -f "$FILE2" ]]; then
+    # Orange text: ANSI escape code 38;5;208
+    echo -e "\033[38;5;208mXPADNEO INSTALLED ON CACHYOS KERNEL\033[0m"
+  else
+    echo -e "\033[33;5mXPADNEO FAILED TO INSTALL\033[0m" && exit 1  
+fi
+echo -e "\033[31mDEBUG:\033[0m" && ls /lib/modules
+echo -e "\033[33mREMOVING OTHER KERNELS\033[0m"
+dnf list --installed | awk '{print $1}' | grep '^kernel' | xargs -r dnf remove -y
+echo -e "\033[31mDEBUG:\033[0m" && ls /lib/modules
 
 
 cd $PREV_DIR
