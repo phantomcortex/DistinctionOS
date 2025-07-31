@@ -98,9 +98,9 @@ for dir in bin lib include share; do
     fi
 done
 
-echo "\033[33mInstallation complete.\033[0m"
+echo -e "\033[36mInstallation complete.\033[0m"
 #check
-if [[-f "/usr/bin/wine" ]]; then
+if [[ -f "/usr/bin/wine" ]]; then
   echo -e "wine-build installed correctly"
 else
   echo -e "wine-build did not install correctly"
