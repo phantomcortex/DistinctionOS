@@ -140,20 +140,7 @@ install_packages=(python3-icoextract \
   lact \
   dysk \
   nushell \
-  clang \
-  gcc \
-  gcc-c++ \
-  rpm-build \
-  elfutils \
-  bison \
   meson \
-  flex \
-  fakeroot \
-  lld \
-  llvm \
-  m4 \
-  kmodtool \
-  kmod-kvmfr \
   binutils \
   make \
   cmake)
