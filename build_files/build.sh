@@ -136,9 +136,31 @@ install_packages=(python3-icoextract \
   apfs-fuse \
   ardour8 \
   ffmpeg \
+  make \
   lact \
   dysk \
-  nushell)
+  nushell \
+  clang \
+  gcc \
+  gcc-c++ \
+  rpm-build \
+  elfutils \
+  bison \
+  meson \
+  flex \
+  fakeroot \
+  lld \
+  llvm \
+  m4 \
+  kmodtool \
+  kvmfr \
+  kmod-kvmfr \
+  binutils \
+  make \
+  cmake)
+
+
+
 
 : <<'END_COMMENT'
 for repo in "${copr_repos[@]}"; do
