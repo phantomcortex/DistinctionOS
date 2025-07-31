@@ -27,7 +27,7 @@ cd /tmp/xpadneo/hid-xpadneo
 
 echo -e "\033[37m$tee\033[0m"
 tee makefile << 'EOF'
-KERNEL_SOURCE_DIR ?= /lib/modules/$(shell ls /lib/modules/ | grep cachyos | tail -1)/build
+KERNEL_SOURCE_DIR ?= /lib/modules/$(shell ls /lib/modules/ | grep bazzite | tail -1)/build
 LD := ld.bfd
 
 all: modules
