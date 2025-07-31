@@ -3,7 +3,8 @@
 set -ouex pipefail
 
 ### Install packages
-
+RED='\033[31m'
+NC='\033[0m'
 # Packages can be installed from any enabled yum repo on the image.
 # RPMfusion repos are available by default in ublue main images
 # List of rpmfusion packages can be found here:
@@ -225,11 +226,18 @@ ln -s /opt /var/opt
 
 # Use a COPR Example:
 echo -e "\033[31mDNF CHECK UPDATE\033[0m"
-dnf5 check-update --refresh
-# dnf5 -y copr enable ublue-os/staging
-# dnf5 -y install package
-# Disable COPRs so they don't end up enabled on the final image:
-# dnf5 -y copr disable ublue-os/staging
+if ! dnf check-update --refresh; then
+    code=$?
+    if [ "$code" -ne 100 ]; then
+        echo "dnf check-update failed with error code $RED$code"
+        exit $code
+    else
+        echo "Updates are available (exit code $RED 100$NC), continuing..."
+    fi
+else
+    echo "No updates available."
+fi
+
 
 #### Example for enabling a System Unit File
 
