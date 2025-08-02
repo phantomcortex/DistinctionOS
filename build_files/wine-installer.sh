@@ -7,11 +7,18 @@
 set -euo pipefail
 
 # Configuration
-readonly GITHUB_API_URL="https://api.github.com/repos/Kron4ek/Wine-Builds/releases/latest"
-readonly WINE_PATTERN="wine-10.12-staging-tkg-ntsync-amd64-wow64\.tar\.xz"
+readonly GITHUB_API_URL="https://api.github.com/repos/Kron4ek/Wine-Builds/releases"
+readonly WINE_PATTERN="wine-.*-staging-tkg-ntsync-amd64-wow64\.tar\.xz"
 readonly EXTRACTION_TARGET="/usr"
-readonly TEMP_DIR="/tmp/wine-build-$$"
+readonly TEMP_DIR="/tmp/wine-build-$"
 readonly EXCLUDED_FILE="wine-tkg-config.txt"
+
+# Version configuration
+# Uncomment and set to install a specific version (e.g., "10.12")
+# readonly WINE_VERSION="10.12"
+
+# Release candidate configuration
+readonly USE_RELEASE_CANDIDATE=false
 
 # Logging functions
 log_info() {
@@ -37,7 +44,36 @@ cleanup() {
 # Set trap for cleanup
 trap cleanup EXIT
 
-# Verify prerequisites
+# Version comparison function (semantic versioning aware)
+version_compare() {
+    local version1="$1"
+    local version2="$2"
+    
+    # Extract major and minor versions
+    local v1_major v1_minor v2_major v2_minor
+    IFS='.' read -r v1_major v1_minor <<< "$version1"
+    IFS='.' read -r v2_major v2_minor <<< "$version2"
+    
+    # Compare major versions
+    if [[ $v1_major -gt $v2_major ]]; then
+        return 0  # version1 > version2
+    elif [[ $v1_major -lt $v2_major ]]; then
+        return 1  # version1 < version2
+    fi
+    
+    # Major versions equal, compare minor versions
+    if [[ $v1_minor -gt $v2_minor ]]; then
+        return 0  # version1 > version2
+    else
+        return 1  # version1 <= version2
+    fi
+}
+
+# Extract version from filename
+extract_wine_version() {
+    local filename="$1"
+    echo "$filename" | sed -n 's/^wine-\([0-9]\+\.[0-9]\+\).*$/\1/p'
+}
 check_prerequisites() {
     local missing_tools=()
     
@@ -61,29 +97,67 @@ check_prerequisites() {
 
 # Fetch latest Wine build information
 fetch_wine_build_info() {
-    log_info "Fetching latest release information from GitHub API"
+    log_info "Fetching release information from GitHub API"
     
-    local release_data
-    if ! release_data=$(curl -sf "$GITHUB_API_URL"); then
-        log_error "Failed to fetch release information from GitHub API"
+    local releases_data
+    if ! releases_data=$(curl -sf "$GITHUB_API_URL"); then
+        log_error "Failed to fetch releases information from GitHub API"
         exit 1
     fi
     
-    # Extract wine build asset information (ignore proton builds)
-    local wine_asset
-    wine_asset=$(echo "$release_data" | jq -r --arg pattern "$WINE_PATTERN" '
+    # Process all releases to find suitable wine builds
+    local wine_candidates
+    wine_candidates=$(echo "$releases_data" | jq -r --arg pattern "$WINE_PATTERN" '
+        [.[] | 
         .assets[] | 
         select(.name | test($pattern)) | 
         select(.name | test("proton") | not) |
-        {name: .name, download_url: .browser_download_url}
-    ' | head -1)
+        {
+            name: .name, 
+            download_url: .browser_download_url,
+            is_rc: (.name | test("rc")),
+            version: (.name | capture("wine-(?<ver>[0-9]+\\.[0-9]+)") | .ver)
+        }] | 
+        sort_by(.version | split(".") | map(tonumber)) | 
+        reverse
+    ')
     
-    if [[ -z "$wine_asset" || "$wine_asset" == "null" ]]; then
-        log_error "No suitable Wine build found matching pattern: $WINE_PATTERN"
+    if [[ -z "$wine_candidates" || "$wine_candidates" == "null" || "$wine_candidates" == "[]" ]]; then
+        log_error "No suitable Wine builds found matching pattern: $WINE_PATTERN"
         exit 1
     fi
     
-    echo "$wine_asset"
+    # Filter based on configuration
+    local selected_build
+    
+    # Check if specific version requested
+    if [[ -n "${WINE_VERSION:-}" ]]; then
+        log_info "Searching for specific Wine version: $WINE_VERSION"
+        selected_build=$(echo "$wine_candidates" | jq --arg version "$WINE_VERSION" '
+            .[] | select(.version == $version) | select(.is_rc == false)
+        ' | head -1)
+        
+        if [[ -z "$selected_build" || "$selected_build" == "null" ]]; then
+            log_error "Specific Wine version $WINE_VERSION not found"
+            exit 1
+        fi
+    else
+        # Select latest based on release candidate preference
+        if [[ "$USE_RELEASE_CANDIDATE" == "true" ]]; then
+            log_info "Selecting latest Wine build (including release candidates)"
+            selected_build=$(echo "$wine_candidates" | jq '.[0]')
+        else
+            log_info "Selecting latest stable Wine build (excluding release candidates)"
+            selected_build=$(echo "$wine_candidates" | jq '.[] | select(.is_rc == false)' | head -1)
+        fi
+        
+        if [[ -z "$selected_build" || "$selected_build" == "null" ]]; then
+            log_error "No suitable Wine build found with current criteria"
+            exit 1
+        fi
+    fi
+    
+    echo "$selected_build"
 }
 
 # Download Wine build
