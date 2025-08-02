@@ -143,7 +143,8 @@ install_packages=(python3-icoextract \
   meson \
   binutils \
   make \
-  cmake)
+  cmake \
+  sassc)
 
 
 
