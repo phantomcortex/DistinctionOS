@@ -8,7 +8,7 @@ set -euo pipefail
 
 # Configuration
 readonly GITHUB_API_URL="https://api.github.com/repos/Kron4ek/Wine-Builds/releases/latest"
-readonly WINE_PATTERN="wine-.*-staging-tkg-ntsync-amd64-wow64\.tar\.xz"
+readonly WINE_PATTERN="wine-*.*-staging-tkg-ntsync-amd64-wow64\.tar\.xz"
 readonly EXTRACTION_TARGET="/usr"
 readonly TEMP_DIR="/tmp/wine-build-$$"
 readonly EXCLUDED_FILE="wine-tkg-config.txt"
