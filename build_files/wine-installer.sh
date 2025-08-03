@@ -105,25 +105,43 @@ fetch_wine_build_info() {
         exit 1
     fi
     
+    # Debug: Check if we got valid JSON
+    if ! echo "$releases_data" | jq empty 2>/dev/null; then
+        log_error "Invalid JSON received from GitHub API"
+        log_error "Response preview: $(echo "$releases_data" | head -c 200)..."
+        exit 1
+    fi
+    
     # Process all releases to find suitable wine builds
+    log_info "Processing releases to find Wine builds..."
     local wine_candidates
-    wine_candidates=$(echo "$releases_data" | jq -r --arg pattern "$WINE_PATTERN" '
+    wine_candidates=$(echo "$releases_data" | jq -c --arg pattern "$WINE_PATTERN" '
         [.[] | 
-        .assets[] | 
+        .assets[]? | 
         select(.name | test($pattern)) | 
-        select(.name | test("proton") | not) |
+        select(.name | test("proton"; "i") | not) |
         {
             name: .name, 
             download_url: .browser_download_url,
-            is_rc: (.name | test("rc")),
-            version: (.name | capture("wine-(?<ver>[0-9]+\\.[0-9]+)") | .ver)
+            is_rc: (.name | test("rc"; "i")),
+            version: (.name | capture("wine-(?<ver>[0-9]+\\.[0-9]+)"; "g") | .ver // "0.0")
         }] | 
-        sort_by(.version | split(".") | map(tonumber)) | 
+        sort_by(.version | split(".") | map(tonumber | . // 0)) | 
         reverse
     ')
     
-    if [[ -z "$wine_candidates" || "$wine_candidates" == "null" || "$wine_candidates" == "[]" ]]; then
+    # Debug output
+    local candidate_count
+    candidate_count=$(echo "$wine_candidates" | jq 'length')
+    log_info "Found $candidate_count Wine build candidates"
+    
+    if [[ "$candidate_count" -eq 0 ]]; then
         log_error "No suitable Wine builds found matching pattern: $WINE_PATTERN"
+        # Debug: Show what assets we did find
+        log_info "Available assets for debugging:"
+        echo "$releases_data" | jq -r '.[] | .assets[]? | .name' | head -10 | while IFS= read -r asset_name; do
+            log_info "  - $asset_name"
+        done
         exit 1
     fi
     
@@ -133,9 +151,9 @@ fetch_wine_build_info() {
     # Check if specific version requested
     if [[ -n "${WINE_VERSION:-}" ]]; then
         log_info "Searching for specific Wine version: $WINE_VERSION"
-        selected_build=$(echo "$wine_candidates" | jq --arg version "$WINE_VERSION" '
+        selected_build=$(echo "$wine_candidates" | jq -c --arg version "$WINE_VERSION" '
             .[] | select(.version == $version) | select(.is_rc == false)
-        ' | head -1)
+        ')
         
         if [[ -z "$selected_build" || "$selected_build" == "null" ]]; then
             log_error "Specific Wine version $WINE_VERSION not found"
@@ -145,10 +163,10 @@ fetch_wine_build_info() {
         # Select latest based on release candidate preference
         if [[ "$USE_RELEASE_CANDIDATE" == "true" ]]; then
             log_info "Selecting latest Wine build (including release candidates)"
-            selected_build=$(echo "$wine_candidates" | jq '.[0]')
+            selected_build=$(echo "$wine_candidates" | jq -c '.[0]')
         else
             log_info "Selecting latest stable Wine build (excluding release candidates)"
-            selected_build=$(echo "$wine_candidates" | jq '.[] | select(.is_rc == false)' | head -1)
+            selected_build=$(echo "$wine_candidates" | jq -c '.[] | select(.is_rc == false)')
         fi
         
         if [[ -z "$selected_build" || "$selected_build" == "null" ]]; then
@@ -156,6 +174,11 @@ fetch_wine_build_info() {
             exit 1
         fi
     fi
+    
+    # Debug: Show selected build
+    local selected_name
+    selected_name=$(echo "$selected_build" | jq -r '.name')
+    log_info "Selected Wine build: $selected_name"
     
     echo "$selected_build"
 }
