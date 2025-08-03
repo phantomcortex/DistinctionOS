@@ -1,7 +1,29 @@
 # Note from phantomcortex:
 You probably shouldn't use this repo... it's a playground, not something intended to be used currently.
 
-# image-template
+## Noteable Additions
+ - Cider (Apple Music Client) See: [Cider collective](https://cider.sh/)
+ - [xpadneo](https://github.com/atar-axis/xpadneo) compiled from source
+ - Various customizations (Cursor-theme:[Capitaine-cursors](https://github.com/keeferrourke/capitaine-cursors),[Deepin-cursors](https://github.com/keeferrourke/capitaine-cursors),Icon-theme:[Kora](https://github.com/phantomcortex/kora),custom background, custom gschemea overrides)
+ - [ardour8](https://github.com/Ardour/ardour) Main: https://ardour.org/
+ - [blender](https://github.com/blender/blender) Main: https://www.blender.org/
+ - [VirtualBox](https://github.com/VirtualBox/virtualbox) Main: https://www.virtualbox.org/wiki/Linux_Downloads
+ - [BlackBox-Terminal](https://github.com/yonasBSD/blackbox-terminal)
+ - Various apps that bazzite wants as flatpak reinstalled as native RPMs 
+ - Various codecs & multimedia added
+ - I'll ***eventually*** find a way to properly layer [Crossover](https://www.codeweavers.com/crossover) on the image
+ - [apfs-fuse](https://github.com/sgan81/apfs-fuse) (While not _entirely_ necessary a Macbook is my secondary system and it's nice to have)
+### Various Shell things
+ - [zsh](https://github.com/zsh-users/zsh)
+ - [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)
+ - [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)
+ - [zoxide](https://github.com/ajeetdsouza/zoxide)
+ - [nushell](https://github.com/nushell/nushell)
+ - [dysk](https://github.com/Canop/dysk)
+## End goal of this repo:
+#### Building off of something already very impressive but make it even more feature rich/complete & add everything I use and could ever want. 
+ I'm sure you could use flatpaks if you were so inclined but it has been my experience that native RPMs just **behave better**
+
 
 # Purpose
 
