@@ -152,7 +152,7 @@ fetch_wine_build_info() {
     if [[ -n "${WINE_VERSION:-}" ]]; then
         log_info "Searching for specific Wine version: $WINE_VERSION"
         selected_build=$(echo "$wine_candidates" | jq -c --arg version "$WINE_VERSION" '
-            .[] | select(.version == $version) | select(.is_rc == false)
+            [.[] | select(.version == $version) | select(.is_rc == false)] | first // empty
         ')
         
         if [[ -z "$selected_build" || "$selected_build" == "null" ]]; then
@@ -163,10 +163,10 @@ fetch_wine_build_info() {
         # Select latest based on release candidate preference
         if [[ "$USE_RELEASE_CANDIDATE" == "true" ]]; then
             log_info "Selecting latest Wine build (including release candidates)"
-            selected_build=$(echo "$wine_candidates" | jq -c '.[0]')
+            selected_build=$(echo "$wine_candidates" | jq -c 'first // empty')
         else
             log_info "Selecting latest stable Wine build (excluding release candidates)"
-            selected_build=$(echo "$wine_candidates" | jq -c '.[] | select(.is_rc == false)')
+            selected_build=$(echo "$wine_candidates" | jq -c '[.[] | select(.is_rc == false)] | first // empty')
         fi
         
         if [[ -z "$selected_build" || "$selected_build" == "null" ]]; then
