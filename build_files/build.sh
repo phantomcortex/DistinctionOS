@@ -11,6 +11,28 @@ NC='\033[0m'
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/39/x86_64/repoview/index.html&protocol=https&redirect=1
 
 # this installs a package from fedora repos
+flatpak remote−add −−if−not−exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+flatpak_apps=(
+    "info.cemu.Cemu" \
+    "com.mattjakeman.ExtensionManager" \
+    "com.ranfdev.DistroShelf" \
+    "com.github.tchx84.Flatseal" \
+    "io.missioncenter.MissionCenter" \
+    "com.vysp3r.ProtonPlus" \
+    "org.DolphinEmu.dolphin-emu" \
+    "org.onlyoffice.desktopeditors" \
+    "rs.ruffle.Ruffle" \
+    "com.steamgriddb.SGDBoop" \
+    "io.github.nokse22.Exhibit" \
+    "me.proton.Mail"
+)
+
+for app in "${flatpak_apps[@]}"; do
+    echo "Installing $app..."
+    flatpak install -y --noninteractive flathub "$app"
+done
+
 
 # Define the COPR repo and package
 dnf5 -y config-manager setopt "*rpmfusion*".enabled=1 #bazzite seems to have some of rpmfusion repos disabled from their base images; Words cannot accurately describe how much this infuriated me  
@@ -205,40 +227,20 @@ sed -i 's@Icon=Cider@/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share
 
 #==Crossover
 
-#rm -rf /opt
+rm -rf /opt
 # remove link so installing crossover is possible
 mkdir -p /opt/cxoffice 
 dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
+mv /opt/cxoffice /var/opt/
 # Crossover Requires a license file so It needs to be writable
 # in theory this should be handled in fix_opt.sh
 # relink
-#ln -s /opt /var/opt
+rm -rf /opt
+ln -s /opt /var/opt
 
 #according to claude If I want certain flatpak apps pre-installed I need to manually layer them -
 # in my build scripts or containerfile
 #flatpak
-flatpak remote−add −−if−not−exists flathub https://flathub.org/repo/flathub.flatpakrepo
-#!/bin/bash
-
-flatpak_apps=(
-    "info.cemu.Cemu" \
-    "com.mattjakeman.ExtensionManager" \
-    "com.ranfdev.DistroShelf" \
-    "com.github.tchx84.Flatseal" \
-    "io.missioncenter.MissionCenter" \
-    "com.vysp3r.ProtonPlus" \
-    "org.DolphinEmu.dolphin-emu" \
-    "org.onlyoffice.desktopeditors" \
-    "rs.ruffle.Ruffle" \
-    "com.steamgriddb.SGDBoop" \
-    "io.github.nokse22.Exhibit" \
-    "me.proton.Mail"
-)
-
-for app in "${flatpak_apps[@]}"; do
-    echo "Installing $app..."
-    flatpak install -y --noninteractive flathub "$app"
-done
 
 #DEBUG
 echo -e "\033[31mDNF CHECK UPDATE\033[0m"
