@@ -36,12 +36,7 @@ mkdir -p /tmp/tilingshell
 dnf5 -y install https://github.com/phantomcortex/kora/releases/download/1.6.5.12/kora-icon-theme-1.6.5.12-1.fc42.noarch.rpm
 echo -e "\033[31mKORA CUSTOM\033[0m"
 
-curl -s https://api.github.com/repos/domferr/tilingshell/releases/latest | \
-            jq -r '.assets | sort_by(.created_at) | .[] | select (.name|test("^tilingshell@.*zip$")) | .browser_download_url' | \
-            wget -qi - -O /tmp/tilingshell/tilingshell@ferrarodomenico.com.zip && \
-        unzip /tmp/tilingshell/tilingshell@ferrarodomenico.com.zip -d /usr/share/gnome-shell/extensions/tilingshell@ferrarodomenico.com && \
-        curl -Lo /usr/share/thumbnailers/exe-thumbnailer.thumbnailer https://raw.githubusercontent.com/jlu5/icoextract/master/exe-thumbnailer.thumbnailer && \
-        systemctl enable dconf-update.service \
+#capitaine cursor themes
 
 # verify
 dnf5 -y install akmod

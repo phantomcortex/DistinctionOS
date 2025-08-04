@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=MacTahoe-Light-red
+Comment=A MacOS Tahoe like Gtk+ theme based on Elegant Design
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=MacTahoe-Light-red
+MetacityTheme=MacTahoe-Light-red
+IconTheme=MacTahoe
+CursorTheme=MACTAHOE-cursors
+ButtonLayout=close,minimize,maximize:menu
+

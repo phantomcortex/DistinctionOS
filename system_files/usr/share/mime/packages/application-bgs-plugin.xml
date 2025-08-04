@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-esm">
+    <generic-icon name="image-x-generic"/>
+    <comment>Elder Scrolls Master Plugin</comment>
+    <glob pattern="*.esm"/>
+  </mime-type>
+ <mime-type type="application/x-esp">
+    <generic-icon name="image-x-generic"/>
+    <comment>Elder Scrolls Plugin</comment>
+    <glob pattern="*.esp"/>
+  </mime-type>
+ <mime-type type="application/x-esl">
+    <generic-icon name="image-x-generic"/>
+    <comment>Elder Scrolls Light Plugin</comment>
+    <glob pattern="*.esl"/>
+  </mime-type>
+
+
+</mime-info>

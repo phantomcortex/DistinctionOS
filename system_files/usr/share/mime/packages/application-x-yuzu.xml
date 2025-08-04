@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+    <mime-type type="application/x-yuzu">
+        <comment>Nintendo Switch Game File</comment>
+        <glob-deleteall/>
+        <glob pattern="*.nsp"/>
+        <glob pattern="*.nsz"/>
+        <glob pattern="*.xci"/>
+    </mime-type>
+</mime-info>
