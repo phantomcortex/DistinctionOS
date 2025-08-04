@@ -11,7 +11,7 @@ set -ouex pipefail
 
 # this installs a package from fedora repos
 
-flatpak remote−add −−if−not−exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
 flatpak_apps=(
     "info.cemu.Cemu" \
