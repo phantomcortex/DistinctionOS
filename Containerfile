@@ -37,6 +37,8 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/wine-installer.sh && \
     echo -e "\033[31mOSTREE COMMIT\033[0m" && \
     ostree container commit
+
+
     
 ### LINTING
 ## Verify final image and contents are correct.

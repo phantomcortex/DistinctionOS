@@ -204,38 +204,43 @@ dnf -y install Cider
 sed -i 's@Icon=Cider@/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share/applications/Cider.desktop
 
 #==Crossover
-: '
-rm -rf /opt
-# remove link so installing crossover is possible
 
-mkdir -p /usr/share/factory/var/opt
+#rm -rf /opt
+# remove link so installing crossover is possible
 mkdir -p /opt/cxoffice 
 dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 # Crossover Requires a license file so It needs to be writable
-mv /opt/cxoffice /usr/share/factory/var/opt # While 
-ls /usr/share/factory/var/opt
-ls /opt
-rm -rf /opt
+# in theory this should be handled in fix_opt.sh
 # relink
-ln -s /opt /var/opt
-'
-# TODO: maybe add premade distrobox with crossover or something similar?
-# could somehow do a first boot install of crossover without baking it into the image
-# part of me still wants crossover to baked in and somehow...
-# could do a system service that hard-links to /var/opt while it could imaged /opt_ro or something
-# one could ask: Is it practical? Worth the effort? could this cause issues?  
-# I'm sure UniversalBlue would heavily discourge playing 'Operation' with the image.
-# baking in Crossover(&others) pros:
-# - no Setup, ready immediately
-# - no need to messing with distrobox and learn a another tool 
-# - uses system binaries and libararies means if something manages to break rolling back is an option, and fairly easy to find the package that breaks 
-# Cons:
-# - perhaps needless complexity? 
-# (however once it's built and 'built-correctly' it'd probably stay in a good state unless theres improvments to be made.)
-# - build system could break if codeweavers changes their site in a manner in which I can no longer just 'yoink' Crossover from their site
-# - it's also a question of 'could it have unintended side effects?'
+#ln -s /opt /var/opt
 
-# Use a COPR Example:
+#according to claude If I want certain flatpak apps pre-installed I need to manually layer them -
+# in my build scripts or containerfile
+#flatpak
+flatpak remote−add −−if−not−exists flathub https://flathub.org/repo/flathub.flatpakrepo
+#!/bin/bash
+
+flatpak_apps=(
+    "info.cemu.Cemu" \
+    "com.mattjakeman.ExtensionManager" \
+    "com.ranfdev.DistroShelf" \
+    "com.github.tchx84.Flatseal" \
+    "io.missioncenter.MissionCenter" \
+    "com.vysp3r.ProtonPlus" \
+    "org.DolphinEmu.dolphin-emu" \
+    "org.onlyoffice.desktopeditors" \
+    "rs.ruffle.Ruffle" \
+    "com.steamgriddb.SGDBoop" \
+    "io.github.nokse22.Exhibit" \
+    "me.proton.Mail"
+)
+
+for app in "${flatpak_apps[@]}"; do
+    echo "Installing $app..."
+    flatpak install -y --noninteractive flathub "$app"
+done
+
+#DEBUG
 echo -e "\033[31mDNF CHECK UPDATE\033[0m"
 if ! dnf check-update --refresh; then
     code=$?
