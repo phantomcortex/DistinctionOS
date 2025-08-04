@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/sc2map">
+    <comment>StarCraft 2 Map File</comment>
+    <glob pattern="*.sc2map"/>
+  </mime-type>
+</mime-info>

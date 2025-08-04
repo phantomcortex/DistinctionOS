@@ -144,7 +144,9 @@ install_packages=(python3-icoextract \
   binutils \
   make \
   cmake \
-  sassc)
+  sassc \
+  dkms \
+  jq)
 
 
 

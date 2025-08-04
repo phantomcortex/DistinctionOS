@@ -92,6 +92,16 @@ increase-thumbnails-size='300%'
 pattern='EEEE, MMMM d  h:mm a'
 font-size=12
 
+[com.raggesilver.BlackBox]
+font='0xProto Nerd Font Bold 12'
+remember-window-size=true
+theme-dark='Pencil Dark'
+pretty=false
+cursor-blink-mode=1
+fill-tabs=true
+window-width=1,800
+window-height=1,200
+
 [org.gnome.shell.extensions.tilingshell]
 inner-gaps=8
 outer-gaps=8

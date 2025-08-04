@@ -3,7 +3,7 @@ FROM scratch AS ctx
 COPY build_files /
 
 # Base Image
-FROM ghcr.io/ublue-os/bazzite-gnome:latest
+FROM ghcr.io/ublue-os/bazzite-gnome:latest as distinction
 #FROM quay.io/fedora/fedora-bootc:42
 
 
@@ -29,12 +29,12 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
     echo -e "\033[31mBUILD SCRIPT >>>>\033[0m" && \
+    /ctx/build.sh && \ 
     /ctx/kernel_modules.sh && \
     echo -e "\033[31mREMOTE GRABBER >>>>\033[0m" && \
     /ctx/remote_grabber.sh && \
      echo -e "\033[31mWINE INSTALLER >>>>\033[0m" && \
     /ctx/wine-installer.sh && \
-    /ctx/build.sh && \ 
     echo -e "\033[31mOSTREE COMMIT\033[0m" && \
     ostree container commit
     

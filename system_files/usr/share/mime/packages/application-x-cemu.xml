@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+    <mime-type type="application/x-cemu">
+        <comment>Wii U Game Archive</comment>
+        <glob-deleteall/>
+        <glob pattern="*.wux"/>
+        <glob pattern="*.wud"/>
+        <glob pattern="*.wua"/>
+        <glob pattern="*.rpx"/>
+    </mime-type>
+</mime-info>
