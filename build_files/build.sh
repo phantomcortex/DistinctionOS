@@ -10,7 +10,7 @@ set -ouex pipefail
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/39/x86_64/repoview/index.html&protocol=https&redirect=1
 
 # this installs a package from fedora repos
-
+: '
 flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
 flatpak_apps=(
@@ -27,7 +27,7 @@ flatpak_apps=(
     "io.github.nokse22.Exhibit" \
     "me.proton.Mail"
 )
-
+'
 for app in "${flatpak_apps[@]}"; do
     echo "Installing $app..."
     flatpak install -y --noninteractive flathub "$app"
