@@ -7,7 +7,7 @@ KERNEL=$(ls /lib/modules/ | grep bazzite | sort -V | tail -1)
 # Set up the build environment properly
 export KERNELDIR="/lib/modules/${KERNEL}/build"
 echo -e "\033[31mINSTALL XPADNEO\033[0m"
-PREV_DIR=$(pwd) && echo -e "\033[33m$pwd\033[0m"
+#PREV_DIR=$(pwd) && echo -e "\033[33m$pwd\033[0m"
 git clone https://github.com/atar-axis/xpadneo.git /tmp/xpadneo
 cd /tmp/xpadneo/hid-xpadneo
 #modified straight from xpadneo's makefile
@@ -92,5 +92,5 @@ KERNEL_VERSION="$(dnf5 repoquery --installed --queryformat='%{evr}.%{arch}' kern
 
 chmod 0600 "/usr/lib/modules/$KERNEL_VERSION/initramfs.img"
 
-cd $PREV_DIR
-
+#cd $PREV_DIR
+cd /
