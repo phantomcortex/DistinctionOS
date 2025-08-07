@@ -28,8 +28,9 @@ for dir in /var/opt/*/; do
       if [[ -d "/usr/lib/opt/$dirname/$subdir" ]]; then
         echo "L+ /var/opt/$dirname/$subdir - - - - /usr/lib/opt/$dirname/$subdir" >> /usr/lib/tmpfiles.d/distinction-opt-fix.conf
       fi 
+      echo -e "\033[31mDEBUG: \033[36mvar_opt:\033[32m$(ls /var/opt/) \033[36musr_lib_opt:\033[32m$(ls /usr/lib/opt) \n \033[31m$(cat /usr/lib/tmpfiles.d/distinction-opt-fix.conf)\033[0m"
     done
   echo "L+ /var/opt/$dirname - - - - /usr/lib/opt/$dirname" >>/usr/lib/tmpfiles.d/distinction-opt-fix.conf
-done
+  done
 
 log "Fix completed"
