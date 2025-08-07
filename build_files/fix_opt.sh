@@ -68,6 +68,8 @@ log() {
 log "Starting /opt directory fix"
 
 # Move directories from /var/opt to /usr/lib/opt
+
+: '
 for dir in /var/opt/*/; do
   [ -d "$dir" ] || continue
   dirname=$(basename "$dir")
@@ -88,5 +90,5 @@ for dir in /var/opt/*/; do
   fi
   echo "L+ /var/opt/$dirname - - - - /usr/lib/opt/$dirname" >>/usr/lib/tmpfiles.d/distinction-opt-fix.conf
 done
-
+'
 log "Fix completed"
