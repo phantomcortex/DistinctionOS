@@ -13,9 +13,13 @@ if [ -L "/opt" ] && [ -d "/var/opt" ]; then
     rm -rf /opt
     recreate_opt=true
 fi
-mkdir -p /opt/cxoffice 
+rm -rf /opt
+echo "mainline remove opt"
 dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 #if [[ -d /opt/cxoffice ]]; then
+echo "$RED DEBUG:$NC"
+ls /opt
+ls /var/opt
 opt_empty=true
 #
 if [ "$(find "/opt" -mindepth 1 -print -quit)" ]; then
@@ -23,6 +27,8 @@ if [ "$(find "/opt" -mindepth 1 -print -quit)" ]; then
     opt_empty=false
     mkdir -p /var/opt
     mv /opt/cxoffice /var/opt
+else
+  mv /opt/*/ /var/opt
 fi
 if [ "$opt_empty" = true ]; then
     echo "${RED}nothing in opt. Something went wrong." >&2
@@ -36,6 +42,7 @@ if [ "$recreate_opt" = true ]; then
   ln -s /opt /var/opt
 fi
  
+#echo -e ""
 #mv /opt/cxoffice /usr/lib/opt
 # Crossover Requires a license file so It needs to be writable
 # in theory this should be handled in fix_opt.sh
