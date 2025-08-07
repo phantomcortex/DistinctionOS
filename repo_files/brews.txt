@@ -1,0 +1,11 @@
+cmake
+make
+ninja
+boost
+meson
+bison
+zsh-syntax-highlighting
+zsh-autocomplete
+gh
+git
+
