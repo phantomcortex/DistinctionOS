@@ -53,7 +53,7 @@ for dir in /var/opt/*/; do
   mv "$dir" "/usr/lib/opt/$dirname"
   # Since I like to support wine developtment by buying Crossover -
   # I often have to use hacky workarounds on immutable systems
-  if [["$dirname" == "cxoffice"]]; then
+  if [[ "$dirname" == "cxoffice" ]]; then
     echo "d /usr/lib/opt/$dirname 0755 root root -" >> /usr/lib/tmpfiles.d/distinction-opt-fix.conf
     echo "d /usr/lib/opt/$dirname/etc 0755 root root -" >> /usr/lib/tmpfiles.d/distinction-opt-fix.conf
     echo "f /usr/lib/opt/$dirname/etc/cxoffice.conf 0644 root root -" >> /usr/lib/tmpfiles.d/distinction-opt-fix.conf
