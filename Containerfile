@@ -33,8 +33,10 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/kernel_modules.sh && \
     echo -e "\033[31mREMOTE GRABBER >>>>\033[0m" && \
     /ctx/remote_grabber.sh && \
-     echo -e "\033[31mWINE INSTALLER >>>>\033[0m" && \
+    echo -e "\033[31mWINE INSTALLER >>>>\033[0m" && \
     /ctx/wine-installer.sh && \
+    echo -e "\033[31mOPT FIXER >>>>\033[0m" && \
+    /ctx/fix_opt.sh && \
     echo -e "\033[31mOSTREE COMMIT\033[0m" && \
     ostree container commit
 

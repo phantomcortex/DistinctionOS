@@ -4,7 +4,8 @@ set -euo pipefail
 # Credit: https://github.com/astrovm/amyos/blob/main/build_files/fix-opt.sh
 
 #==Crossover
-
+RED="\033[31m"
+NC="\033[0m"
 #rm -rf /opt
 # remove link so installing crossover is possible
 if [ -L "/opt" ] && [ -d "/var/opt" ]; then
@@ -18,18 +19,20 @@ dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 opt_empty=true
 #
 if [ "$(find "/opt" -mindepth 1 -print -quit)" ]; then
-    echo "DEBUG: /opt is not empty"
+    echo "$RED DEBUG: /opt is not empty"
     opt_empty=false
     mkdir -p /var/opt
     mv /opt/cxoffice /var/opt
 fi
 if [ "$opt_empty" = true ]; then
-    echo "nothing in opt. Something went wrong." >&2
+    echo "${RED}nothing in opt. Something went wrong." >&2
     exit 1
 fi
 
 if [ "$recreate_opt" = true ]; then
+  echo "$RED rm opt$NC"
   rm -rf /opt 
+  echo "ln -s /opt /var/opt"
   ln -s /opt /var/opt
 fi
  
