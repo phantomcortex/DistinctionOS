@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+
 
 KERNEL=$(ls /lib/modules/ | grep bazzite | sort -V | tail -1)
 
@@ -77,5 +79,18 @@ echo -e "\033[33mREMOVING OTHER KERNELS\033[0m"
 #echo -e "\033[31mDEBUG:\033[0m" && ls /lib/modules
 #dnf -y remove kernel kernel-core kernel-devel kernel-devel-matched kernel-modules kernel-modules-core kernel-modules-extra kernel-tools
 '
+# Get kernel version and build initramfs
+KERNEL_VERSION="$(dnf5 repoquery --installed --queryformat='%{evr}.%{arch}' kernel)"
+/usr/bin/dracut \
+  --no-hostonly \
+  --kver "$KERNEL_VERSION" \
+  --reproducible \
+  --zstd \
+  -v \
+  --add ostree \
+  -f "/usr/lib/modules/$KERNEL_VERSION/initramfs.img"
+
+chmod 0600 "/usr/lib/modules/$KERNEL_VERSION/initramfs.img"
+
 cd $PREV_DIR
 

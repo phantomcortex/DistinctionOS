@@ -10,29 +10,6 @@ set -ouex pipefail
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/39/x86_64/repoview/index.html&protocol=https&redirect=1
 
 # this installs a package from fedora repos
-: '
-flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-
-flatpak_apps=(
-    "info.cemu.Cemu" \
-    "com.mattjakeman.ExtensionManager" \
-    "com.ranfdev.DistroShelf" \
-    "com.github.tchx84.Flatseal" \
-    "io.missioncenter.MissionCenter" \
-    "com.vysp3r.ProtonPlus" \
-    "org.DolphinEmu.dolphin-emu" \
-    "org.onlyoffice.desktopeditors" \
-    "rs.ruffle.Ruffle" \
-    "com.steamgriddb.SGDBoop" \
-    "io.github.nokse22.Exhibit" \
-    "me.proton.Mail"
-)
-
-for app in "${flatpak_apps[@]}"; do
-    echo "Installing $app..."
-    flatpak install -y --noninteractive flathub "$app"
-done
-'
 RED='\033[31m'
 NC='\033[0m'
 # Define the COPR repo and package
@@ -191,7 +168,6 @@ done
 remove_packages=(waydroid \
   sunshine \
   gnome-shell-extension-compiz-windows-effect \
-  gnome-shell-extension-compiz-alike-magic-lamp-effect \
   openssh-askpass \
   dkms)
 
