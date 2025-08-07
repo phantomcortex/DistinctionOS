@@ -35,26 +35,6 @@ echo -e "$GREEN ls /var/opt >> $NC"
 #
 
 ls /var/opt 
-opt_empty=true
-#
-if [ "$(find "/opt" -mindepth 1 -print -quit)" ]; then
-    echo -e "$RED DEBUG: /opt is not empty $NC"
-    opt_empty=false
-    #mkdir -p /var/opt
-fi
-
-if [ "$opt_empty" = true ]; then
-    echo "${RED}nothing in opt. Something went wrong." >&2
-    exit 1
-fi #
-#
-if [ "$recreate_opt" = true ]; then
-  echo "$RED rm opt$NC"
-  rm -rf /opt 
-  echo "ln -s /opt /var/opt"
-  ln -s /opt /var/opt
-fi #
-
 
 trap '[[ $BASH_COMMAND != echo* ]] && [[ $BASH_COMMAND != log* ]] && echo "+ $BASH_COMMAND"' DEBUG
 
