@@ -219,23 +219,6 @@ dnf -y install Cider
 
 sed -i 's@Icon=Cider@/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share/applications/Cider.desktop
 
-#==Crossover
-
-rm -rf /opt
-# remove link so installing crossover is possible
-mkdir -p /opt/cxoffice 
-dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
-mv /opt/cxoffice/ /var/opt/cxoffice
-# Crossover Requires a license file so It needs to be writable
-# in theory this should be handled in fix_opt.sh
-# relink
-rm -rf /opt
-ln -s /opt /var/opt
-
-#according to claude If I want certain flatpak apps pre-installed I need to manually layer them -
-# in my build scripts or containerfile
-#flatpak
-
 #DEBUG
 echo -e "\033[31mDNF CHECK UPDATE\033[0m"
 if ! dnf check-update --refresh; then
