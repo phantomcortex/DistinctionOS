@@ -11,7 +11,7 @@ CYAN="\033[36m"
 #rm -rf /opt
 # remove link so installing crossover is possible
 if [ -L "/opt" ] && [ -d "/var/opt" ]; then
-    echo "DEBUG: /opt is a symlink to /var/opt"
+    echo -e "DEBUG: /opt is a symlink to /var/opt"
     rm -rf /opt
     recreate_opt=true
 fi
@@ -19,7 +19,7 @@ rm -rf /opt
 echo "mainline remove opt"
 dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 #if [[ -d /opt/cxoffice ]]; then
-echo "$RED DEBUG:$NC"
+echo -e "$RED DEBUG:$NC"
 echo -e "$GREEN ls /opt >> $NC"
 ls /opt 
 echo -e "$GREEN ls /var/opt >> $NC"
@@ -30,7 +30,7 @@ ls /var/opt
 opt_empty=true
 #
 if [ "$(find "/opt" -mindepth 1 -print -quit)" ]; then
-    echo "$RED DEBUG: /opt is not empty $NC"
+    echo -e "$RED DEBUG: /opt is not empty $NC"
     opt_empty=false
     mkdir -p /var/opt
     mv /opt/cxoffice /var/opt
@@ -86,6 +86,6 @@ for dir in /var/opt/*/; do
       echo -e "\033[31mDEBUG: \033[36mvar_opt:\033[32m$(ls /var/opt/) \033[36musr_lib_opt:\033[32m$(ls /usr/lib/opt) \n \033[31m$(cat /usr/lib/tmpfiles.d/distinction-opt-fix.conf)\033[0m"
     done
   echo "L+ /var/opt/$dirname - - - - /usr/lib/opt/$dirname" >>/usr/lib/tmpfiles.d/distinction-opt-fix.conf
-  done
+done
 
 log "Fix completed"
