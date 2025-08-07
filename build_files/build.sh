@@ -27,12 +27,12 @@ flatpak_apps=(
     "io.github.nokse22.Exhibit" \
     "me.proton.Mail"
 )
-'
+
 for app in "${flatpak_apps[@]}"; do
     echo "Installing $app..."
     flatpak install -y --noninteractive flathub "$app"
 done
-
+'
 RED='\033[31m'
 NC='\033[0m'
 # Define the COPR repo and package
@@ -143,14 +143,11 @@ install_packages=(python3-icoextract \
   file-roller \
   evince \
   loupe \
-  blender
   zoxide \
   nvim \
   rust \
   cargo \
   zsh \
-  zsh-autosuggestions \
-  zsh-syntax-highlighting \
   blackbox-terminal \
   clapper \
   totem-video-thumbnailer \
@@ -163,12 +160,8 @@ install_packages=(python3-icoextract \
   lact \
   dysk \
   nushell \
-  meson \
   binutils \
-  make \
-  cmake \
   sassc \
-  dkms \
   jq)
 
 
@@ -232,7 +225,7 @@ rm -rf /opt
 # remove link so installing crossover is possible
 mkdir -p /opt/cxoffice 
 dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
-mv /opt/cxoffice /var/opt/
+mv /opt/cxoffice/ /var/opt/cxoffice
 # Crossover Requires a license file so It needs to be writable
 # in theory this should be handled in fix_opt.sh
 # relink
