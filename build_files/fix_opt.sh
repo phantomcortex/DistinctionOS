@@ -40,10 +40,7 @@ opt_empty=true
 if [ "$(find "/opt" -mindepth 1 -print -quit)" ]; then
     echo -e "$RED DEBUG: /opt is not empty $NC"
     opt_empty=false
-    mkdir -p /var/opt
-    mv /opt/cxoffice /var/opt
-else
-  mv /opt/*/ /var/opt
+    #mkdir -p /var/opt
 fi
 
 if [ "$opt_empty" = true ]; then
