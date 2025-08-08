@@ -92,6 +92,19 @@ for repo in "${!RPM_PACKAGES[@]}"; do
   fi
 done
 
+#remove pesky bazzite things (mainly askpass)
+remove_packages=(waydroid \
+  sunshine \
+  gnome-shell-extension-compiz-windows-effect \
+  openssh-askpass)
+
+for pkg in "${remove_packages[@]}"; do
+  if rpm -q "$pkg" &>/dev/null; then
+    echo "Removing $pkg..."
+    dnf5 -y remove "$pkg"
+  fi 
+done 
+
 # custom icon for Cider because it doesn't seem to use it
 sed -i 's@Icon=Cider@/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share/applications/Cider.desktop
 
