@@ -114,17 +114,15 @@ jobs:
       # Rechunk is a script that we use on Universal Blue to make sure there isnt a single huge layer when your image gets published.
       # This does not make your image faster to download, just provides better resumability and fixes a few errors.
       # Documentation for Rechunk is provided on their github repository at https://github.com/hhd-dev/rechunk
-      # You can enable it by uncommenting the following lines:
-      # NOTE: rechunker has been updated to v.1.2.3 I don't know what updating rechunker actually entails...
-       - name: Run Rechunker
+      # You can enable it by uncommenting the following lines:       - name: Run Rechunker
          id: rechunk
-         uses: hhd-dev/rechunk@ded27feba22df48134eece2c66ba0fca1289ff40 # v1.2.3 # updated since ublue doesn't update rechunker on their template
+         uses: hhd-dev/rechunk@f153348d8100c1f504dec435460a0d7baf11a9d2 # v1.1.1
          with:
-           rechunk: 'ghcr.io/hhd-dev/rechunk:v1.2.3' # update from v1.0.1
+           rechunk: 'ghcr.io/hhd-dev/rechunk:v1.0.1'
            ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
            prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
-           skip_compression: true # may play with this at some point
-           version: '${{ steps.generate-version.outputs.tag }}' # modify this may break
+           skip_compression: true
+           version: ${{ env.CENTOS_VERSION }} # leaving labels as is might work?
            labels: ${{ steps.metadata.outputs.labels }}
             org.opencontainers.image.created=<timestamp>
             org.opencontainers.image.description=universal-blue's species and my preferences
