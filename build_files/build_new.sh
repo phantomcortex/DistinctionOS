@@ -113,7 +113,7 @@ if [[ ! -d /var/opt ]]; then
   mkdir -p /var/opt
 fi #sanity check
 
-dnf5 -y install http://crossover.codweavers.com/redirect/crossover.rpm
+dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 #assuming that this works without any extra technical difficultes
 
 log "Enabling system services"
