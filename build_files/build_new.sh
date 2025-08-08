@@ -28,7 +28,7 @@ dnf makecache
 # RPM packages list
 declare -A RPM_PACKAGES=(
   ["fedora"]="\
-    fzf \
+    python3-icoextract \
     neovim \
     yt-dlp \
     zsh-autosuggestions \
@@ -39,16 +39,16 @@ declare -A RPM_PACKAGES=(
     zoxide \
     apfs-fuse \
     ardour8 \
-    jq \
     sassc \
     blackbox-terminal \
-    ffmpeg-thumbnailer \
+    ffmpegthumbnailer \
     gstreamer1-plugins-good-extras
     heif-pixbuf-loader \
     libheif-tools \
     decibels \
     dconf \
-    gtk-murrine-engine"
+    gtk-murrine-engine \
+    gnome-tweaks"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
