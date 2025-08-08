@@ -1,0 +1,10 @@
+[copr:copr.fedorainfracloud.org:fernando-debian:dysk]
+name=Copr repo for dysk owned by fernando-debian
+baseurl=https://download.copr.fedorainfracloud.org/results/fernando-debian/dysk/fedora-$releasever-$basearch/
+type=rpm-md
+skip_if_unavailable=True
+gpgcheck=1
+gpgkey=https://download.copr.fedorainfracloud.org/results/fernando-debian/dysk/pubkey.gpg
+repo_gpgcheck=0
+enabled=1
+enabled_metadata=1
