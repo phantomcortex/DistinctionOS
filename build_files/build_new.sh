@@ -63,8 +63,7 @@ declare -A RPM_PACKAGES=(
     clapper"
 
   ["brave-browser"]="brave-browser"
-  ["cider"]="Cider"
-  #["cidercollective"]="Cider"
+  ["cidercollective"]="Cider"
   ["copr:ilyaz/LACT"]="lact"
   ["copr:atim/nushell"]="nushell"
   ["copr:fernando-debian/dysk"]="dysk"
