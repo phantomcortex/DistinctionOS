@@ -1,40 +1,7 @@
 #!/usr/bin/bash
 set -euo pipefail
 
-#==Crossover
-RED="\033[31m"
-NC="\033[0m"
-GREEN="\033[32m"
-CYAN="\033[36m"
-#rm -rf /opt
-# remove link so installing crossover is possible
-if [[ ! -d /var/opt ]]; then
-  echo -e "$RED /var/opt does not exist for some reason...\n $CYAN CREATING... $NC"
-  mkdir -p /var/opt
-fi #
-
-
-if [ -L "/opt" ] && [ -d "/var/opt" ]; then
-    echo -e "DEBUG: /opt is a symlink to /var/opt"
-    #rm -rf /opt
-    #recreate_opt=true
-else 
-    echo "DEBUG: /opt is not a symlink to /var/opt"
-fi #
-
-
-#echo "mainline remove opt"
-#try to install to /var/opt
-dnf install -y http://crossover.codeweavers.com/redirect/crossover.rpm || { echo -e "$RED dnf failed, running fallback...$NC"; rm -rf /opt/ /var/opt && mkdir /opt/cxoffice /var/opt && dnf install -y http://crossover.codeweavers.com/redirect/crossover.rpm || echo "ok.... what now?" && exit 1; }
-#dnf -y install http://crossover.codeweavers.com/redirect/crossover.rpm
-#if [[ -d /opt/cxoffice ]]; then
-echo -e "$RED DEBUG:$NC"
-echo -e "$GREEN ls /opt >> $NC"
-ls /opt 
-echo -e "$GREEN ls /var/opt >> $NC"
-#
-
-ls /var/opt 
+# CREDIT: https://github.com/ExistingPerson08/amyos-gnome/blob/main/build_files/fix-opt.sh
 
 trap '[[ $BASH_COMMAND != echo* ]] && [[ $BASH_COMMAND != log* ]] && echo "+ $BASH_COMMAND"' DEBUG
 

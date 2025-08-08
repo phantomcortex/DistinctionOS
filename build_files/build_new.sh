@@ -1,6 +1,9 @@
 #!/usr/bin/bash
 set -euo pipefail
 
+# CREDIT: https://github.com/ExistingPerson08/amyos-gnome/blob/main/build_files/install-apps.sh
+# A good example on what to improve upon
+
 trap '[[ $BASH_COMMAND != echo* ]] && [[ $BASH_COMMAND != log* ]] && echo "+ $BASH_COMMAND"' DEBUG
 
 log() {
@@ -45,8 +48,7 @@ declare -A RPM_PACKAGES=(
     libheif-tools \
     decibels \
     dconf \
-    gtk-murrine-engine \
-    "
+    gtk-murrine-engine"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
@@ -61,8 +63,11 @@ declare -A RPM_PACKAGES=(
     clapper"
 
   ["brave-browser"]="brave-browser"
-  ["copr:fernando-debian"]="dysk"
-  ["vscode"]="code"
+  ["cider"]="Cider"
+  ["_copr:copr.fedorainfracloud.org:ilyaz:LACT"]="lact"
+  ["_copr:copr.fedorainfracloud.org:monkeygold:nautilus-open-any-terminal"]="nautilus-open-any-terminal"
+  ["_copr:copr.fedorainfracloud.org:atim:nushell"]="nushell"
+  ["_copr:copr.fedorainfracloud.org:fernando-debian:dysk"]="dysk"
 )
 
 log "Starting DistinctionOS build process"
@@ -91,6 +96,13 @@ done
 sed -i 's@Icon=Cider@/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share/applications/Cider.desktop
 
 #Crossover installed properly
+if [[ ! -d /var/opt ]]; then
+  echo -e "$RED /var/opt does not exist for some reason...\n $CYAN CREATING... $NC"
+  mkdir -p /var/opt
+fi #sanity check
+
+dnf5 -y install http://crossover.codweavers.com/redirect/crossover.rpm
+#assuming that this works without any extra technical difficultes
 
 log "Enabling system services"
 
