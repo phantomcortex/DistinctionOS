@@ -64,10 +64,11 @@ declare -A RPM_PACKAGES=(
 
   ["brave-browser"]="brave-browser"
   ["cider"]="Cider"
-  ["_copr:copr.fedorainfracloud.org:ilyaz:LACT"]="lact"
-  ["_copr:copr.fedorainfracloud.org:monkeygold:nautilus-open-any-terminal"]="nautilus-open-any-terminal"
-  ["_copr:copr.fedorainfracloud.org:atim:nushell"]="nushell"
-  ["_copr:copr.fedorainfracloud.org:fernando-debian:dysk"]="dysk"
+  #["cidercollective"]="Cider"
+  ["copr:copr.fedorainfracloud.org:ilyaz:LACT"]="lact"
+  ["copr:copr.fedorainfracloud.org:monkeygold:nautilus-open-any-terminal"]="nautilus-open-any-terminal"
+  ["copr:copr.fedorainfracloud.org:atim:nushell"]="nushell"
+  ["copr:copr.fedorainfracloud.org:fernando-debian:dysk"]="dysk"
 )
 
 log "Starting DistinctionOS build process"
