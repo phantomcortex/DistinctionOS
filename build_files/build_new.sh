@@ -122,7 +122,7 @@ dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 #assuming that this works without any extra technical difficultes
 
 # crossover dependencies
-dnf5 -y install perl-file-copy
+dnf5 -y install perl-File-Copy
 
 log "Enabling system services"
 
