@@ -2,7 +2,7 @@
 distinction-install: distinction-install-flatpaks distinction-install-brews distinction-install-custom-shell distinction-install-nvchad
 
 # Installs shell and terminal related things
-distinction-install-shell-configuration: distinction-install-custom-shell distinction-install-nvchad
+distinction-install-shell: distinction-install-custom-shell distinction-install-nvchad
 
 # Install only Flatpaks
 distinction-install-flatpaks:
