@@ -15,7 +15,7 @@
  - [nushell](https://github.com/nushell/nushell)
  - [dysk](https://github.com/Canop/dysk)
 ## End goal of this repo:
-#### Building off of something already very impressive but make it even more feature rich/complete & add everything I use and could ever want. It's made for me, myself, and I; Designed around the best 'Out-of-the-Box' experience possible. But of course, 'best' is subjective.
+#### Building off of something already very impressive but make it even more feature rich/complete & add everything I use and could ever want. It's made for me, myself, and I; Designed around the best 'Out-of-the-Box' experience possible.
  I'm sure you could use flatpaks if you were so inclined... but it has been my experience that native RPMs just **behave better.**
 
 
