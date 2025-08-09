@@ -101,6 +101,7 @@ cursor-blink-mode=1
 fill-tabs=true
 window-width=1,800
 window-height=1,200
+scrollback-mode=1
 
 [org.gnome.shell.extensions.tilingshell]
 inner-gaps=8
