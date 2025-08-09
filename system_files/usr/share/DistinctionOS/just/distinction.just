@@ -28,10 +28,10 @@ distinction-install-custom-shell:
     #!/usr/bin/env bash
     set -euo pipefail
     
-    echo "Installing oh-my-zsh!"
+    echo "Installing custom shell"
     git clone https://github.com/phantomcortex/dotfiles.git ~/.dotfiles
-    bash ~/.dotfiles/install.sh
-    #sh -c "$(curl -fsSL https://raw.githubusercontent.com/phantomcortex/dotfiles/master/tools/install.sh)"
+    bash ~/.dotfiles/install.sh # assuming it works...
+    
     echo "Install complete"
     
 #neovim environment
