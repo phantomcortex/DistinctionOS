@@ -29,10 +29,12 @@ dnf makecache
 declare -A RPM_PACKAGES=(
   ["fedora"]="\
     python3-icoextract \
+    bat \
     neovim \
     yt-dlp \
     zsh-autosuggestions \
     zsh \
+    zsh-syntax-highlighting \
     file-roller \
     evince \
     loupe \
@@ -104,8 +106,11 @@ for pkg in "${remove_packages[@]}"; do
   fi 
 done 
 
-# custom icon for Cider because it doesn't seem to use it
-sed -i 's@Icon=Cider@/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share/applications/Cider.desktop
+# remove bazzite things intended for waydroid
+find /usr/share/applications -iname '*waydroid*' -exec rm -rf {} + 
+
+# custom icon for Cider because it doesn't seem to use it regardless of what icon theme is used
+sed -i 's@Icon=Cider@Icon=/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share/applications/Cider.desktop
 
 #Crossover installed properly
 if [[ ! -d /var/opt ]]; then
@@ -116,9 +121,12 @@ fi #sanity check
 dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 #assuming that this works without any extra technical difficultes
 
+# crossover dependencies
+dnf5 -y install perl-file-copy
+
 log "Enabling system services"
 
-log "Adding Distinction OS just recipes"
+log "Adding DistinctionOS just recipes"
 echo "import \"/usr/share/DistinctionOS/just/distinction.just\"" >>/usr/share/ublue-os/justfile
 
 log "Hide incompatible Bazzite just recipes"

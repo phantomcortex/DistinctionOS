@@ -1,5 +1,10 @@
+if [[ -r "${XDG_CACHE_HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"]]; then
+  source "${XDG_CACHE_HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
 
- 
+export ZSH="$HOME/.oh-my-zsh"
+
+ZSH_THEME="powerlevel10k"
 #ALIAS
 alias grep="grep --color=auto"
 alias fgrep="fgrep --color=auto"
