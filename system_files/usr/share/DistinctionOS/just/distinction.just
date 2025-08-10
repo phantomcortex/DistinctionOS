@@ -29,7 +29,14 @@ distinction-install-custom-shell:
     set -euo pipefail
     
     echo "Installing custom shell"
+    sleep 2
+    echo "STEP: Change shell to zsh"
+    sleep 2
+    sudo chsh -s $(which zsh) killawatt
+    sleep 2
     git clone https://github.com/phantomcortex/dotfiles.git ~/.dotfiles
+    sleep 2
+    echo "Running custom install script"
     bash ~/.dotfiles/install.sh # assuming it works...
     
     echo "Install complete"
