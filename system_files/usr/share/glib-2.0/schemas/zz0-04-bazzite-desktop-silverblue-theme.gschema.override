@@ -61,10 +61,6 @@ style-components=3
 blur=true
 style-dialogs=0
 
-[org.gnome.shell.extensions.blur-my-shell.applications]
-blur=true
-opacity=200
-
 [org.gnome.shell.extensions.blur-my-shell.screenshot]
 blur=true
 
@@ -80,7 +76,7 @@ blur=true
 [org.gnome.shell.extensions.blur-my-shell.applications]
 opacity=200
 sigma=70
-whilelist=['org.gnome.Nautilus', 'org.gnome.Shell.Extensions', 'com.mattjakeman.ExtensionManager', 'org.gnome.Shell.Extensions', 'com.raggesilver.BlackBox', 'crossover', 'org.gnome.TextEditor', 'io.github.ilya_zlobintsev.LACT', 'org.gnome.Settings', 'org.gnome.clocks', 'org.gnome.font-viewer', 'gnome-disks', 'org.gnome.baobab', 'org.gnome.Logs', 'io.github.realmazharhussain.GdmSettings', 'io.missioncenter.MissionCenter', 'it.mijorus.gearlever', 'io.gitlab.adhami3310.Impression', 'io.github.flattool.Ignition', 'org.gnome.FileRoller', 'openrgb', 'org.gnome.tweaks', 'com.vysp3r.ProtonPlus', 'opensnitch_ui', 'gnome-abrt', 'zenity', 'com.github.tchx84.Flatseal', 'page.codeberg.JakobDev.jdDesktopEntryEdit', 'app.drey.EarTag', 'dconf-editor', 'com.github.unrud.VideoDownloader', 'com.github.unrud.VideoDownloader', 'org.gnome.Decibels']
+whilelist=['org.gnome.Nautilus', 'org.gnome.Shell.Extensions', 'com.mattjakeman.ExtensionManager', 'org.gnome.Shell.Extensions', 'com.raggesilver.BlackBox', 'crossover', 'org.gnome.TextEditor', 'io.github.ilya_zlobintsev.LACT', 'org.gnome.Settings', 'org.gnome.clocks', 'org.gnome.font-viewer', 'gnome-disks', 'org.gnome.baobab', 'org.gnome.Logs', 'io.github.realmazharhussain.GdmSettings', 'io.missioncenter.MissionCenter', 'it.mijorus.gearlever', 'io.gitlab.adhami3310.Impression', 'io.github.flattool.Ignition', 'org.gnome.FileRoller', 'openrgb', 'org.gnome.tweaks', 'com.vysp3r.ProtonPlus', 'opensnitch_ui', 'gnome-abrt', 'zenity', 'com.github.tchx84.Flatseal', 'page.codeberg.JakobDev.jdDesktopEntryEdit', 'app.drey.EarTag', 'dconf-editor', 'com.github.unrud.VideoDownloader', 'com.github.unrud.VideoDownloader', 'org.gnome.Decibels', 'org.gnome.Loupe', 'io.bassi.Amberol', 'zen', 'com.github.neithern.g4music', 'org.gnome.Boxes', 're.sonny.Workbench', 'org.gnome.Builder', 'yelp', 'io.github.dvlv.boxbuddyrs', 'gnome-builder', 'org.gnome.Software', 'org.gnome.Ptyxis']
 
 [org.gnome.shell.extensions.ncom.github.hermes83.compiz-alike-magic-lamp-effect]
 duration=250
@@ -91,6 +87,14 @@ increase-thumbnails-size='300%'
 [org.gnome.shell.extensions.date-menu.formatter]
 pattern='EEEE, MMMM d  h:mm a'
 font-size=12
+
+[org.gnome.shell.extensions.dash-to-dock]
+running-indicator-style='SEGMENTED'
+show-mounts=false
+show-dock-urgent-notify=false
+dash-max-icon-size=64
+intellihide-mode='ALL_WINDOWS'
+height-fraction=-0.9
 
 [com.raggesilver.BlackBox]
 font='0xProto Nerd Font Bold 12'
