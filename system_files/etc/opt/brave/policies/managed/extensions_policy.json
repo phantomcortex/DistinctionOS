@@ -1,0 +1,7 @@
+{
+  "ExtensionInstallForcelist": [
+    "eimadpbcbfnmbkopoojfekhnkhdbieeh;https://clients2.google.com/service/update2/crx",
+    "cjpalhdlnbpafiamejdnhcphjbkeiagm;https://clients2.google.com/service/update2/crx",
+    "gebbhagfogifgggkldgodflihgfeippi;https://clients2.google.com/service/update2/crx"
+  ]
+}
