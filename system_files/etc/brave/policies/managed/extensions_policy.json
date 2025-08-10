@@ -1,0 +1,47 @@
+{
+  "AudioCaptureAllowed": false,
+  "AudioCaptureAllowedUrls": [],
+  "VideoCaptureAllowed": false,
+  "VideoCaptureAllowedUrls": [],
+  "DefaultGeolocationSetting": 2,
+  "GeolocationAllowedForUrls": [],
+  "GeolocationBlockedForUrls": ["*"],
+  "DefaultNotificationsSetting": 2,
+  "NotificationsAllowedForUrls": [],
+  "NotificationsBlockedForUrls": ["*"],
+  "AudioSandboxEnabled": true,
+  "DefaultMediaStreamSetting": 2,
+  "MediaStreamMicDisabled": true,
+  "MediaStreamCameraDisabled": true
+  "ExtensionInstallForcelist": [
+    "eimadpbcbfnmbkopoojfekhnkhdbieeh;https://clients2.google.com/service/update2/crx",
+    "cjpalhdlnbpafiamejdnhcphjbkeiagm;https://clients2.google.com/service/update2/crx",
+    "gebbhagfogifgggkldgodflihgfeippi;https://clients2.google.com/service/update2/crx",
+    "mnjggcdmjocbbbhaepdhchncahnbgone;https://clients2.google.com/service/update2/crx",
+    "jcflnmpjkgiagljbphhomfgplmhhodpn;https://clients2.google.com/service/update2/crx",
+    "ponfpcnoihfmfllpaingbgckeeldkhle;https://clients2.google.com/service/update2/crx",
+    "emdkdnnopdnajipoapepbeeiemahbjcn;https://clients2.google.com/service/update2/crx",
+    "ghmbeldphafepmbegfdlkpapadhbakde;https://clients2.google.com/service/update2/crx",
+    "paponcgjfojgemddooebbgniglhkajkj;https://clients2.google.com/service/update2/crx",
+    "neebplgakaahbhdphmkckjjcegoiijjo;https://clients2.google.com/service/update2/crx"
+  ]
+  "ExtensionSettings": {
+    "eimadpbcbfnmbkopoojfekhnkhdbieeh": {
+      "installation_mode": "force_installed",
+      "update_url": "https://clients2.google.com/service/update2/crx",
+      "toolbar_pin": "force_pinned"
+    },
+    "cjpalhdlnbpafiamejdnhcphjbkeiagm": {
+      "installation_mode": "force_installed",
+      "update_url": "https://clients2.google.com/service/update2/crx",
+      "toolbar_pin": "force_pinned"
+    },
+    "ponfpcnoihfmfllpaingbgckeeldkhle": {
+      "installation_mode": "force_installed",
+      "update_url": "https://clients2.google.com/service/update2/crx",
+      "toolbar_pin": "force_pinned"
+    },
+    "*": {
+      "installation_mode": "allowed"
+    }
+}
