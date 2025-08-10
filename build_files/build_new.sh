@@ -97,7 +97,8 @@ done
 remove_packages=(waydroid \
   sunshine \
   gnome-shell-extension-compiz-windows-effect \
-  openssh-askpass)
+  openssh-askpass \
+  cockpit-bridge)
 
 for pkg in "${remove_packages[@]}"; do
   if rpm -q "$pkg" &>/dev/null; then
