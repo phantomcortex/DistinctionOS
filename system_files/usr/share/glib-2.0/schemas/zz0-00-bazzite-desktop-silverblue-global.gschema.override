@@ -83,3 +83,4 @@ use-system-font=false
 
 [org.gnome.shell]
 favorite-apps=['brave-browser.desktop','org.gnome.Nautilus.desktop','com.raggesilver.BlackBox.desktop','Cider.desktop', 'org.gnome.TextEditor.desktop', 'io.missioncenter.MissionCenter.desktop']
+remember-mount-password=true
