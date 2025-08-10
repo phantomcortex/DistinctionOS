@@ -21,6 +21,8 @@ distinction-install-brews:
 
     echo "Installing Homebrews..."
     xargs -a <(curl --retry 3 -sL https://raw.githubusercontent.com/phantomcortex/distinction-ublue-internal/main/repo_files/brews) brew install
+    echo "build tldr cache..."
+    tldr --update
     echo "Homebrews installation complete."
     
 # custom shell
@@ -32,13 +34,15 @@ distinction-install-custom-shell:
     sleep 2
     echo "STEP: Change shell to zsh"
     sleep 2
-    sudo chsh -s $(which zsh) killawatt
+    sudo chsh -s /usr/bin/zsh $USER
+    sudo chsh -s /usr/bin/zsh root
     sleep 2
     git clone https://github.com/phantomcortex/dotfiles.git ~/.dotfiles
     sleep 2
     echo "Running custom install script"
     bash ~/.dotfiles/install.sh # assuming it works...
-    
+    echo "apply to root"
+    sudo cp -r ~/.dotfiles /root/
     echo "Install complete"
     
 #neovim environment
@@ -48,6 +52,11 @@ distinction-install-nvchad:
 
   echo "Installing NVChad"
   git clone https://github.com/NvChad/starter ~/.config/nvim && nvim
+  sleep 5
+  echo "Install to root user"
+  sudo cp -r ~/.config/nvim /root/.config/
+  sudo cp -r~/.local/share/nvim /root/.local/share/
+
   echo "Install complete"
 
 #install nautilus scripts
