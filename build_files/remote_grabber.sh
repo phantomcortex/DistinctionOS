@@ -17,7 +17,10 @@ unzip -o $TMP/burn-my-windows@schneegans.github.com.zip -d $EXTENSIONS_DIR/burn-
 git clone https://github.com/Tudmotu/gnome-shell-extension-clipboard-indicator.git "$EXTENSIONS_DIR/clipboard-indicator@tudmotu.com"
 
 #date-menu-formatter
-git clone https://github.com/marcinjakubowski/date-menu-formatter.git "$EXTENSIONS_DIR/date-menu-formatter@tudmotu.com"
+git clone https://github.com/marcinjakubowski/date-menu-formatter.git "$EXTENSIONS_DIR/date-menu-formatter@marcinjakubowski.github.com"
+
+# dash-to-dock 
+git clone https://github.com/micheleg/dash-to-dock.git "$EXTENSIONS_DIR/dash-to-dock@micxgx.gmail.com"
 
 # 'User Avatar in Quick Settings'
 git clone https://github.com/d-go/quick-settings-avatar.git "$EXTENSIONS_DIR/quick-settings-avatar@d-go"
