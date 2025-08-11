@@ -28,7 +28,6 @@ dnf makecache
 # RPM packages list
 declare -A RPM_PACKAGES=(
   ["fedora"]="\
-    python3-icoextract \
     neovim \
     yt-dlp \
     zsh \
@@ -40,7 +39,6 @@ declare -A RPM_PACKAGES=(
     ardour8 \
     sassc \
     blackbox-terminal \
-    ffmpegthumbnailer \
     gstreamer1-plugins-good-extras
     heif-pixbuf-loader \
     libheif-tools \
