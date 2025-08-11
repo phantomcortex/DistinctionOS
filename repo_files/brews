@@ -13,3 +13,4 @@ sshs
 python@3.13
 gcc
 clang-format
+bat

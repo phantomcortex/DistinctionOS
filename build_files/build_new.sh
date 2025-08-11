@@ -29,12 +29,9 @@ dnf makecache
 declare -A RPM_PACKAGES=(
   ["fedora"]="\
     python3-icoextract \
-    bat \
     neovim \
     yt-dlp \
-    zsh-autosuggestions \
     zsh \
-    zsh-syntax-highlighting \
     file-roller \
     evince \
     loupe \
