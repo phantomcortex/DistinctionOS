@@ -227,3 +227,9 @@ main() {
 }
 main "$@"
 
+#last minute grabs
+curl -l https://raw.githubusercontent.com/ublue-os/bluefin/main/system_files/shared/etc/zsh/zlogin -o /etc/zsh/zlogin
+curl -l https://raw.githubusercontent.com/ublue-os/bluefin/main/system_files/shared/etc/zsh/zlogout -o /etc/zsh/zlogout
+curl -l https://raw.githubusercontent.com/ublue-os/bluefin/main/system_files/shared/etc/zsh/zprofile -o /etc/zsh/zprofile
+curl -l https://raw.githubusercontent.com/ublue-os/bluefin/main/system_files/shared/etc/zsh/zshenv -o /etc/zsh/zshenv
+curl -l https://raw.githubusercontent.com/ublue-os/bluefin/main/system_files/shared/etc/zsh/zshrc -o /etc/zsh/zshrc
