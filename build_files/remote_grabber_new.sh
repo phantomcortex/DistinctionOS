@@ -233,3 +233,5 @@ curl -l https://raw.githubusercontent.com/ublue-os/bluefin/main/system_files/sha
 curl -l https://raw.githubusercontent.com/ublue-os/bluefin/main/system_files/shared/etc/zsh/zprofile -o /etc/zsh/zprofile
 curl -l https://raw.githubusercontent.com/ublue-os/bluefin/main/system_files/shared/etc/zsh/zshenv -o /etc/zsh/zshenv
 curl -l https://raw.githubusercontent.com/ublue-os/bluefin/main/system_files/shared/etc/zsh/zshrc -o /etc/zsh/zshrc
+#
+dnf5 -y install https://github.com/phantomcortex/kora/releases/download/1.6.5.12/kora-icon-theme-1.6.5.12-1.fc42.noarch.rpm
