@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 set -euo pipefail
 
-# is it wise or should i really be layering appimages on the OS?
+# Is it wise or should i really be layering appimages on the OS?
 # Probably not. maybe this 'fixation' will pass and I'll use those appimages \
 # like I'm supposed to 
 

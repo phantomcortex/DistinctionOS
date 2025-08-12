@@ -8,6 +8,7 @@
  - [BlackBox-Terminal](https://github.com/yonasBSD/blackbox-terminal)
  - Various apps that bazzite wants as flatpak that are now reinstalled as native RPMs 
  - Various codecs & multimedia added
+ - Audacity-Freeworld [Github](https://github.com/audacity/audacity) [Freeworld .spec](https://github.com/rpmfusion/audacity-freeworld/blob/master/audacity-freeworld.spec) 'Freeworld' is better than fedoras default audacity package in the sense it ships patent encumbered codecs that fedora can't/won't ship in their official repositories.
  - [Crossover](https://www.codeweavers.com/crossover)
  - [apfs-fuse](https://github.com/sgan81/apfs-fuse) (While not _entirely_ necessary a Macbook is my secondary system and it's nice to have)
 ### Various Shell things
