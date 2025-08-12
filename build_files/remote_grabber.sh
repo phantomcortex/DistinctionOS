@@ -32,9 +32,10 @@ unzip $TMP/gnome-ui-tune@itstime.tech.shell-extension.zip -d "$EXTENSIONS_DIR/gn
 curl -L https://github.com/fflewddur/tophat/releases/download/v22/tophat@fflewddur.github.io.v22.shell-extension.zip -o $TMP/tophat@fflewddur.github.io.v22.shell-extension.zip
 unzip $TMP/tophat@fflewddur.github.io.v22.shell-extension.zip -d "$EXTENSIONS_DIR/tophat@fflewddur.github.io"
 
-if [[ -d /usr/share/gnome-shell/extensions/hotedge@jonathan.jdoda.ca]]; then
+if [[ -d /usr/share/gnome-shell/extensions/hotedge@jonathan.jdoda.ca ]]; then
   rm -rf /usr/share/gnome-shell/extensions/hotedge@jonathan.jdoda.ca
 fi
+
 dnf5 -y install wget1 
 mkdir -p /tmp/tilingshell 
 
