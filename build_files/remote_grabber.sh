@@ -78,13 +78,6 @@ verify_directory_contents "/usr/share/icons" "capitaine" "Deepin"
 verify_directory_contents "/usr/share/backgrounds" "skyrim"
 verify_directory_contents "/usr/share/gnome-shell" "tophat" "gnome-ui-tune" "burn-my-windows"
 
-# verify
-dnf5 -y install akmod
-echo -e "\033[31mVERIFY GNOME EXTENSIONS\033[0m"
-ls /usr/share/gnome-shell/extensions/
-echo "......................."
-ls /usr/share/gnome-shell/extensions/ |grep -E 'tophat|gnome-ui-tune|burn-my-windows|tophat'
-
 echo -e "\033[31mCOMPILE GLIB SCHEMAS033[0m"
 glib-compile-schemas /usr/share/glib-2.0/schemas/
 gtk-update-icon-cache /usr/share/icons/kora 
