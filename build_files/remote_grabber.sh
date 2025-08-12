@@ -43,7 +43,40 @@ mkdir -p /tmp/tilingshell
 dnf5 -y install https://github.com/phantomcortex/kora/releases/download/1.6.5.12/kora-icon-theme-1.6.5.12-1.fc42.noarch.rpm
 echo -e "\033[31mKORA CUSTOM\033[0m"
 
-#capitaine cursor themes
+# Function to verify directory contents
+verify_directory_contents() {
+    local directory="$1"
+    shift
+    local patterns=("$@")
+    local found_count=0
+    
+    if [[ ! -d "$directory" ]]; then
+        echo -e "${RED}Directory does not exist: $directory${NC}"
+        return 1
+    fi
+    
+    echo "Examining: $directory"
+    for pattern in "${patterns[@]}"; do
+        local matches
+        matches=$(find "$directory" -maxdepth 1 -name "*${pattern}*" -type d 2>/dev/null)
+        if [[ -n "$matches" ]]; then
+            echo -e "  ${GREEN}✓${NC} Pattern '$pattern' matched:"
+            echo "$matches" | sed 's/^/    /'
+            ((found_count++))
+        else
+            echo -e "  ${RED}✗${NC} Pattern '$pattern' not found"
+        fi
+    done
+    
+    echo "  Summary: $found_count/${#patterns[@]} patterns found"
+    return 0
+}
+
+# Usage demonstration
+verify_directory_contents "/usr/share/themes" "Orchis"
+verify_directory_contents "/usr/share/icons" "capitaine" "Deepin"
+verify_directory_contents "/usr/share/backgrounds" "skyrim"
+verify_directory_contents "/usr/share/gnome-shell" "tophat" "gnome-ui-tune" "burn-my-windows"
 
 # verify
 dnf5 -y install akmod
@@ -52,16 +85,10 @@ ls /usr/share/gnome-shell/extensions/
 echo "......................."
 ls /usr/share/gnome-shell/extensions/ |grep -E 'tophat|gnome-ui-tune|burn-my-windows|tophat'
 
-echo -e "\033[31mVERIFY THEMES\033[0m"
-ls /usr/share/themes/ |grep -e 'Orchis'
-echo -e "\033[31mVERIFY ICONS\033[0m"
-ls /usr/share/icons/ |grep -E 'capitaine|Deppin'
-echo -e "\033[31mVERIFY BACKGROUNDS\033[0m"
-ls /usr/share/backgrounds |grep -e 'skyrim'
-
 echo -e "\033[31mCOMPILE GLIB SCHEMAS033[0m"
 glib-compile-schemas /usr/share/glib-2.0/schemas/
-
+gtk-update-icon-cache /usr/share/icons/kora 
+update-mime-database /usr/share/mime
 # cleanup
 
 rm -rf /tmp/gnome-shell
