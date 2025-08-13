@@ -36,11 +36,10 @@ distinction-install-custom-shell:
     sleep 2
     sudo chsh -s /usr/bin/zsh $USER
     sudo chsh -s /usr/bin/zsh root
+    echo "This may take effect after you reboot"
     sleep 2
-    git clone https://github.com/phantomcortex/dotfiles.git ~/.dotfiles
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/phantomcortex/dotfiles/main/install_new.sh)"
     sleep 2
-    echo "Running custom install script"
-    bash ~/.dotfiles/install.sh # assuming it works...
     echo "apply to root"
     sudo cp -r ~/.dotfiles /root/
     echo "Install complete"
@@ -51,6 +50,11 @@ distinction-install-nvchad:
   set -euo pipefail
 
   echo "Installing NVChad"
+  # check if neovim is installed:::brew:or:layered
+  if [ ! -f /home/linuxbrew/.linuxbrew/bin/nvim] && [ ! -f /usr/bin/nvim ]; then
+    echo -e "\033[34m...nvim is not installed\033[0m"
+    brew install neovim && 
+  fi
   git clone https://github.com/NvChad/starter ~/.config/nvim && nvim
   sleep 5
   echo "Install to root user"
