@@ -28,7 +28,6 @@ dnf makecache
 # RPM packages list
 declare -A RPM_PACKAGES=(
   ["fedora"]="\
-    neovim \
     yt-dlp \
     zsh \
     file-roller \
@@ -45,7 +44,8 @@ declare -A RPM_PACKAGES=(
     decibels \
     dconf \
     gtk-murrine-engine \
-    gnome-tweaks"
+    gnome-tweaks \
+    glib2-devel"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
