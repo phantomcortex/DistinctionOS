@@ -4,8 +4,6 @@ ninja
 boost
 meson
 bison
-zsh-syntax-highlighting
-zsh-autocomplete
 gh
 git
 tealdeer
@@ -17,4 +15,3 @@ bat
 nushell
 rust
 cargo
-neovim

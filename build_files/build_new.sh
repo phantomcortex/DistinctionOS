@@ -32,6 +32,7 @@ declare -A RPM_PACKAGES=(
     zsh \
     zsh-syntax-highlighting \
     zsh-autosuggestions \
+    neovim \
     file-roller \
     evince \
     loupe \
