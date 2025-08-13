@@ -225,4 +225,10 @@ main() {
         exit 1
     fi
 }
+
+# bazzite's dnf wrapper is such a pest
+if [[ -f /usr/bin/dnf ]]; then
+  rm /usr/bin/dnf
+fi
 main "$@"
+# << nothing executes beyond this point >>
