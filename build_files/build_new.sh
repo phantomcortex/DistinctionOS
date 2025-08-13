@@ -30,6 +30,8 @@ declare -A RPM_PACKAGES=(
   ["fedora"]="\
     yt-dlp \
     zsh \
+    zsh-syntax-highlighting \
+    zsh-autosuggestions \
     file-roller \
     evince \
     loupe \
