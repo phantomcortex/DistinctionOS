@@ -53,7 +53,7 @@ distinction-install-nvchad:
   # check if neovim is installed:::brew:or:layered
   if [ ! -f /home/linuxbrew/.linuxbrew/bin/nvim] && [ ! -f /usr/bin/nvim ]; then
     echo -e "\033[34m...nvim is not installed\033[0m"
-    brew install neovim && 
+    brew install neovim  
   fi
   git clone https://github.com/NvChad/starter ~/.config/nvim && nvim
   sleep 5
