@@ -15,3 +15,6 @@ gcc
 clang-format
 bat
 nushell
+rust
+cargo
+neovim
