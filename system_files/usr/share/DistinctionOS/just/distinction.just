@@ -1,7 +1,7 @@
 # Install all distinction OS curated apps
 distinction-install: distinction-install-flatpaks distinction-install-brews distinction-install-custom-shell distinction-install-nvchad
 
-# Installs shell and terminal related things
+# Installs shell and terminal related things such as nvchad
 distinction-install-shell: distinction-install-custom-shell distinction-install-nvchad
 
 # Install only Flatpaks
@@ -38,8 +38,10 @@ distinction-install-custom-shell:
     sudo chsh -s /usr/bin/zsh root
     echo "This may take effect after you reboot"
     sleep 2
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/phantomcortex/dotfiles/main/install_new.sh)"
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/phantomcortex/dotfiles/main/install_claude.sh)"
     sleep 2
+    [ -e ~/.dotfiles/.zshrc && ! -e ~/.zshrc ] || ln -s ~/.dotfiles/.zshrc
+    source ~/.zshrc #should run p10k configure around here or shortly after
     echo "apply to root"
     sudo cp -r ~/.dotfiles /root/
     echo "Install complete"
