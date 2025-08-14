@@ -48,7 +48,8 @@ declare -A RPM_PACKAGES=(
     dconf \
     gtk-murrine-engine \
     gnome-tweaks \
-    glib2-devel"
+    glib2-devel \
+    perl-File-Copy"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
@@ -121,9 +122,6 @@ dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 
 # TODO: make section that install the latest version from releases; Like the wine-builds script
 dnf5 -y install https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher/releases/download/v2.18.1/Heroic-2.18.1-linux-x86_64.rpm
-
-# crossover dependencies
-dnf5 -y install perl-File-Copy
 
 log "Enabling system services"
 
