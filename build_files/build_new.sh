@@ -10,6 +10,11 @@ log() {
   echo "=== $* ==="
 }
 
+#
+rpmkeys --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/-/raw/master/pub.gpg 
+printf "[gitlab.com_paulcarroty_vscodium_repo]\nname=download.vscodium.com\nbaseurl=https://download.vscodium.com/rpms/\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=1\ngpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/-/raw/master/pub.gpg\nmetadata_expire=1h\n" | sudo tee -a /etc/yum.repos.d/vscodium.repo
+
+#=================Cider=====================
 # Cider workaround because I don't want to \ 
 # mess with the main installer portion
 rpm --import https://repo.cider.sh/RPM-GPG-KEY
@@ -23,8 +28,8 @@ gpgcheck=1
 gpgkey=https://repo.cider.sh/RPM-GPG-KEY
 EOF
 
-# Cider install instructions have 'dnf makecache' as a step
 dnf makecache
+#=================Cider=====================
 # RPM packages list
 declare -A RPM_PACKAGES=(
   ["fedora"]="\
@@ -49,7 +54,9 @@ declare -A RPM_PACKAGES=(
     gtk-murrine-engine \
     gnome-tweaks \
     glib2-devel \
-    perl-File-Copy"
+    perl-File-Copy \
+    winetricks \
+    clang"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
@@ -67,6 +74,8 @@ declare -A RPM_PACKAGES=(
   ["cidercollective"]="Cider"
   ["copr:ilyaz/LACT"]="lact"
   ["copr:fernando-debian/dysk"]="dysk"
+  ["copr:atim/heroic-games-launcher"]="heroic-games-launcher-bin"
+  ["com_paulcarroty_vscodium_repo"]="codium"
 )
 
 log "Starting DistinctionOS build process"
@@ -111,17 +120,16 @@ find /usr/share/applications -iname '*waydroid*' -exec rm -rf {} +
 # custom icon for Cider because it doesn't seem to use it regardless of what icon theme is used
 sed -i 's@Icon=Cider@Icon=/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share/applications/Cider.desktop
 
-#Crossover installed properly
+# modify winetricks due to winetricks telling me 'You are using 64 bit verb' or 'You seem to be using wow64 mode!' five-thousand times... 
+sed -i 's@Exec=winetricks --gui@Exec=/usr/bin/env WINEDEBUG-all winetricks -q --gui@g' /usr/share/applications/winetricks.desktop
+
 if [[ ! -d /var/opt ]]; then
   echo -e "$RED /var/opt does not exist for some reason...\n $CYAN CREATING... $NC"
   mkdir -p /var/opt
 fi #sanity check
 
-dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm
-#assuming that this works without any extra technical difficultes
+dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm # Crossover net install::I hope they don't change their website so I can't grab it
 
-# TODO: make section that install the latest version from releases; Like the wine-builds script
-dnf5 -y install https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher/releases/download/v2.18.1/Heroic-2.18.1-linux-x86_64.rpm
 
 log "Enabling system services"
 
