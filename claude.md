@@ -100,7 +100,6 @@ For packages installed to /opt:
 ### `build_files/kernel_modules.sh`
 For one kernel compilied from source:
 - Compiles and adds xpadneo kernel module
-- user states that he may want to add a custom kernel later
 
 ### `build_files/layered_appimages.sh`
 As the name implies adds directly to the OS image:
@@ -152,18 +151,11 @@ Contains custom files added at build time:
 2. Configure default selections in system settings
 3. Test across different applications
 
-## Integration Points
-
-### External Dependencies
-- **Bazzite Upstream**: Monitor for breaking changes and new features
-- **Fedora**: Track major version transitions and policy changes
-
 ### User Data Management
 - **Persistent Storage**: User data remains intact across image updates
 - **Configuration Persistence**: Personal settings preserved in `/var/home/`
 - **Application Data**: Flatpak and container app data maintained
 
-## Troubleshooting Context
 
 ### Common Issues
 - **Build Failures**: Often related to package availability or dependency conflicts
@@ -176,7 +168,8 @@ Contains custom files added at build time:
 - **Layer Inspection**: Analyze image layers with `podman history`
 
 ## Future Roadmap
-- TODO: build-working installable disk-image 
+- standalone ISO image file (that actually works)
+- rechunker support 
  
 
 ### Planned Enhancements
