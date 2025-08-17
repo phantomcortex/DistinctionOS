@@ -121,7 +121,23 @@ find /usr/share/applications -iname '*waydroid*' -exec rm -rf {} +
 sed -i 's@Icon=Cider@Icon=/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share/applications/Cider.desktop
 
 # modify winetricks due to winetricks telling me 'You are using 64 bit verb' or 'You seem to be using wow64 mode!' five-thousand times... 
-sed -i 's@Exec=winetricks --gui@Exec=/usr/bin/env WINEDEBUG-all winetricks -q --gui@g' /usr/share/applications/winetricks.desktop
+if [ -f /usr/share/applications/winetricks.desktop ]; then 
+  sed -i 's@Exec=winetricks --gui@Exec=/usr/bin/env WINEDEBUG-all winetricks -q --gui@g' /usr/share/applications/winetricks.desktop
+else
+  echo "winetricks.desktop does not exist for some reason"
+  if [ rpm -q winetricks ]; then 
+    tee /usr/share/applications/winetricks.desktop << 'EOF'
+[Desktop Entry]
+Name=Winetricks
+Comment=Work around problems and install applications under Wine
+Exec=/usr/bin/env WINEDEBUG=-all winetricks -q --gui
+Terminal=false
+Icon=winetricks
+Type=Application
+Categories=Utility;
+EOF
+  fi
+fi
 
 if [[ ! -d /var/opt ]]; then
   echo -e "$RED /var/opt does not exist for some reason...\n $CYAN CREATING... $NC"
