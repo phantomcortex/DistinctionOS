@@ -75,7 +75,7 @@ declare -A RPM_PACKAGES=(
   ["copr:ilyaz/LACT"]="lact"
   ["copr:fernando-debian/dysk"]="dysk"
   ["copr:atim/heroic-games-launcher"]="heroic-games-launcher-bin"
-  ["com_paulcarroty_vscodium_repo"]="codium"
+  ["gitlab.com_paulcarroty_vscodium_repo"]="codium"
 )
 
 log "Starting DistinctionOS build process"
