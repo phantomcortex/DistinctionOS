@@ -43,3 +43,12 @@ MimeType=application/x-wii-u-rom;
 x-AppImage-Version=a6fb0a4
 EOF
 
+if [ ! -e /var/opt/yuzu/yuzu-4176.AppImage ]; then
+  echo "yuzu does not exist!" 
+  exit
+elif [ ! -e /var/opt/cemu/cemu-2.6.AppImage ]; then
+  echo "cemu does not exists!"
+  exit
+else
+  echo "yuzu/cemu should work fine"
+fi

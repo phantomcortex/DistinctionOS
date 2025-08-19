@@ -29,7 +29,9 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
     echo -e "\033[31mBUILD SCRIPT >>>>\033[0m" && \
-    /ctx/build_new.sh && \ 
+    /ctx/build_new.sh && \
+    echo -e "\033[31mLAYER APPIMAGES >>>>\033[0m" && \
+    /ctx/layered_appimages.sh && \
     echo -e "\033[31mOPT FIXER >>>>\033[0m" && \
     /ctx/fix_opt.sh && \
     echo -e "\033[31mKERENEL SCRIPT >>>>\033[0m" && \
@@ -38,8 +40,6 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/remote_grabber_new.sh && \
     echo -e "\033[31mWINE INSTALLER >>>>\033[0m" && \
     /ctx/wine-installer.sh && \
-    echo -e "\033[31mWINE INSTALLER >>>>\033[0m" && \
-    /ctx/layered_appimages.sh && \
     echo -e "\033[31mOSTREE COMMIT\033[0m" && \
     ostree container commit
 
