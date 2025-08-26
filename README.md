@@ -1,6 +1,6 @@
 ## Noteable Additions
  - Cider (Apple Music Client) See: [Cider collective](https://cider.sh/)
- - **NOTE:** This is Cider version 3. You need to purchase an license from itch.io to use it.  
+ - **NOTE:** This is Cider version 3. You need to purchase an license from itch.io to use it. See: https://cidercollective.itch.io/cider
  - [xpadneo](https://github.com/atar-axis/xpadneo) compiled from source
  - Various customizations (Cursor-theme:[Capitaine-cursors](https://github.com/keeferrourke/capitaine-cursors),[Deepin-cursors](https://github.com/yeyushengfan258/DeepinV20-dark-cursors),Icon-theme:[Kora](https://github.com/phantomcortex/kora),custom background, custom gschemea overrides)
  - [ardour8](https://github.com/Ardour/ardour) Main: https://ardour.org/
@@ -8,16 +8,16 @@
  - [BlackBox-Terminal](https://github.com/yonasBSD/blackbox-terminal)
  - Various apps that bazzite wants as flatpak that are now reinstalled as native RPMs 
  - Various codecs & multimedia added
- - Audacity-Freeworld [Github](https://github.com/audacity/audacity) [Freeworld .spec](https://github.com/rpmfusion/audacity-freeworld/blob/master/audacity-freeworld.spec) 'Freeworld' is better than fedoras default audacity package in the sense it ships patent encumbered codecs that fedora can't/won't ship in their official repositories.
- - [Crossover](https://www.codeweavers.com/crossover)
- - [apfs-fuse](https://github.com/sgan81/apfs-fuse) (While not _entirely_ necessary a Macbook is my secondary system and it's nice to have)
+ - Audacity-Freeworld [Github](https://github.com/audacity/audacity) [Freeworld .spec](https://github.com/rpmfusion/audacity-freeworld/blob/master/audacity-freeworld.spec) 'Freeworld' is better than fedora's default audacity package in the sense that it ships patent encumbered codecs that fedora can't/won't ship in their official repositories.
+ - From The Developers of the Wine compatability layer: [Crossover](https://www.codeweavers.com/crossover) It's a bit like [Bottles](https://github.com/bottlesdevs/Bottles) But a bit bettter in some areas, and it runs on MacOS.
 ### Various Shell things
  - [zoxide](https://github.com/ajeetdsouza/zoxide)
  - [nushell](https://github.com/nushell/nushell)
  - [dysk](https://github.com/Canop/dysk)
+
 ## End goal of this repo:
-#### Building off of something already very impressive but make it even more feature rich/complete & add everything I use and could ever want. It's made for me, myself, and I; Designed around the best 'Out-of-the-Box' experience possible.
- I'm sure you could use flatpaks if you were so inclined... but it has been my experience that native RPMs just **behave better.**
+#### Building off of something already very impressive but make it even more feature rich/complete & add everything I use and could ever want. It's made for me, myself, and I; Designed around my definition of the best 'Out-of-the-Box' experience possible.
+
 
 
 # Purpose
