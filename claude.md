@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Distinction-UBlue-Internal** is a custom immutable Linux image built upon the Bazzite foundation, leveraging Universal Blue's infrastructure and tooling. This repository represents a personalised gaming and development environment optimised for a Fully featured expierence.
+**DistinctionOS** is a custom immutable Linux image built upon the Bazzite foundation, leveraging Universal Blue's infrastructure and tooling. This repository represents a personalised gaming and development environment optimised for a Fully featured expierence.
 
 
 ### Key Characteristics
@@ -50,7 +50,7 @@ distinction-ublue-internal/
 - ****
 
 ### Package Management Strategy
-- **System Packages**: Declared in recipe.yml for base image inclusion
+- **System Packages**: Added during build process for base image inclusion
 - **User Packages**: Installed via RPM packages, flatpak, or distrobox containers
 - **Development Tools**: Integrated into base image for immediate availability
 
