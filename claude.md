@@ -1,4 +1,4 @@
-# Claude Context: Distinction-UBlue-Internal
+# Claude Context: DistinctionOS
 
 ## Project Overview
 
