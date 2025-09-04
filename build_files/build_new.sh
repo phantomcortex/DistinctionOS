@@ -10,10 +10,6 @@ log() {
   echo "=== $* ==="
 }
 
-#
-rpmkeys --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/-/raw/master/pub.gpg 
-printf "[gitlab.com_paulcarroty_vscodium_repo]\nname=download.vscodium.com\nbaseurl=https://download.vscodium.com/rpms/\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=1\ngpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/-/raw/master/pub.gpg\nmetadata_expire=1h\n" | tee -a /etc/yum.repos.d/vscodium.repo
-
 #=================Cider=====================
 # Cider workaround because I don't want to \ 
 # mess with the main installer portion
@@ -56,7 +52,8 @@ declare -A RPM_PACKAGES=(
     glib2-devel \
     perl-File-Copy \
     winetricks \
-    clang"
+    clang \
+    lutris"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
@@ -75,7 +72,8 @@ declare -A RPM_PACKAGES=(
   ["copr:ilyaz/LACT"]="lact"
   ["copr:fernando-debian/dysk"]="dysk"
   ["copr:atim/heroic-games-launcher"]="heroic-games-launcher-bin"
-  ["gitlab.com_paulcarroty_vscodium_repo"]="codium"
+  ["copr:sergiomb/clonezilla"]="clonezilla"
+  ["copr:alternateved/eza"]="eza"
 )
 
 log "Starting DistinctionOS build process"
@@ -145,7 +143,8 @@ if [[ ! -d /var/opt ]]; then
 fi #sanity check
 
 dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm # Crossover net install::I hope they don't change their website so I can't grab it
-
+# per process firewall which can be disabled at any time.
+dnf5 -y install https://raw.githubusercontent.com/evilsocket/opensnitch/releases/download/v1.7.2/opensnitch-1.7.2-1.x86_64.rpmfusion-free
 
 log "Enabling system services"
 
