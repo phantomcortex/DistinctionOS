@@ -144,7 +144,7 @@ fi #sanity check
 
 dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm # Crossover net install::I hope they don't change their website so I can't grab it
 # per process firewall which can be disabled at any time.
-dnf5 -y install https://raw.githubusercontent.com/evilsocket/opensnitch/releases/download/v1.7.2/opensnitch-1.7.2-1.x86_64.rpmfusion-free
+#dnf5 -y install https://raw.githubusercontent.com/evilsocket/opensnitch/releases/download/v1.7.2/opensnitch-1.7.2-1.x86_64.rpmfusion-free
 
 log "Enabling system services"
 
