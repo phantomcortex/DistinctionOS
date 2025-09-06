@@ -47,7 +47,7 @@ declare -A EXTENSIONS_ZIP=(
 )
 
 # Extensions requiring schema compilation
-readonly SCHEMA_EXTENSIONS=("pip-on-top@rafostar.github.com" "dash-to-dock@micxgx.gmail.com", "burn-my-windows@schneegans.github.com")
+readonly SCHEMA_EXTENSIONS=("pip-on-top@rafostar.github.com" "dash-to-dock@micxgx.gmail.com" "burn-my-windows@schneegans.github.com")
 
 # Extensions to be removed (if present)
 readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca")
