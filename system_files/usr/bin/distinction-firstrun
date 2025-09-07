@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+LOGDIR="/var/DistinctionOS"
+LOGFILE="${LOGDIR}/DistinctionOS_firstrun.log"
+
+# Create log directory if it doesn't exist
+mkdir -p "${LOGDIR}"
+
+# Function to log messages
+log_message() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "${LOGFILE}"
+}
+
+log_message "Starting DistinctionOS first-run setup..."
+
+# Check if ujust is available
+if command -v ujust &> /dev/null; then
+    log_message "Running distinction-install recipe..."
+    
+    # Run the ujust recipe
+    if ujust distinction-install 2>&1 | tee -a "${LOGFILE}"; then
+        log_message "Successfully completed distinction-install"
+    else
+        log_message "ERROR: distinction-install failed with exit code $?"
+        exit 1
+    fi
+else
+    log_message "ERROR: ujust command not found"
+    exit 1
+fi
+
+log_message "First-run setup completed successfully!"
+log_message "Log file created at: ${LOGFILE}"
+
+# Create completion marker
+echo "Completed: $(date)" >> "${LOGFILE}"

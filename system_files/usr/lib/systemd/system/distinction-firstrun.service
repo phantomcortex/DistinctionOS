@@ -1,0 +1,13 @@
+[Unit]
+Description=DistinctionOS First Run Setup
+After=graphical-session.target
+ConditionPathExists=!/var/DistinctionOS/DistinctionOS_firstrun.log
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/distinction-firstrun
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=default.target
