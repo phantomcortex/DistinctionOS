@@ -34,15 +34,9 @@ me.proton.Pass
 menu.kando.Kando
 net.rpcs3.RPCS3
 org.DolphinEmu.dolphin-emu
-org.freedesktop.Sdk.Extension.llvm18
-org.freedesktop.Sdk.Extension.rust-stable
-org.freedesktop.Sdk.Extension.vala
-org.gnome.Builder
-org.gnome.Glade
 org.gtk.Gtk3theme.Breeze
 org.gtk.Gtk3theme.Orchis-Dark
 org.gtk.Gtk3theme.adw-gtk3-dark
-org.inkscape.Inkscape
 org.musescore.MuseScore
 org.onlyoffice.desktopeditors
 org.zrythm.Zrythm
