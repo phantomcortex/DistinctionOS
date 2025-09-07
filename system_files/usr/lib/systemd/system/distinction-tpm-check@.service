@@ -1,0 +1,10 @@
+# Template service for rpm-ostree post-deployment hooks
+[Unit]
+Description=TPM Check After RPM-OSTree Deployment
+After=rpm-ostreed.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/distinction-tpm-post-deploy
+StandardOutput=journal
+StandardError=journal
