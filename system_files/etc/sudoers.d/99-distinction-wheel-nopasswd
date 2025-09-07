@@ -1,0 +1,4 @@
+# DistinctionOS - Passwordless sudo for wheel group
+# WARNING: This reduces security - members of wheel group won't need passwords for sudo
+# If you share this computer with others, You should remove other users from the wheel group
+%wheel ALL=(ALL:ALL) NOPASSWD: ALL
