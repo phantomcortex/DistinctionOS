@@ -2,28 +2,38 @@
 
 ## Project Overview
 
-**DistinctionOS** is a custom immutable Linux image built upon the Bazzite foundation, leveraging Universal Blue's infrastructure and tooling. This repository represents a personalised gaming and development environment optimised for a Fully featured expierence.
-
+**DistinctionOS** is a custom immutable Linux image built upon the Bazzite foundation, leveraging Universal Blue's infrastructure and tooling. This repository represents a personalised gaming and development environment optimised for a fully-featured experience.
 
 ### Key Characteristics
 - **Base System**: Bazzite (gaming-focused Fedora Atomic variant)
 - **Build System**: Built from Universal Blue's github Image template and uses github-actions to build & push to ghcr
 - **Target Audience**: Mainly Personal use, with gaming and development focus
 - **Deployment**: OCI container images via GitHub Container Registry
+- **Philosophy**: "Swiss Army Knife" approach - versatile powerhouse over minimalism
 
 ## Repository Structure
 
 ```
 DistinctionOS/
-├── system_files/               # Static files to be copied into the image
+├── system_files/               # Static files copied into the image
+│   ├── usr/
+│   │   ├── bin/               # Custom executables (firstrun, tpm-monitor, advmv, advcp)
+│   │   ├── lib/systemd/       # SystemD services and timers
+│   │   └── share/DistinctionOS/just/  # Just recipes
+│   └── etc/
+│       └── sudoers.d/         # Sudo configuration
 ├── build_files/                # Build-time scripts
-├── repo_files/                 # contains resources for just recipes
-├── disk_config/                # contains configuration for build-disk.yml
-├── Containerfile               # Custom container build instructions
-├── README.md                   # User-facing documentation
-├── claude.md                   # This AI context file
-└── .github/
-    └── workflows/            # contains build.yml & build-disk.yml for github actions
+│   ├── build_new.sh           # Main package installer
+│   ├── fix_opt.sh             # Fixes /opt packages at runtime
+│   ├── kernel_modules.sh      # Compiles xpadneo kernel module
+│   ├── config.sh      			# Intended for System Configuration or miscellaneous things that don't have a proper place
+│   ├── layered_appimages.sh   # Layers AppImages (user aware of unconventional approach)
+│   ├── remote_grabber.sh      # GNOME Shell extension management
+│   └── wine_installer.sh      # Installs Kron4ek Wine builds
+├── repo_files/                # Resources for just recipes
+├── disk_config/               # Configuration for build-disk.yml
+├── Containerfile              # Custom container build instructions
+└── .github/workflows/         # GitHub Actions (build.yml & build-disk.yml)
 ```
 
 ## Technical Architecture
@@ -51,7 +61,7 @@ DistinctionOS/
 
 ### Package Management Strategy
 - **System Packages**: Added during build process for base image inclusion
-- **User Packages**: Installed via RPM packages, flatpak, or distrobox containers
+- **User Packages**: Installed via RPM packages, flatpak, distrobox containers, or homebrew packages
 - **Development Tools**: Integrated into base image for immediate availability
 
 ## Configuration Areas
@@ -68,18 +78,7 @@ DistinctionOS/
 - **Workflow Optimization**: Shortcuts and automation for common tasks
 
 ## Development Workflow
-
-### Local Development
-```bash
-# Clone the repository
-git clone https://github.com/phantomcortex/distinctionos.git
-
-# Test build locally
-podman build -t distinction-test .
-
-# Run build validation
-./scripts/validate-build.sh
-```
+- **w**:
 
 ### CI/CD Pipeline
 - **Trigger**: Push to main branch or pull requests
@@ -91,7 +90,9 @@ podman build -t distinction-test .
 
 ### `build_files/build_new.sh`
 The main package installer of the configuration, defining:
-- Package installations and removals
+- Package installations and removals 
+- RPM repos configuration 
+- asc key additions
 
 ### `build_files/fix_opt.sh`
 For packages installed to /opt:
@@ -100,6 +101,7 @@ For packages installed to /opt:
 ### `build_files/kernel_modules.sh`
 For one kernel compilied from source:
 - Compiles and adds xpadneo kernel module
+- Other dkms modules can added to build process later
 
 ### `build_files/layered_appimages.sh`
 As the name implies adds directly to the OS image:
@@ -140,11 +142,72 @@ Contains custom files added at build time:
 
 ### Adding New Packages
 - Edit `build_new.sh` where it declares packages and corresponding repositories
+- Edit `config.sh` for enabling system services
 
-### Configuration Files
-1. Add files to `config/` directory
-2. Map destination paths in `recipe.yml`
-3. Validate file permissions and ownership
+## Current Implementation Status
+
+### ✅ Completed Features
+
+#### Default Shell Configuration
+- **ZSH as System Default**: Configured for all new users via `/etc/default/useradd`
+- **First-Run Automation**: SystemD service (`distinction-firstrun.service`) that:
+  - Triggers on first boot after rebase
+  - Runs `ujust distinction-install` automatically
+  - Creates log at `/var/DistinctionOS/DistinctionOS_firstrun.log`
+  - Only runs once (checks for log file existence)
+
+#### TPM Unlock System
+- **Interactive Setup**: `ujust distinction-tpm-unlock-setup` with preset PCR configurations:
+  - Maximum Security (PCR 0,1,4,5,7,8,9)
+  - Balanced (PCR 0,4,7,9)
+  - Convenience (PCR 7)
+  - Custom selection
+- **Proactive Monitoring**: `distinction-tpm-monitor` service that:
+  - Detects kernel, bootloader, firmware changes
+  - Warns BEFORE reboot when updates will break TPM
+  - Monitors rpm-ostree deployments
+  - Runs every 30 minutes via SystemD timer
+- **Recovery Tools**:
+  - `ujust distinction-tpm-reenrol`: Quick re-enrollment
+  - `ujust distinction-tpm-verify`: Status check
+  - `ujust distinction-tpm-reset`: Complete reset with auth
+  - `ujust distinction-tpm-logs`: View monitor logs
+
+#### Just Recipe System
+- **Main Recipe**: `distinction.just` with modular imports
+- **Installation Recipes**:
+  - Flatpak installation from GitHub-hosted list
+  - Homebrew package management
+  - Oh-my-zsh with Powerlevel10k theme
+  - NvChad configuration for Neovim
+  - Nautilus scripts integration
+  - **TPM Management**: Separate recipe file for TPM operations
+
+#### Security Configuration
+  - **Passwordless Sudo**: Configured for wheel group (user aware of security implications)
+  - Located at `/etc/sudoers.d/99-distinction-wheel-nopasswd`
+
+### 🚧 Known Issues
+- NvChad installation for root may need verification after first run
+- Some just recipes need error handling improvements
+- TPM re-enrollment requires manual password entry (by design for security)
+- In testing System sometimes hangs at plymouth screen for a short while after system receives shutdown signal 
+## Maintenance Procedures
+
+### After System Updates
+```bash
+rpm-ostree upgrade
+# Monitor will detect and notify about TPM changes
+ujust distinction-tpm-reenrol  # If notified
+systemctl reboot
+```
+
+### TPM Management
+```bash
+ujust distinction-tpm-check     # Check if re-enrollment needed
+ujust distinction-tpm-verify    # Verify current status
+ujust distinction-tpm-logs      # View recent activity
+```
 
 ### Theme and Appearance
 1. Add theme files to `system_files/usr/share/themes/`
@@ -156,45 +219,41 @@ Contains custom files added at build time:
 - **Configuration Persistence**: Personal settings preserved in `/var/home/`
 - **Application Data**: Flatpak and container app data maintained
 
-
-### Common Issues
-- **Build Failures**: Often related to package availability or dependency conflicts
-- **Runtime Problems**: Usually configuration-related or service conflicts
-- **Update Issues**: May require manual intervention for major changes
-
 ### Debug Approaches
 - **Build Logs**: Examine GitHub Actions output for build-time issues
 - **System Logs**: Use `journalctl` for runtime problem diagnosis
 - **Layer Inspection**: Analyze image layers with `podman history`
 
 ## Future Roadmap
-- standalone ISO image file (that actually works)
-- rechunker support 
- 
 
-### Planned Enhancements
-- Ship Cachyos-lto kernel by default
-- ~~user use zsh by default~~ ✅- Done.
-- ~~on fresh installation, automatic install of oh-my-zsh, powerlevel10k, & user's preexisting p10k configureation from https://github.com/phantomcortex/dotfiles/~~  ✅- Done.
-
-
-### Experimental Features
-- Custom kernel optimizations
-- Advanced security hardening
-- Cloud development workflow integration
+### Near-term Goals
+- [ ] Standalone installable ISO image file (that actually works)
+- [ ] Rechunker support
+- [ ] Ship CachyOS-lto kernel by default
+- [x] User uses ZSH by default ✅ (untested)
+- [x] Auto-install oh-my-zsh, powerlevel10k on fresh installation ✅ (untested)
+- [x] TPM auto-recovery mechanism ✅ (untested)
 
 ---
 
 ## Notes for AI Assistants
-This repo does not use BlueBuild. Some scripts currently do not follow Google Shell Style Guide conventions. The user places priority on a Fully featured expierence with plenty of 'bells and whisles' more akin to a swiss army knife. The user wants a versatile powerhose rather than minimalism.
+Note: This project does not use BlueBuild. Some legacy scripts may not follow style conventions fully. 
 
 ### Code Style Preferences
 - **Shell Scripts**: Follow Google Shell Style Guide conventions
 - **YAML Files**: 2-space indentation, explicit string quoting where beneficial
 - **Documentation**: Clear, concise explanations with practical examples
+- **Context Generation**: At the end of a session, user will ask for an updated claude.md context file
 
-### Project Context
-This is a personal project focused on creating an optimal Linux environment for both gaming and development work. The user values clean, maintainable configurations and appreciates detailed explanations of technical concepts. They prefer elegant solutions that balance functionality with simplicity. The user strongly perfers native RPM packages over their flatpak counterparts depending on the app.
+### Project Philosophy
+- Fully-featured experience prioritized over minimalism akin to a Swiss army knife
+- Native RPM packages preferred over Flatpaks where sensible
+- Elegant solutions balancing functionality with maintainability
+- Proactive problem prevention over reactive fixes
+- This is a personal project focused on creating an optimal Linux environment for both gaming and development work. The user values clean, maintainable configurations and appreciates detailed explanations of technical concepts. 
 
-### Technical Expertise Level
-The user has intermediate system admin skills and appreciates detailed technical discussions. They're comfortable with container technologies, package management, and system-level configurations. Explanations can include advanced concepts but should remain practical and actionable.
+### User Technical Level
+- Intermediate Linux system administration skills
+- Comfortable with containers, package management, system configuration
+- Appreciates detailed technical explanations with practical application
+- Values Posh British delivery of refined communication akin to a butler serving Champagne to the lord of the castle
