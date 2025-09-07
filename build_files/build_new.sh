@@ -57,7 +57,8 @@ declare -A RPM_PACKAGES=(
     winetricks \
     clang \
     lutris \
-    virt-manager"
+    virt-manager \
+    dkms"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
