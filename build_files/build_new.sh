@@ -74,7 +74,6 @@ declare -A RPM_PACKAGES=(
 
   ["brave-browser"]="brave-browser"
   ["cidercollective"]="Cider"
-  ["zfs"]="zfs zfs-dkms"
   ["copr:ilyaz/LACT"]="lact"
   ["copr:fernando-debian/dysk"]="dysk"
   ["copr:atim/heroic-games-launcher"]="heroic-games-launcher-bin"
@@ -109,7 +108,8 @@ remove_packages=(waydroid \
   sunshine \
   gnome-shell-extension-compiz-windows-effect \
   openssh-askpass \
-  cockpit-bridge)
+  cockpit-bridge \
+  zfs-fuse)
 
 for pkg in "${remove_packages[@]}"; do
   if rpm -q "$pkg" &>/dev/null; then
@@ -118,6 +118,7 @@ for pkg in "${remove_packages[@]}"; do
   fi 
 done 
 
+dnf -y install zfs
 # remove bazzite things intended for waydroid
 find /usr/share/applications -iname '*waydroid*' -exec rm -rf {} + 
 
