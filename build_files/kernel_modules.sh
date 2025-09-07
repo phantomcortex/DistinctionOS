@@ -1,22 +1,17 @@
 #!/bin/bash
 set -euo pipefail
 
-# Determine the target kernel version for DKMS build
-TARGET_KERNEL=$(rpm -q kernel --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n' | tail -1)
+KERNEL=$(ls /lib/modules/ | grep bazzite | sort -V | tail -1)
 
 # Build ZFS modules for the target kernel specifically
-dkms autoinstall -k ${TARGET_KERNEL}
+dkms autoinstall -k ${KERNEL}
 
-if [ -d "/lib/modules/${TARGET_KERNEL}/extra/zfs" ]; then
+if [ -d "/lib/modules/${KERNEL}/extra/zfs" ]; then
     echo "ZFS modules successfully built for kernel ${TARGET_KERNEL}"
 else
     echo "Warning: ZFS module build may have failed for kernel ${TARGET_KERNEL}"
     # Fallback: attempt to build for all installed kernels
-    dkms autoinstall
 fi 
-
-KERNEL=$(ls /lib/modules/ | grep bazzite | sort -V | tail -1)
-
 # Set up the build environment properly
 export KERNELDIR="/lib/modules/${KERNEL}/build"
 echo -e "\033[31mINSTALL XPADNEO\033[0m"
