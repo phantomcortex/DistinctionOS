@@ -34,6 +34,8 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/layered_appimages.sh && \
     echo -e "\033[31mOPT FIXER >>>>\033[0m" && \
     /ctx/fix_opt.sh && \
+    echo -e "\033[31mSYSTEM CONFIG >>>>\033[0m" && \
+    /ctx/config.sh && \
     echo -e "\033[31mKERENEL SCRIPT >>>>\033[0m" && \
     /ctx/kernel_modules.sh && \
     echo -e "\033[31mREMOTE GRABBER >>>>\033[0m" && \
