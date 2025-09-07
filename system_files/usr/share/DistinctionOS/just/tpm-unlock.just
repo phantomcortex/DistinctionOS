@@ -1,4 +1,7 @@
 # TPM2 LUKS Unlock Configuration
+
+# NOTE: recipe written by Anthropic's Claude Opus 4.1
+# At the time of writing: (September 7th, 2025) recipe not verified to be working
 distinction-tpm-unlock-setup:
     #!/usr/bin/env bash
     set -euo pipefail
