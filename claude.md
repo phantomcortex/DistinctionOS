@@ -14,7 +14,7 @@
 ## Repository Structure
 
 ```
-distinction-ublue-internal/
+DistinctionOS/
 ├── system_files/               # Static files to be copied into the image
 ├── build_files/                # Build-time scripts
 ├── repo_files/                 # contains resources for just recipes
@@ -72,7 +72,7 @@ distinction-ublue-internal/
 ### Local Development
 ```bash
 # Clone the repository
-git clone https://github.com/phantomcortex/distinction-ublue-internal.git
+git clone https://github.com/phantomcortex/distinctionos.git
 
 # Test build locally
 podman build -t distinction-test .
@@ -174,8 +174,9 @@ Contains custom files added at build time:
 
 ### Planned Enhancements
 - Ship Cachyos-lto kernel by default
-- user use zsh by default
-- on fresh installation, automatic install of oh-my-zsh, powerlevel10k, & user's preexisting p10k configureation from https://github.com/phantomcortex/dotfiles/
+- ~~user use zsh by default~~ ✅- Done.
+- ~~on fresh installation, automatic install of oh-my-zsh, powerlevel10k, & user's preexisting p10k configureation from https://github.com/phantomcortex/dotfiles/~~  ✅- Done.
+
 
 ### Experimental Features
 - Custom kernel optimizations
