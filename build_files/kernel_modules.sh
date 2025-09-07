@@ -7,9 +7,9 @@ KERNEL=$(ls /lib/modules/ | grep bazzite | sort -V | tail -1)
 dkms autoinstall -k ${KERNEL}
 
 if [ -d "/lib/modules/${KERNEL}/extra/zfs" ]; then
-    echo "ZFS modules successfully built for kernel ${TARGET_KERNEL}"
+    echo "ZFS modules successfully built for kernel ${KERNEL}"
 else
-    echo "Warning: ZFS module build may have failed for kernel ${TARGET_KERNEL}"
+    echo "Warning: ZFS module build may have failed for kernel ${KERNEL}"
     # Fallback: attempt to build for all installed kernels
 fi 
 # Set up the build environment properly
