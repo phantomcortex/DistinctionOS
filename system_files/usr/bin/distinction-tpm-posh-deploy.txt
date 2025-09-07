@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Post-deployment hook for rpm-ostree
+set -euo pipefail
+
+LOG_FILE="/var/log/distinction-tpm-monitor.log"
+
+log_message() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] POST-DEPLOY: $1" >> "$LOG_FILE"
+}
+
+log_message "RPM-OSTree deployment detected"
+
+# Check if the deployment changed critical components
+if /usr/bin/distinction-tpm-monitor --check &>/dev/null; then
+    log_message "Critical boot components will change"
+    
+    # Send urgent notification
+    notify-send --urgency=critical \
+        "⚠ TPM Unlock Action Required" \
+        "System update will break TPM unlock. Run 'ujust distinction-tpm-reenrol' before rebooting!" \
+        --icon=security-high-symbolic
+    
+    # Create a flag file for the next boot
+    touch /var/lib/distinction-tpm/pending-reenrol
+    
+    # Also create a wall message for all terminals
+    wall "WARNING: System update detected that will break TPM unlock. Run 'sudo distinction-tpm-monitor --reenrol' before rebooting!"
+else
+    log_message "No critical changes detected"
+fi

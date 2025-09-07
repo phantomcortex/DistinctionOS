@@ -1,0 +1,22 @@
+[Unit]
+Description=DistinctionOS TPM Recovery Monitor
+After=multi-user.target
+Wants=distinction-tpm-monitor.timer
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/distinction-tpm-monitor --monitor
+Restart=on-failure
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/distinction-tpm /var/log
+ProtectHome=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target
