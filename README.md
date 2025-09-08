@@ -1,24 +1,37 @@
-## Noteable Additions
- - Cider (Apple Music Client) See: [Cider collective](https://cider.sh/)
- - **NOTE:** This is Cider version 3. You need to purchase an license from itch.io to use it. See: https://cidercollective.itch.io/cider
- - [xpadneo](https://github.com/atar-axis/xpadneo) compiled from source
- - Various customizations (Cursor-theme:[Capitaine-cursors](https://github.com/keeferrourke/capitaine-cursors),[Deepin-cursors](https://github.com/yeyushengfan258/DeepinV20-dark-cursors),Icon-theme:[Kora](https://github.com/phantomcortex/kora),custom background, custom gschemea overrides)
+# Note:
+### I wouldn't necessarily call DistinctionOS production ready... But It's not supposed to, It's only intended to be perfect for me. Don't expect this to be the most stable, DistinctionOS can and will change depending and my needs, wants, and desires.
+
+# Noteable Additions
+ ### Cider (Apple Music Client) 
+ - See: [Cider collective](https://cider.sh/)
+ -  **NOTE:** ***This is Cider version 3. You need to purchase an license from itch.io to use it, But it should be a one-time payment. See: https://cidercollective.itch.io/cider You will still need an active Apple Music subscription to use it.***
+  ### XPADNEO
+ - [xpadneo](https://github.com/atar-axis/xpadneo) compiled from source and signed at build time
+ - Xpadneo is good for controller input over bluetooth and for use for xbox series elite controllers (which I have and use)
+ 
+ ### BlackBox-Terminal
+  [BlackBox-Terminal](https://github.com/yonasBSD/blackbox-terminal) BlackBox-Terminal is currently unmaintained But I still love it, Which is why it's here.
+  
+ ### Ardour 8
  - [ardour8](https://github.com/Ardour/ardour) Main: https://ardour.org/
- - [VirtualBox](https://github.com/VirtualBox/virtualbox) Main: https://www.virtualbox.org/wiki/Linux_Downloads
- - [BlackBox-Terminal](https://github.com/yonasBSD/blackbox-terminal)
- - Various apps that bazzite wants as flatpak that are now reinstalled as native RPMs 
- - Various codecs & multimedia added
- - Audacity-Freeworld [Github](https://github.com/audacity/audacity) [Freeworld .spec](https://github.com/rpmfusion/audacity-freeworld/blob/master/audacity-freeworld.spec) 'Freeworld' is better than fedora's default audacity package in the sense that it ships patent encumbered codecs that fedora can't/won't ship in their official repositories.
- - From The Developers of the Wine compatability layer: [Crossover](https://www.codeweavers.com/crossover) It's a bit like [Bottles](https://github.com/bottlesdevs/Bottles) But a bit bettter in some areas, and it runs on MacOS.
-### Various Shell things
+ - open source DAW licensed under GPL v2 (If you use Ardour, Consider donating!)
+ 
+ ### Audacity (Freeworld)
+ - [Audacity](https://github.com/audacity/audacity) [Freeworld spec](https://github.com/rpmfusion/audacity-freeworld/blob/master/audacity-freeworld.spec) 'Freeworld' is better than fedora's default audacity package in the sense that it ships patent encumbered codecs that fedora can't/won't ship in their official repositories. (If you use audacity, Consider donating!)
+ 
+ ### Codeweavers' Crossover
+ - From The Developers of the Wine compatability layer: [Crossover](https://www.codeweavers.com/crossover) It's a bit like [Bottles](https://github.com/bottlesdevs/Bottles) But a bit bettter in some areas, and it runs on MacOS. 
+ - Crossover Current Version:`25.1.0` 
+ - ***Note: Currently, Part of the build process for DistinctionOS grabs the most recent rpm package direct from codeweavers; This Means It'll update Crossover regardless of your license, and in turn, breaking your crossover installation if your license doesn't support the most recent versions.*** 
+### Misc
  - [zoxide](https://github.com/ajeetdsouza/zoxide)
  - [nushell](https://github.com/nushell/nushell)
  - [dysk](https://github.com/Canop/dysk)
-
-## End goal of this repo:
-#### Building off of something already very impressive but make it even more feature rich/complete & add everything I use and could ever want. It's made for me, myself, and I; Designed around my definition of the best 'Out-of-the-Box' experience possible.
-
-
+ - Flatpak-builder 
+ - Various apps that bazzite wants as flatpak that are now reinstalled as native RPMs 
+ - Various codecs & multimedia added
+ ### VirtualBox 7
+ - [VirtualBox](https://github.com/VirtualBox/virtualbox) Main: https://www.virtualbox.org/wiki/Linux_Downloads
 
 # Purpose
 
