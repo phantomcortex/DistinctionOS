@@ -17,3 +17,5 @@ systemctl enable distinction-firstrun.service
 echo "Enabling TPM monitor services..."
 systemctl enable distinction-tpm-monitor.timer
 systemctl enable distinction-tpm-monitor.service
+
+gtk-update-icon-cache -f /usr/share/icons/kora
