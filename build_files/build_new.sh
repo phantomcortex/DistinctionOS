@@ -59,7 +59,8 @@ declare -A RPM_PACKAGES=(
     lutris \
     virt-manager \
     dkms \
-    flatpak-builder"
+    nss-mdns.i686 \
+    pcsc-lite-libs.i686"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
