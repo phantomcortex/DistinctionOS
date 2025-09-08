@@ -58,7 +58,8 @@ declare -A RPM_PACKAGES=(
     clang \
     lutris \
     virt-manager \
-    dkms"
+    dkms \
+    flatpak-builder"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
