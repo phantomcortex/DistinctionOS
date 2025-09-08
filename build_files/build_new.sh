@@ -10,6 +10,23 @@ log() {
   echo "=== $* ==="
 }
 
+
+#remove pesky bazzite things (mainly askpass)
+remove_packages=(waydroid \
+  sunshine \
+  gnome-shell-extension-compiz-windows-effect \
+  openssh-askpass \
+  cockpit-bridge \
+  zfs-fuse)
+
+for pkg in "${remove_packages[@]}"; do
+  if rpm -q "$pkg" &>/dev/null; then
+    echo "Removing $pkg..."
+    dnf5 -y remove "$pkg"
+  fi 
+done 
+
+
 # ZFS filesystem driver 
 dnf install -y https://zfsonlinux.org/fedora/zfs-release-2-8.fc42.noarch.rpm   
 
@@ -60,7 +77,12 @@ declare -A RPM_PACKAGES=(
     virt-manager \
     dkms \
     nss-mdns.i686 \
-    pcsc-lite-libs.i686"
+    pcsc-lite-libs.i686 \
+    freerdp \
+    dialog \
+    iproute \
+    libnotify \
+    nmap-ncat"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
@@ -104,21 +126,6 @@ for repo in "${!RPM_PACKAGES[@]}"; do
     "${cmd[@]}"
   fi
 done
-
-#remove pesky bazzite things (mainly askpass)
-remove_packages=(waydroid \
-  sunshine \
-  gnome-shell-extension-compiz-windows-effect \
-  openssh-askpass \
-  cockpit-bridge \
-  zfs-fuse)
-
-for pkg in "${remove_packages[@]}"; do
-  if rpm -q "$pkg" &>/dev/null; then
-    echo "Removing $pkg..."
-    dnf5 -y remove "$pkg"
-  fi 
-done 
 
 #flatpak-builder wasn't installed last commit
 if ! rpm -q flatpak-builder &>/dev/null; then
