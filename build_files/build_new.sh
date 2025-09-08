@@ -119,6 +119,10 @@ for pkg in "${remove_packages[@]}"; do
   fi 
 done 
 
+#flatpak-builder wasn't installed last commit
+if ! rpm -q flatpak-builder &>/dev/null; then
+  dnf5 -y install flatpak-builder
+fi
 dnf -y install zfs
 # remove bazzite things intended for waydroid
 find /usr/share/applications -iname '*waydroid*' -exec rm -rf {} + 
