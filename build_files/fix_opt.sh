@@ -1,8 +1,8 @@
 #!/usr/bin/bash
 set -euo pipefail
 
-# CREDIT: https://github.com/ExistingPerson08/amyos-gnome/blob/main/build_files/fix-opt.sh
-# Enhanced for Crossover support by DistinctionOS
+# Alternative approach: Full copy for complete writeability
+# Use this if you prefer simplicity over immutability benefits
 
 trap '[[ $BASH_COMMAND != echo* ]] && [[ $BASH_COMMAND != log* ]] && echo "+ $BASH_COMMAND"' DEBUG
 
@@ -10,7 +10,7 @@ log() {
   echo "=== $* ==="
 }
 
-log "Starting enhanced /opt directory fix"
+log "Starting /opt directory fix (full-copy variant)"
 
 # Ensure required directories exist
 mkdir -p /usr/lib/opt
@@ -21,65 +21,26 @@ for dir in /var/opt/*/; do
   [ -d "$dir" ] || continue
   dirname=$(basename "$dir")
   
-  # Special handling for Crossover
   if [[ "$dirname" == "cxoffice" ]]; then
-    log "Processing Crossover with special writeable handling"
+    log "Processing Crossover with full-copy approach"
     
-    # Move main content to read-only location
+    # Store the entire package in /usr/lib/opt as backup/source
     mkdir -p "/usr/lib/opt/$dirname"
+    cp -a "$dir"* "/usr/lib/opt/$dirname/" 2>/dev/null || true
     
-    # Save the etc directory temporarily if it exists
-    if [[ -d "$dir/etc" ]]; then
-      log "Preserving existing etc directory"
-      cp -a "$dir/etc" "/tmp/cxoffice-etc-temp"
-    fi
+    # Keep everything in /var/opt for full writeability
+    # No need to move anything - it's already there
     
-    # Move everything to /usr/lib/opt first
-    for item in "$dir"*; do
-      basename_item=$(basename "$item")
-      if [[ -e "$item" ]]; then
-        mv "$item" "/usr/lib/opt/$dirname/"
-      fi
-    done
-    
-    # Now move etc back to /var/opt for writeability
-    if [[ -d "/usr/lib/opt/$dirname/etc" ]]; then
-      mkdir -p "/var/opt/$dirname"
-      mv "/usr/lib/opt/$dirname/etc" "/var/opt/$dirname/etc"
-      log "Moved etc to writeable location"
-    elif [[ -d "/tmp/cxoffice-etc-temp" ]]; then
-      # Restore from temp if we saved it
-      mkdir -p "/var/opt/$dirname"
-      mv "/tmp/cxoffice-etc-temp" "/var/opt/$dirname/etc"
-      log "Restored etc from temp"
-    else
-      # Create empty etc if it doesn't exist
-      mkdir -p "/var/opt/$dirname/etc"
-      log "Created empty etc directory"
-    fi
-    
-    # Ensure proper permissions
-    chmod 755 "/var/opt/$dirname/etc"
-    
-    # Create tmpfiles.d configuration
+    # Create tmpfiles.d to copy from backup on boot if needed
     cat >> /usr/lib/tmpfiles.d/distinction-opt-fix.conf <<EOF
-# Crossover directory structure
+# Crossover - Full writeable copy
 d /var/opt/$dirname 0755 root root -
 d /var/opt/$dirname/etc 0755 root root -
+# Copy missing files from backup (C = copy if doesn't exist)
+C /var/opt/$dirname - - - - /usr/lib/opt/$dirname
 EOF
     
-    # Create symlinks for read-only components
-    for subdir in bin lib lib64 share support; do
-      if [[ -d "/usr/lib/opt/$dirname/$subdir" ]]; then
-        echo "L+ /var/opt/$dirname/$subdir - - - - /usr/lib/opt/$dirname/$subdir" >> /usr/lib/tmpfiles.d/distinction-opt-fix.conf
-      fi
-    done
-    
-    # If cxoffice.conf exists, ensure it's in the writeable location
-    if [[ -f "/usr/lib/opt/$dirname/etc/cxoffice.conf" ]]; then
-      mv "/usr/lib/opt/$dirname/etc/cxoffice.conf" "/var/opt/$dirname/etc/"
-      log "Moved cxoffice.conf to writeable location"
-    fi
+    log "Crossover configured for full writeability"
     
   else
     # Standard handling for other /opt packages
@@ -88,14 +49,5 @@ EOF
     echo "L+ /var/opt/$dirname - - - - /usr/lib/opt/$dirname" >> /usr/lib/tmpfiles.d/distinction-opt-fix.conf
   fi
 done
-
-# Clean up any temp directories
-rm -rf /tmp/cxoffice-etc-temp
-
-# Debug output (optional - remove in production)
-if [[ -f /usr/lib/tmpfiles.d/distinction-opt-fix.conf ]]; then
-  log "Generated tmpfiles.d configuration:"
-  cat /usr/lib/tmpfiles.d/distinction-opt-fix.conf
-fi
 
 log "Fix completed successfully"
