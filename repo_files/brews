@@ -8,10 +8,10 @@ gh
 git
 tealdeer
 sshs
+sshfs
 python@3.13
 gcc
 clang-format
 bat
 nushell
 rust
-cargo
