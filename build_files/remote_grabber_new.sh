@@ -37,7 +37,6 @@ declare -A EXTENSIONS_GIT=(
     ["date-menu-formatter@marcinjakubowski.github.com"]="https://github.com/marcinjakubowski/date-menu-formatter.git"
     ["dash-to-dock@micxgx.gmail.com"]="https://github.com/micheleg/dash-to-dock.git"
     ["quick-settings-avatar@d-go"]="https://github.com/d-go/quick-settings-avatar.git"
-    ["azwallpaper@azwallpaper.gitlab.com"]="https://gitlab.com/AndrewZaech/azwallpaper.git"
 )
 
 declare -A EXTENSIONS_ZIP=(
