@@ -2,6 +2,10 @@
 set -euo pipefail
 
 # script for things that don't really have a specific place
+log() {
+  echo "=== $* ==="
+}
+
 
 # Change the default shell to zsh
 if [ -e /etc/default/useradd ];then
@@ -32,7 +36,7 @@ for recipe in "install-coolercontrol" "install-openrgb"; do
   sed -i "s/^$recipe:/_$recipe:/" /usr/share/ublue-os/just/*.just
 done
 
-#log "Build process completed"
+log "Build process completed"
 
 
 mkdir -p /etc/zsh/
