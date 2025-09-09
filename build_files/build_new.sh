@@ -73,16 +73,7 @@ declare -A RPM_PACKAGES=(
     perl-File-Copy \
     winetricks \
     clang \
-    lutris \
-    virt-manager \
-    dkms \
-    nss-mdns.i686 \
-    pcsc-lite-libs.i686 \
-    freerdp \
-    dialog \
-    iproute \
-    libnotify \
-    nmap-ncat"
+    lutris"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
@@ -131,6 +122,15 @@ done
 if ! rpm -q flatpak-builder &>/dev/null; then
   dnf5 -y install flatpak-builder
 fi
+dnf5 -y install virt-manager \
+    dkms \
+    nss-mdns.i686 \
+    pcsc-lite-libs.i686 \
+    freerdp \
+    dialog \
+    iproute \
+    libnotify \
+    nmap-ncat
 dnf -y install zfs
 # remove bazzite things intended for waydroid
 find /usr/share/applications -iname '*waydroid*' -exec rm -rf {} + 
