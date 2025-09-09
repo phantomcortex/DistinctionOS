@@ -130,7 +130,9 @@ dnf5 -y install virt-manager \
     dialog \
     iproute \
     libnotify \
-    nmap-ncat
+    nmap-ncat \
+    wl-paste \
+    pandoc
 dnf -y install zfs
 # remove bazzite things intended for waydroid
 find /usr/share/applications -iname '*waydroid*' -exec rm -rf {} + 
