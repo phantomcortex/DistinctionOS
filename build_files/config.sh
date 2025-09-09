@@ -32,7 +32,7 @@ for recipe in "install-coolercontrol" "install-openrgb"; do
   sed -i "s/^$recipe:/_$recipe:/" /usr/share/ublue-os/just/*.just
 done
 
-log "Build process completed"
+#log "Build process completed"
 
 
 mkdir -p /etc/zsh/
