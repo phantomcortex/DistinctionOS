@@ -56,6 +56,7 @@ declare -A RPM_PACKAGES=(
     zsh-autosuggestions \
     neovim \
     file-roller \
+    bat \
     evince \
     loupe \
     zoxide \
@@ -132,7 +133,9 @@ dnf5 -y install \
     wl-paste \
     pandoc \
     docker \
-    docker-compose
+    docker-compose \
+    flatpak-builder
+
 
 # Install ZFS 
 dnf -y install zfs
