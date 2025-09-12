@@ -177,12 +177,6 @@ dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 #dnf5 -y install https://raw.githubusercontent.com/evilsocket/opensnitch/releases/download/v1.7.2/opensnitch-1.7.2-1.x86_64.rpmfusion-free
 
 # custom kora icon theme
-#dnf5 -y install https://github.com/phantomcortex/kora/releases/download/1.6.5.12/kora-icon-theme-1.6.5.12-1.fc42.noarch.rpm
 
-#!/usr/bin/env bash
-url=$(curl -s https://api.github.com/repos/phantomcortex/kora/releases/latest | grep -Po '"browser_download_url": "\K.*?\.rpm(?=")' | head -n1)
-[ -n "$url" ] || { echo "No RPM found"; exit 1; }
-echo "Installing from $url"
-curl -Ls "$url" -o /tmp/kora.rpm
-dnf5 -y install /tmp/kora.rpm
-
+# Install latest release directly with dnf5
+dnf5 -y install $(curl -s https://api.github.com/repos/phantomcortex/kora/releases/latest | grep "browser_download_url.*\.rpm" | cut -d '"' -f 4)
