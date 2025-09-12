@@ -19,6 +19,7 @@ remove_packages=(waydroid \
   cockpit-bridge \
   zfs-fuse)
 # TODO: Rebrand Bazzite things to DistinctionOS
+# TODO: Figure out why certain packages seem to be omitted during install
 
 for pkg in "${remove_packages[@]}"; do
   if rpm -q "$pkg" &>/dev/null; then
@@ -70,7 +71,6 @@ declare -A RPM_PACKAGES=(
     decibels \
     dconf \
     gtk-murrine-engine \
-    gnome-tweaks \
     glib2-devel \
     perl-File-Copy \
     winetricks \
@@ -134,7 +134,8 @@ dnf5 -y install \
     pandoc \
     docker \
     docker-compose \
-    flatpak-builder
+    flatpak-builder \
+    gnome-tweaks 
 
 
 # Install ZFS 
@@ -176,4 +177,12 @@ dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm
 #dnf5 -y install https://raw.githubusercontent.com/evilsocket/opensnitch/releases/download/v1.7.2/opensnitch-1.7.2-1.x86_64.rpmfusion-free
 
 # custom kora icon theme
-dnf5 -y install https://github.com/phantomcortex/kora/releases/download/1.6.5.12/kora-icon-theme-1.6.5.12-1.fc42.noarch.rpm
+#dnf5 -y install https://github.com/phantomcortex/kora/releases/download/1.6.5.12/kora-icon-theme-1.6.5.12-1.fc42.noarch.rpm
+
+#!/usr/bin/env bash
+url=$(curl -s https://api.github.com/repos/phantomcortex/kora/releases/latest | grep -Po '"browser_download_url": "\K.*?\.rpm(?=")' | head -n1)
+[ -n "$url" ] || { echo "No RPM found"; exit 1; }
+echo "Installing from $url"
+curl -Ls "$url" -o /tmp/kora.rpm
+dnf5 -y install /tmp/kora.rpm
+
