@@ -174,9 +174,14 @@ fi #sanity check
 dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
 
 # The follwing is opensnitch, a per process firewall which can be disabled at any time.
-#dnf5 -y install https://raw.githubusercontent.com/evilsocket/opensnitch/releases/download/v1.7.2/opensnitch-1.7.2-1.x86_64.rpmfusion-free
+dnf5 -y install $(curl -s https://api.github.com/repos/evilsocket/opensnitch/releases/latest | grep "browser_download_url.*\.rpm" | cut -d '"' -f 4)
+
 
 # custom kora icon theme
 
 # Install latest release directly with dnf5
 dnf5 -y install $(curl -s https://api.github.com/repos/phantomcortex/kora/releases/latest | grep "browser_download_url.*\.rpm" | cut -d '"' -f 4)
+# Winboat (Added @ 0.7.11)
+dnf5 -y install $(curl -s https://api.github.com/repos/TibixDev/winboat/releases/latest | grep "browser_download_url.*\.rpm" | cut -d '"' -f 4)
+
+
