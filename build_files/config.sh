@@ -48,6 +48,11 @@ curl -L https://raw.githubusercontent.com/ublue-os/bluefin/main/system_files/sha
 
 gtk-update-icon-cache -f /usr/share/icons/kora
 
+#few updates ()
+update-desktop-database
+glib-compile-schemas /usr/share/glib-2.0
+update-mime-database -V /usr/share/mime
+
 
 # remove pesky askpass 
 if [ -e /etc/profile.d/askpass.sh ]; then
