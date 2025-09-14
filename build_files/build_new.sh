@@ -173,10 +173,6 @@ fi #sanity check
 
 dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
 
-# The follwing is opensnitch, a per process firewall which can be disabled at any time.
-dnf5 -y install $(curl -s https://api.github.com/repos/evilsocket/opensnitch/releases/latest | grep "browser_download_url.*\.rpm" | cut -d '"' -f 4)
-
-
 # custom kora icon theme
 
 # Install latest release directly with dnf5
