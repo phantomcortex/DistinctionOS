@@ -7,17 +7,19 @@ button-layout='appmenu:minimize,maximize,close'
 [org.gnome.desktop.interface]
 color-scheme='prefer-dark'
 gtk-theme='adw-gtk3-dark'
-enable-hot-corners=false
-document-font-name='Noto Sans 12'
+enable-hot-corners=true
+document-font-name='0xProto Nerd Font Bold 12'
 font-name='Berserker Bold 12'
 monospace-font-name='Fira Code weight=450 10'
 accent-color='red'
-cursor-theme='DeepinDark-cursors'
+cursor-theme='capitaine-cursors'
 cursor-size=36
-icon-theme=Kora
+font-antialiasing='rgba'
+icon-theme=kora
 
 [org.gnome.desktop.sound]
-theme-name='steam'
+theme-name='_custom'
+event-sounds=false
 
 [org.gnome.desktop.wm.preferences]
 titlebar-font='Berserker Bold Medium 12'
