@@ -15,12 +15,12 @@ usermod -s /usr/bin/zsh root
 #
 
 # enable distictionos-firstrun
-systemctl enable distinction-firstrun.service
+#systemctl enable distinction-firstrun.service
 
 # Enable TPM monitoring services
 echo "Enabling TPM monitor services..."
-systemctl enable distinction-tpm-monitor.timer
-systemctl enable distinction-tpm-monitor.service
+#systemctl enable distinction-tpm-monitor.timer
+#systemctl enable distinction-tpm-monitor.service
 
 log "Enabling system services"
 
