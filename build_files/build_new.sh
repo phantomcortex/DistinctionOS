@@ -144,7 +144,7 @@ dnf5 -y install \
 dnf -y install zfs
 
 # remove bazzite things intended for waydroid
-find /usr -iname '*waydroid*' -exec rm -rf {} + 
+find /usr/share/applications -iname '*waydroid*' -exec rm -rf {} + 
 
 # custom icon for Cider because it doesn't seem to use it regardless of what icon theme is used
 sed -i 's@Icon=Cider@Icon=/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share/applications/Cider.desktop
