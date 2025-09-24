@@ -119,14 +119,15 @@ jobs:
         uses: hhd-dev/rechunk@ded27feba22df48134eece2c66ba0fca1289ff40 # v1.2.3
         with:
           rechunk: 'ghcr.io/hhd-dev/rechunk:v1.2.3'
-          ref: 'raw-img' # ref: "${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
+          ref: 'raw-img'
           prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           skip_compression: true
           version: '${{ steps.generate-version.outputs.tag }}'
           labels: |
           	io.artifacthub.package.readme-url=https://raw.githubusercontent.com/phantomcortex/DistinctionOS/refs/heads/main/README.md
+          	io.artifacthub.package.logo-url=https://raw.githubusercontent.com/ublue-os/bazzite/main/repo_content/logo.png
           	org.opencontainers.image.created=<timestamp>
-          	org.opencontainers.image.description=DistinctionOS is fork of Bazzite based around my versatile powerhouse.
+          	org.opencontainers.image.description=DistinctionOS is fork of Bazzite, based around my versatile powerhouse.
           	org.opencontainers.image.licenses=Apache-2.0
           	org.opencontainers.image.revision=${{ github.sha }}
           	org.opencontainers.image.source=https://github.com/phantomcortex/DistinctionOS
