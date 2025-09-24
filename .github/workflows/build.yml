@@ -22,7 +22,7 @@ env:
   IMAGE_NAME: "${{ github.event.repository.name }}"  # output image name, usually same as repo name
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"  # do not edit
   DEFAULT_TAG: "latest"
-  FEDORA_VERSION: "40"  # Update this to match your Bazzite's Fedora version
+  FEDORA_VERSION: "42"  # Current Bazzite Fedora version
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ inputs.brand_name}}-${{ inputs.stream_name }}
@@ -113,19 +113,13 @@ jobs:
           labels: ${{ steps.metadata.outputs.labels }}
           oci: false
 
-      # Push the built image to local storage for Rechunker to access
-      - name: Push to local registry
-        run: |
-          # Push the image to containers-storage for Rechunker
-          podman push ${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }} containers-storage:localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}
-
       # Rechunk the image to provide better layer management and download resumability
       - name: Run Rechunker
         id: rechunk
         uses: hhd-dev/rechunk@f153348d8100c1f504dec435460a0d7baf11a9d2 # v1.1.1
         with:
           rechunk: 'ghcr.io/hhd-dev/rechunk:v1.0.1'
-          ref: "containers-storage:localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
+          ref: "${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           skip_compression: true
           version: ${{ env.FEDORA_VERSION }}
