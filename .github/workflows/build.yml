@@ -113,6 +113,11 @@ jobs:
           labels: ${{ steps.metadata.outputs.labels }}
           oci: false
 
+      - name: Start local registry
+        run: |
+          podman run -d -p 5000:5000 --name registry docker.io/library/registry:2
+          podman push ${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }} localhost:5000/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}
+
       # Rechunk the image to provide better layer management and download resumability
       - name: Run Rechunker
         id: rechunk
