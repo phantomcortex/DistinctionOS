@@ -139,7 +139,8 @@ dnf5 -y install \
     sane-backends-libs.i686 \
     sane-backends-libs.x86_64
 
-
+dnf5 -y install git-2.51.0-2.fc42.x86_64
+dnf5 versionlock add git
 # Install ZFS 
 dnf -y install zfs
 
