@@ -61,7 +61,6 @@ declare -A RPM_PACKAGES=(
     evince \
     loupe \
     zoxide \
-    apfs-fuse \
     ardour8 \
     sassc \
     blackbox-terminal \
@@ -74,7 +73,6 @@ declare -A RPM_PACKAGES=(
     glib2-devel \
     perl-File-Copy \
     winetricks \
-    clang \
     lutris"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
@@ -82,8 +80,7 @@ declare -A RPM_PACKAGES=(
     libheif-freeworld \
     libavcodec-freeworld \
     gstreamer1-plugins-bad-freeworld \
-    gstreamer1-plugins-ugly \
-    VirtualBox"
+    gstreamer1-plugins-ugly"
 
   ["fedora-multimedia"]="\
     mpv \
@@ -121,7 +118,6 @@ for repo in "${!RPM_PACKAGES[@]}"; do
 done
 
 dnf5 -y install \
-    virt-manager \
     dkms \
     nss-mdns.i686 \
     pcsc-lite-libs.i686 \
