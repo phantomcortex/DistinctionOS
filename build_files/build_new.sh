@@ -133,7 +133,8 @@ dnf5 -y install \
     flatpak-builder \
     gnome-tweaks \
     sane-backends-libs.i686 \
-    sane-backends-libs.x86_64
+    sane-backends-libs.x86_64 \
+    sox
 
 
 # Install ZFS 
