@@ -134,7 +134,8 @@ dnf5 -y install \
     gnome-tweaks \
     sane-backends-libs.i686 \
     sane-backends-libs.x86_64 \
-    sox
+    sox \
+    totem-video-thumbnailer
 
 
 # Install ZFS 
