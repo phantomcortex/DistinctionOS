@@ -136,7 +136,8 @@ dnf5 -y install \
     sane-backends-libs.x86_64 \
     sox \
     totem-video-thumbnailer \
-    mediainfo
+    mediainfo \
+    perl-Image-ExifTool
 
 
 # Install ZFS 
