@@ -137,7 +137,8 @@ dnf5 -y install \
     sox \
     totem-video-thumbnailer \
     mediainfo \
-    perl-Image-ExifTool
+    perl-Image-ExifTool \
+    libraw
 
 
 # Install ZFS 
