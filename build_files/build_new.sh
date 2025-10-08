@@ -138,7 +138,7 @@ dnf5 -y install \
     totem-video-thumbnailer \
     mediainfo \
     perl-Image-ExifTool \
-    libraw
+    LibRaw
 
 
 # Install ZFS 
