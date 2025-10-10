@@ -92,6 +92,7 @@ declare -A RPM_PACKAGES=(
   ["copr:fernando-debian/dysk"]="dysk"
   ["copr:atim/heroic-games-launcher"]="heroic-games-launcher-bin"
   ["copr:sergiomb/clonezilla"]="clonezilla"
+  ["copr:monkeygold/nautilus-open-any-terminal"]="nautilus-open-any-terminal"
   ["copr:alternateved/eza"]="eza"
 )
 
@@ -122,11 +123,7 @@ dnf5 -y install \
     nss-mdns.i686 \
     pcsc-lite-libs.i686 \
     freerdp \
-    dialog \
-    iproute \
-    libnotify \
     nmap-ncat \
-    wl-paste \
     pandoc \
     docker \
     docker-compose \
@@ -138,7 +135,6 @@ dnf5 -y install \
     totem-video-thumbnailer \
     mediainfo \
     perl-Image-ExifTool \
-    LibRaw
 
 
 # Install ZFS 
