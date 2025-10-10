@@ -1,11 +1,11 @@
 ---
-name: Build container image
+name: Build DistinctionOS
 on:
   pull_request:
     branches:
       - main
   schedule:
-    - cron: '05 8 */3 * *'  # 2:05am Mountain time every 3 days
+    - cron: '05 8 */4 * *'  # 2:05am Mountain time every 4 days
   #push:
   #  branches:
   #    - main
