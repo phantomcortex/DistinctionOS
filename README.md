@@ -6,7 +6,7 @@
  - See: [Cider collective](https://cider.sh/)
  -  **NOTE:** ***This is Cider version 3. You need to purchase an license from itch.io to use it, But it should be a one-time payment. See: https://cidercollective.itch.io/cider You will still need an active Apple Music subscription to use it.***
   ### XPADNEO
- - [xpadneo](https://github.com/atar-axis/xpadneo) compiled from source and signed at build time
+ - [xpadneo](https://github.com/atar-axis/xpadneo) compiled from source.
  - Xpadneo is good for controller input over bluetooth and for use for xbox series elite controllers (which I have and use)
  
  ### BlackBox-Terminal
@@ -19,19 +19,20 @@
  ### Audacity (Freeworld)
  - [Audacity](https://github.com/audacity/audacity) [Freeworld spec](https://github.com/rpmfusion/audacity-freeworld/blob/master/audacity-freeworld.spec) 'Freeworld' is better than fedora's default audacity package in the sense that it ships patent encumbered codecs that fedora can't/won't ship in their official repositories. (If you use audacity, Consider donating!)
  
- ### Codeweavers' Crossover
- - From The Developers of the Wine compatability layer: [Crossover](https://www.codeweavers.com/crossover) It's a bit like [Bottles](https://github.com/bottlesdevs/Bottles) But a bit bettter in some areas, and it runs on MacOS. 
- - Crossover Current Version:`25.1.0` 
- - ***Note: Currently, Part of the build process for DistinctionOS grabs the most recent rpm package direct from codeweavers; This Means It'll update Crossover regardless of your license, and in turn, breaking your crossover installation if your license doesn't support the most recent versions.*** 
+
 ### Misc
  - [zoxide](https://github.com/ajeetdsouza/zoxide)
- - [nushell](https://github.com/nushell/nushell)
  - [dysk](https://github.com/Canop/dysk)
  - Flatpak-builder 
  - Various apps that bazzite wants as flatpak that are now reinstalled as native RPMs 
- - Various codecs & multimedia added
- ### VirtualBox 7
- - [VirtualBox](https://github.com/VirtualBox/virtualbox) Main: https://www.virtualbox.org/wiki/Linux_Downloads
+
+ ### Misc /bin
+- advcp
+- advmv
+- rpm-ostree-search-hl (rpm-ostree search highlighting)
+
+ 
+
 
 # Purpose
 
