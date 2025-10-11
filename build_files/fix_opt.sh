@@ -21,6 +21,8 @@ for dir in /var/opt/*/; do
   [ -d "$dir" ] || continue
   dirname=$(basename "$dir")
   
+  true <<'COMMENT'
+  
   if [[ "$dirname" == "cxoffice" ]]; then
     log "Processing Crossover with full-copy approach"
     
@@ -39,9 +41,9 @@ d /var/opt/$dirname/etc 0755 root root -
 # Copy missing files from backup (C = copy if doesn't exist)
 C /var/opt/$dirname - - - - /usr/lib/opt/$dirname
 EOF
-    
+
     log "Crossover configured for full writeability"
-    
+  
   else
     # Standard handling for other /opt packages
     log "Processing standard package: $dirname"
@@ -50,4 +52,9 @@ EOF
   fi
 done
 
+COMMENT 
+
+log "Processing standard package: $dirname"
+    mv "$dir" "/usr/lib/opt/$dirname"
+    echo "L+ /var/opt/$dirname - - - - /usr/lib/opt/$dirname" >> /usr/lib/tmpfiles.d/distinction-opt-fix.conf
 log "Fix completed successfully"
