@@ -136,6 +136,9 @@ dnf5 -y install \
     mediainfo \
     perl-Image-ExifTool \
 
+# Install traditional wine
+dnf5 -y install wine --skip-broken
+
 
 # Install ZFS 
 dnf -y install zfs
