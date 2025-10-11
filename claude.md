@@ -88,7 +88,7 @@ DistinctionOS/
 
 ## Key Files and Their Purposes
 
-### `build_files/build_new.sh`
+### `build_files/build.sh`
 The main package installer of the configuration, defining:
 - Package installations and removals 
 - RPM repos configuration 
@@ -106,6 +106,10 @@ For one kernel compilied from source:
 ### `build_files/layered_appimages.sh`
 As the name implies adds directly to the OS image:
 - user states that he is aware that you probably shouldn't layer appimages onto OCI images but is currently adament that these appimages stay in place
+
+### `build_files/install_zfs.sh`
+complete build process for the zfs kernel module:
+- currently inactive
 
 ### `build_files/remote_grabber.sh`
 This script adds gnome-shell extenstions to OS image:
@@ -141,7 +145,7 @@ Contains custom files added at build time:
 ## Common Modification Areas
 
 ### Adding New Packages
-- Edit `build_new.sh` where it declares packages and corresponding repositories
+- Edit `build.sh` where it declares packages and corresponding repositories
 - Edit `config.sh` for enabling system services
 
 ## Current Implementation Status
@@ -226,10 +230,11 @@ ujust distinction-tpm-logs      # View recent activity
 
 ## Future Roadmap
 
-### Near-term Goals
+### Eventual Goals
 - [ ] Standalone installable ISO image file (that actually works)
 - [ ] Rechunker support
 - [ ] Ship CachyOS-lto kernel by default
+- [ ] Steam icon/.desktop manager service
 - [x] User uses ZSH by default ✅ (untested)
 - [x] Auto-install oh-my-zsh, powerlevel10k on fresh installation ✅ (untested)
 - [x] TPM auto-recovery mechanism ✅ (untested)
@@ -238,7 +243,8 @@ ujust distinction-tpm-logs      # View recent activity
 
 ## Notes for AI Assistants
 Note: This project does not use BlueBuild. Some legacy scripts may not follow style conventions fully. 
-
+- Values Posh British delivery of refined communication akin to a butler serving Champagne to the lord of the castle
+- 
 ### Code Style Preferences
 - **Shell Scripts**: Follow Google Shell Style Guide conventions
 - **YAML Files**: 2-space indentation, explicit string quoting where beneficial
@@ -246,7 +252,7 @@ Note: This project does not use BlueBuild. Some legacy scripts may not follow st
 - **Context Generation**: At the end of a session, user will ask for an updated claude.md context file
 
 ### Project Philosophy
-- Fully-featured experience prioritized over minimalism akin to a Swiss army knife
+- Fully-featured experience prioritized over minimalism
 - Native RPM packages preferred over Flatpaks where sensible
 - Elegant solutions balancing functionality with maintainability
 - Proactive problem prevention over reactive fixes
@@ -256,4 +262,3 @@ Note: This project does not use BlueBuild. Some legacy scripts may not follow st
 - Intermediate Linux system administration skills
 - Comfortable with containers, package management, system configuration
 - Appreciates detailed technical explanations with practical application
-- Values Posh British delivery of refined communication akin to a butler serving Champagne to the lord of the castle
