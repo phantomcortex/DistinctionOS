@@ -29,9 +29,6 @@ for pkg in "${remove_packages[@]}"; do
 done 
 
 
-# ZFS filesystem driver 
-dnf install -y https://zfsonlinux.org/fedora/zfs-release-2-8.fc42.noarch.rpm   
-
 #=================Cider=====================
 # Cider workaround because I don't want to \ 
 # mess with the main installer portion
@@ -73,7 +70,16 @@ declare -A RPM_PACKAGES=(
     glib2-devel \
     perl-File-Copy \
     winetricks \
-    lutris"
+    lutris \
+    sox \
+    totem-video-thumbnailer \
+    mediainfo \
+    pandoc \
+    docker \
+    docker-compose \
+    flatpak-builder \
+    gnome-tweaks \    
+    freerdp"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
@@ -134,39 +140,10 @@ dnf5 -y install \
     sox \
     totem-video-thumbnailer \
     mediainfo \
-    perl-Image-ExifTool \
+    perl-Image-ExifTool
 
 # Install traditional wine
 dnf5 -y install wine --skip-broken
-
-
-# Install ZFS 
-dnf -y install zfs
-
-# remove bazzite things intended for waydroid
-find /usr/share/applications -iname '*waydroid*' -exec rm -rf {} + 
-
-# custom icon for Cider because it doesn't seem to use it regardless of what icon theme is used
-sed -i 's@Icon=Cider@Icon=/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share/applications/Cider.desktop
-
-# modify winetricks due to winetricks telling me 'You are using 64 bit verb' or 'You seem to be using wow64 mode!' five-thousand times... 
-if [ -f /usr/share/applications/winetricks.desktop ]; then 
-  sed -i 's@Exec=winetricks --gui@Exec=/usr/bin/env WINEDEBUG-all winetricks -q --gui@g' /usr/share/applications/winetricks.desktop
-else
-  echo "winetricks.desktop does not exist for some reason"
-  if [ rpm -q winetricks ]; then 
-    tee /usr/share/applications/winetricks.desktop << 'EOF'
-[Desktop Entry]
-Name=Winetricks
-Comment=Work around problems and install applications under Wine
-Exec=/usr/bin/env WINEDEBUG=-all winetricks -q --gui
-Terminal=false
-Icon=winetricks
-Type=Application
-Categories=Utility;
-EOF
-  fi
-fi
 
 if [[ ! -d /var/opt ]]; then
   echo -e "$RED /var/opt does not exist for some reason...\n $CYAN CREATING... $NC"

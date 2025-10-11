@@ -3,16 +3,6 @@ set -euo pipefail
 
 KERNEL=$(ls /lib/modules/ | grep bazzite | sort -V | tail -1)
 
-# Build ZFS modules for the target kernel specifically
-dkms autoinstall -k ${KERNEL}
-
-if [ -d "/lib/modules/${KERNEL}/extra/zfs" ]; then
-    echo "ZFS modules successfully built for kernel ${KERNEL}"
-else
-    echo "Warning: ZFS module build may have failed for kernel ${KERNEL}"
-    # Fallback: attempt to build for all installed kernels
-fi 
-# Set up the build environment properly
 export KERNELDIR="/lib/modules/${KERNEL}/build"
 echo -e "\033[31mINSTALL XPADNEO\033[0m"
 set +u #these are here prevent 'unbound variable' which doesn't make ANY sense.
@@ -64,6 +54,7 @@ if [[ -f "$FILE1" || -f "$FILE2" ]]; then
   else
     echo -e "\033[33;5mXPADNEO FAILED TO INSTALL\033[0m" && exit 1  
 fi #sanity check
+
 
 # Get kernel version and build initramfs
 KERNEL_VERSION="$(dnf5 repoquery --installed --queryformat='%{evr}.%{arch}' kernel)"

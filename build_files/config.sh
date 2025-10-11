@@ -39,6 +39,32 @@ done
 log "Build process completed"
 
 
+# remove bazzite things intended for waydroid
+find /usr/share/applications -iname '*waydroid*' -exec rm -rf {} + 
+
+# custom icon for Cider because it doesn't seem to use it regardless of what icon theme is used
+sed -i 's@Icon=Cider@Icon=/usr/share/icons/kora/apps/scalable/cider.svg@g' /usr/share/applications/Cider.desktop
+
+# modify winetricks due to winetricks telling me 'You are using 64 bit verb' or 'You seem to be using wow64 mode!' five-thousand times... 
+if [ -f /usr/share/applications/winetricks.desktop ]; then 
+  sed -i 's@Exec=winetricks --gui@Exec=/usr/bin/env WINEDEBUG-all winetricks -q --gui@g' /usr/share/applications/winetricks.desktop
+else
+  echo "winetricks.desktop does not exist for some reason"
+  if [ rpm -q winetricks ]; then 
+    tee /usr/share/applications/winetricks.desktop << 'EOF'
+[Desktop Entry]
+Name=Winetricks
+Comment=Work around problems and install applications under Wine
+Exec=/usr/bin/env WINEDEBUG=-all winetricks -q --gui
+Terminal=false
+Icon=winetricks
+Type=Application
+Categories=Utility;
+EOF
+  fi
+fi
+
+
 mkdir -p /etc/zsh/
 curl -L https://raw.githubusercontent.com/ublue-os/bluefin/main/system_files/shared/etc/zsh/zlogin -o /etc/zsh/zlogin
 curl -L https://raw.githubusercontent.com/ublue-os/bluefin/main/system_files/shared/etc/zsh/zlogout -o /etc/zsh/zlogout
