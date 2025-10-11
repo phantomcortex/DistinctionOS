@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# rpm-ostree wrapper with search term highlighting
+
+# Check if this is a search operation
+if [[ "$1" == "search" ]] && [[ -n "$2" ]]; then
+    # Extract the search term (everything after 'search')
+    shift  # Remove 'search' from arguments
+    search_terms="$*"
+    
+    # Build grep pattern from search terms
+    # Join terms with | for alternation
+    grep_pattern=""
+    for term in $search_terms; do
+        if [[ -z "$grep_pattern" ]]; then
+            grep_pattern="$term"
+        else
+            grep_pattern="$grep_pattern|$term"
+        fi
+    done
+    
+    # Run rpm-ostree and use grep's built-in colour support
+    # GREP_COLORS sets the highlight colour (bold red)
+    GREP_COLORS='ms=01;31' /usr/bin/rpm-ostree search $search_terms | \
+        grep --color=always -E -i "$grep_pattern|$"
+    
+    # The |$ at the end ensures lines without matches are still shown
+else
+    # For non-search commands, pass through normally
+    /usr/bin/rpm-ostree "$@"
+fi
