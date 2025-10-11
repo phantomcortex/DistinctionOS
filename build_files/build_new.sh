@@ -170,7 +170,9 @@ if [[ ! -d /var/opt ]]; then
   mkdir -p /var/opt
 fi #sanity check
 
-dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
+#codeweavers seems to have changed their website I can't grab crossover anymore... 😞
+# in retrospec I should've had a ujust recipe for crossover.
+#dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
 
 # custom kora icon theme
 
