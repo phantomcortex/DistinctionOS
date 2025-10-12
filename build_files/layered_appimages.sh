@@ -51,4 +51,6 @@ elif [ ! -e /var/opt/cemu/cemu-2.6.AppImage ]; then
   exit
 else
   echo "yuzu/cemu should work fine"
+  chmod +x /var/opt/yuzu/yuzu-4176.AppImage
+  chmod +x /var/opt/cemu/cemu-2.6.AppImage
 fi
