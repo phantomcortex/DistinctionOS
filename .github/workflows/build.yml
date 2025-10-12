@@ -5,7 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "05 8 */3 * *" # 2:05am Mountain time every 3 days
+    - cron: '05 8 */3 * *'  # 2:05am Mountain time every 3 days
   #push:
   #  branches:
   #    - main
@@ -18,11 +18,11 @@ on:
 env:
   IMAGE_DESC: "My Customized Universal Blue Image"
   IMAGE_KEYWORDS: "bootc,ublue,universal-blue"
-  IMAGE_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4" # Put your own image here for a fancy profile on https://artifacthub.io/!
-  IMAGE_NAME: "${{ github.event.repository.name }}" # output image name, usually same as repo name
-  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}" # do not edit
-  DEFAULT_TAG: "testing"
-  FEDORA_VERSION: "42" # Current Bazzite Fedora version
+  IMAGE_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4"  # Put your own image here for a fancy profile on https://artifacthub.io/!
+  IMAGE_NAME: "${{ github.event.repository.name }}"  # output image name, usually same as repo name
+  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"  # do not edit
+  DEFAULT_TAG: "latest"
+  FEDORA_VERSION: "42"  # Update this to match your Bazzite's Fedora version
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ inputs.brand_name}}-${{ inputs.stream_name }}
@@ -113,34 +113,17 @@ jobs:
           labels: ${{ steps.metadata.outputs.labels }}
           oci: false
 
-      - name: Start local registry
-        run: |
-          podman run -d -p 5000:5000 --name registry docker.io/library/registry:2
-          podman push ${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }} localhost:5000/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}
-
       # Rechunk the image to provide better layer management and download resumability
       - name: Run Rechunker
         id: rechunk
-        uses: hhd-dev/rechunk@ded27feba22df48134eece2c66ba0fca1289ff40 # v1.2.3
+        uses: hhd-dev/rechunk@f153348d8100c1f504dec435460a0d7baf11a9d2 # v1.1.1
         with:
-          rechunk: "ghcr.io/hhd-dev/rechunk:v1.2.3"
-          ref: "raw-img"
+          rechunk: 'ghcr.io/hhd-dev/rechunk:v1.0.1'
+          ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           skip_compression: true
-          version: "${{ steps.generate-version.outputs.tag }}"
-          labels: |
-            io.artifacthub.package.readme-url=https://raw.githubusercontent.com/phantomcortex/DistinctionOS/refs/heads/main/README.md
-            io.artifacthub.package.logo-url=https://raw.githubusercontent.com/ublue-os/bazzite/main/repo_content/logo.png
-            org.opencontainers.image.created=<timestamp>
-            org.opencontainers.image.description=DistinctionOS is fork of Bazzite, based around my versatile powerhouse.
-            org.opencontainers.image.licenses=Apache-2.0
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.source=https://github.com/phantomcortex/DistinctionOS
-            org.opencontainers.image.title=DistinctionOS
-            org.opencontainers.image.vendor=Phantom.Cortex
-            org.opencontainers.image.url=https://bazzite.gg
-            org.universal-blue.pkg.kernel=<relver:kernel>
-            org.universal-blue.pkg.gamescope=<relver:gamescope>
+          version: ${{ env.FEDORA_VERSION }}
+          labels: ${{ steps.metadata.outputs.labels }}
 
       # Load rechunked image into podman storage and apply tags
       - name: Load in podman and tag
