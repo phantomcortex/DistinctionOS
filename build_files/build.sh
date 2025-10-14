@@ -83,14 +83,11 @@ declare -A RPM_PACKAGES=(
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
-    libheif-freeworld \
     libavcodec-freeworld \
     gstreamer1-plugins-bad-freeworld \
     gstreamer1-plugins-ugly"
 
-  ["fedora-multimedia"]="\
-    mpv \
-    clapper"
+  ["fedora-multimedia"]="mpv"
 
   ["brave-browser"]="brave-browser"
   ["cidercollective"]="Cider"
@@ -98,7 +95,7 @@ declare -A RPM_PACKAGES=(
   ["copr:fernando-debian/dysk"]="dysk"
   ["copr:atim/heroic-games-launcher"]="heroic-games-launcher-bin"
   ["copr:sergiomb/clonezilla"]="clonezilla"
-  ["copr:monkeygold/nautilus-open-any-terminal"]="nautilus-open-any-terminal"
+  #["copr:monkeygold/nautilus-open-any-terminal"]="nautilus-open-any-terminal"
   ["copr:alternateved/eza"]="eza"
 )
 
@@ -152,7 +149,7 @@ fi #sanity check
 
 #codeweavers seems to have changed their website I can't grab crossover anymore... 😞
 # in retrospec I should've had a ujust recipe for crossover.
-#dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
+dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
 
 dnf5 -y upgrade --bugfix --security
 
