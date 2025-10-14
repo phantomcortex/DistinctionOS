@@ -81,4 +81,6 @@ fi
 # rm other bazzite things
  [ -e /etc/profile.d/bazzite-neofetch.sh ] && rm -f /etc/profile.d/bazzite-neofetch.sh
  [ -e /usr/share/applications/gnome-ssh-askpass.desktop ] && rm -f /usr/share/applications/gnome-ssh-askpass.desktop
+ [ -e /etc/yum.repos.d/charm.repo ] && rm -f /etc/yum.repos.d/charm.repo
+
 
