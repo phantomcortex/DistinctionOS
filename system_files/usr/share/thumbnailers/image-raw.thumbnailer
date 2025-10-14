@@ -2,8 +2,6 @@
 Version=1.0
 Encoding=UTF-8
 Type=X-Thumbnailer
-Name=RAW Image Thumbnailer
-MimeType=image/x-sony-arw;image/x-sony-sr2;image/x-sony-srf;image/x-canon-cr2;image/x-canon-cr3;image/x-canon-crw;image/x-nikon-nef;image/x-nikon-nrw;image/x-pentax-pef;image/x-pentax-raw;image/x-olympus-orf;image/x-panasonic-rw2;image/x-panasonic-raw;image/x-fuji-raf;image/x-adobe-dng;image/x-minolta-mrw;image/x-sigma-x3f;image/x-kodak-dcr;image/x-kodak-k25;image/x-kodak-kdc;image/
-
-x-mamiya-mef;
-Exec=convert -size %sx%s %i -thumbnail %sx%s -quality 90 %o
+Name=RAW Image Thumbnailer (dcraw)
+MimeType=image/x-sony-arw;image/x-sony-sr2;image/x-sony-srf;image/x-canon-cr2;image/x-canon-cr3;image/x-canon-crw;image/x-nikon-nef;image/x-nikon-nrw;image/x-pentax-pef;image/x-pentax-raw;image/x-olympus-orf;image/x-panasonic-rw2;image/x-panasonic-raw;image/x-fuji-raf;image/x-adobe-dng;image/x-minolta-mrw;image/x-sigma-x3f;image/x-kodak-dcr;image/x-kodak-k25;image/x-kodak-kdc;image/x-mamiya-mef;image/x-hasselblad-3fr;image/x-leica-raw;image/x-leica-rwl;image/x-epson-erf;image/x-samsung-srw;
+Exec=sh -c "dcraw -e -c %i | convert - -thumbnail %sx%s -quality 90 %o"
