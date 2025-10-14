@@ -137,15 +137,12 @@ dnf5 -y install \
     sox \
     totem-video-thumbnailer \
     mediainfo \
+    dcraw \
     perl-Image-ExifTool
 
 # Install traditional wine
 dnf5 -y install wine --skip-broken
 
-if [[ ! -d /var/opt ]]; then
-  echo -e "$RED /var/opt does not exist for some reason...\n $CYAN CREATING... $NC"
-  mkdir -p /var/opt
-fi #sanity check
 
 #codeweavers seems to have changed their website I can't grab crossover anymore... 😞
 # in retrospec I should've had a ujust recipe for crossover.
