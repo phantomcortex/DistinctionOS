@@ -5,24 +5,24 @@ on:
     branches:
       - main
   schedule:
-    - cron: '05 8 */4 * *'  # 2:05am Mountain time every 4 days
+    - cron: "05 8 */4 * *" # 2:05am Mountain time every 4 days
   push:
     branches:
       - main
     paths-ignore:
-      - '.github/**'
-      - '**/README.md'
-      - '**/claude.md'
-      - 'repo_files/**'
+      - ".github/**"
+      - "**/README.md"
+      - "**/claude.md"
+      - "repo_files/**"
   workflow_dispatch:
 
 env:
   IMAGE_DESC: "Bazzite but with custom modifications"
   IMAGE_KEYWORDS: "bootc,ublue,universal-blue"
-  IMAGE_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4" 
+  IMAGE_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4"
   IMAGE_NAME: "${{ github.event.repository.name }}"
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
-  DEFAULT_TAG: "testing"  # Changed from "rechunker-stable" for clarity
+  DEFAULT_TAG: "testing" # Changed from "rechunker-stable" for clarity
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
@@ -49,7 +49,7 @@ jobs:
         run: |
           echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
           echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
-          
+
       - name: Get current date
         id: date
         run: |
@@ -63,7 +63,7 @@ jobs:
           TIMESTAMP="$(date +%Y%m%d)"
           COMMIT_TAGS=()
           BUILD_TAGS=()
-          
+
           # Have tags for tracking builds during pull request
           SHA_SHORT="${GITHUB_SHA::7}"
           COMMIT_TAGS+=("pr-${{ github.event.number }}")
@@ -148,19 +148,41 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create auth file for skopeo
+        if: github.event_name != 'pull_request'
+        run: |
+          # Create auth.json for skopeo
+          sudo podman login \
+            --authfile /tmp/auth.json \
+            --username ${{ github.actor }} \
+            --password ${{ secrets.GITHUB_TOKEN }} \
+            ghcr.io
+
       - name: Push To GHCR
-        uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        id: push
-        env:
-          REGISTRY_USER: ${{ github.actor }}
-          REGISTRY_PASSWORD: ${{ github.token }}
-        with:
-          registry: ${{ env.IMAGE_REGISTRY }}
-          image: ${{ env.IMAGE_NAME }}
-          tags: ${{ steps.metadata.outputs.tags }}
-          username: ${{ env.REGISTRY_USER }}
-          password: ${{ env.REGISTRY_PASSWORD }}
+        if: github.event_name != 'pull_request'
+        run: |
+          # Use skopeo to copy the rechunked OCI directory to the registry
+          for tag in ${{ steps.generate-tags.outputs.tags }}; do
+          echo "Pushing ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}"
+
+          # First, save the image to an OCI directory
+          sudo podman save \
+            --format oci-dir \
+            -o /tmp/rechunked-oci \
+            ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
+
+           # Then use skopeo to copy to registry
+          sudo skopeo copy \
+           --authfile /tmp/auth.json \
+           --retry-times 3 \
+           --dest-compress \
+           --dest-compress-format gzip \
+           oci:/tmp/rechunked-oci \
+           docker://${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
+
+          # Clean up
+          sudo rm -rf /tmp/rechunked-oci
+          done
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3
