@@ -131,45 +131,36 @@ jobs:
           skip_compression: false
           max-layers: 100
           labels: ${{ steps.metadata.outputs.labels }}
+          version: ${{ env.DEFAULT_TAG }} # Add this!
 
-      - name: Load in podman and tag
+      # After rechunker, the image is already in the correct format
+      - name: Load rechunked image
         run: |
-          IMAGE=$(sudo podman pull ${{ steps.rechunk.outputs.ref }})
-          sudo rm -rf ${{ steps.rechunk.outputs.location }}
+          # Pull the rechunked image into podman
+          sudo skopeo copy \
+            oci:${{ steps.rechunk.outputs.location }} \
+            containers-storage:${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:rechunked
+
+          # Tag for all desired tags
           for tag in ${{ steps.generate-tags.outputs.tags }}; do
-            sudo podman tag $IMAGE ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
+            sudo podman tag \
+              ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:rechunked \
+              ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
           done
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        if: github.event_name != 'pull_request'
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create auth file for skopeo
         if: github.event_name != 'pull_request'
         run: |
-          # Create auth.json for skopeo
-          sudo podman login \
-            --authfile /tmp/auth.json \
-            --username ${{ github.actor }} \
-            --password ${{ secrets.GITHUB_TOKEN }} \
-            ghcr.io
+          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Push rechunked image to GHCR
+      - name: Push To GHCR
         if: github.event_name != 'pull_request'
         run: |
-          # Direct push from rechunker output using skopeo
           for tag in ${{ steps.generate-tags.outputs.tags }}; do
-          sudo skopeo copy \
-          --dest-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
-          --dest-compress \
-          --dest-compress-format gzip \
-          --retry-times 3 \
-          oci:${{ steps.rechunk.outputs.location }} \
-          docker://${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
+            echo "Pushing ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}"
+            sudo podman push \
+              --compression-format gzip \
+              ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
           done
 
       - name: Install Cosign
