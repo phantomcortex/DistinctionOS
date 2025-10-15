@@ -212,5 +212,5 @@ jobs:
       - name: Create changelog annotation
         id: changelog
         run: |
-          CHANGELOG=$(.github/workflows/shared/changelog.py ublue-aurora-dx -)
+          CHANGELOG=$(.github/workflows/changelog.py distinctionos -)
           echo "$CHANGELOG" >> $GITHUB_STEP_SUMMARY
