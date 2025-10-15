@@ -158,30 +158,18 @@ jobs:
             --password ${{ secrets.GITHUB_TOKEN }} \
             ghcr.io
 
-      - name: Push To GHCR
+      - name: Push rechunked image to GHCR
         if: github.event_name != 'pull_request'
         run: |
-          # Use skopeo to copy the rechunked OCI directory to the registry
+          # Direct push from rechunker output using skopeo
           for tag in ${{ steps.generate-tags.outputs.tags }}; do
-          echo "Pushing ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}"
-
-          # First, save the image to an OCI directory
-          sudo podman save \
-            --format oci-dir \
-            -o /tmp/rechunked-oci \
-            ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
-
-           # Then use skopeo to copy to registry
           sudo skopeo copy \
-           --authfile /tmp/auth.json \
-           --retry-times 3 \
-           --dest-compress \
-           --dest-compress-format gzip \
-           oci:/tmp/rechunked-oci \
-           docker://${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
-
-          # Clean up
-          sudo rm -rf /tmp/rechunked-oci
+          --dest-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
+          --dest-compress \
+          --dest-compress-format gzip \
+          --retry-times 3 \
+          oci:${{ steps.rechunk.outputs.location }} \
+          docker://${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
           done
 
       - name: Install Cosign
