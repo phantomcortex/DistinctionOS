@@ -1,5 +1,5 @@
 ---
-name: Build DistinctionOS-rechunker
+name: Build DistinctionOS
 on:
   pull_request:
     branches:
@@ -40,75 +40,84 @@ jobs:
       id-token: write
 
     steps:
-      # Prepare runner
+
+      # 'Maximize build space' is here because the build stage returns an error: 'read/write on closed pipe'. This error disappears when 'Maximize build space' is active
+      - name: Maximize build space
+        uses: ublue-os/remove-unwanted-software@517622d6452028f266b7ba4cc9a123b5f58a6b53 # v7   
+        
+     # These stage versions are pinned by https://github.com/renovatebot/renovate
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4
+          
+	  # Prepare runner
       - name: Prepare environment
         run: |
           # Lowercase the image uri
+          # This is here because the build stage returns an error: 'repository name must be lowercase'
           echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
           echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
-          
-      - name: Checkout
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-        with:
-          persist-credentials: false
-
 
       # These stage versions are pinned by https://github.com/renovatebot/renovate
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4
 
-      #- name: Maximize build space
-        #uses: ublue-os/remove-unwanted-software@517622d6452028f266b7ba4cc9a123b5f58a6b53 # v7
-
       - name: Get current date
         id: date
         run: |
-          # This generates a timestamp like what is defined on the ArtifactHub documentation
-          # E.G: 2022-02-08T15:38:15Z'
-          # https://artifacthub.io/docs/topics/repositories/container-images/
-          # https://linux.die.net/man/1/date
           echo "date=$(date -u +%Y\-%m\-%d\T%H\:%M\:%S\Z)" >> $GITHUB_OUTPUT
 
+	  - name: Generate tags
+        id: generate-tags
+        shell: bash
+        run: |
+          # Generate a timestamp for creating an image version history
+          TIMESTAMP="$(date +%Y%m%d)"
+          COMMIT_TAGS=()
+          BUILD_TAGS=()
+          
+          # Have tags for tracking builds during pull request
+          SHA_SHORT="${GITHUB_SHA::7}"
+          COMMIT_TAGS+=("pr-${{ github.event.number }}")
+          COMMIT_TAGS+=("${SHA_SHORT}")
 
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              BUILD_TAGS=("${COMMIT_TAGS[@]}")
+          else
+              BUILD_TAGS+=("${DEFAULT_TAG}")
+              BUILD_TAGS+=("${DEFAULT_TAG}-${TIMESTAMP}")
+              BUILD_TAGS+=("latest")
+          fi
+
+          echo "Generated the following build tags: "
+          for TAG in "${BUILD_TAGS[@]}"; do
+              echo "${TAG}"
+          done
+
+          echo "tags=${BUILD_TAGS[*]}" >> $GITHUB_OUTPUT
       - name: Image Metadata
-        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5
+        uses: docker/metadata-action@v5
         id: metadata
         with:
-          # This generates all the tags for your image, you can add custom tags here too!
-          # Default tags are "$DEFAULT_TAG" and "$DEFAULT_TAG.$date".
+          images: |
+            ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=rechunker-stable
-            type=raw,value=rechunker-stable${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}}
-            type=raw,value={{date 'YYYYMMDD'}}
-            type=sha,enable=${{ github.event_name == 'pull_request' }}
-            type=ref,event=pr
+            ${{ steps.generate-tags.outputs.tags }}
           labels: |
-            io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/refs/heads/main/README.md
             org.opencontainers.image.created=${{ steps.date.outputs.date }}
             org.opencontainers.image.description=${{ env.IMAGE_DESC }}
-            org.opencontainers.image.documentation=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/refs/heads/main/README.md
-            org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/blob/main/Containerfile
             org.opencontainers.image.title=${{ env.IMAGE_NAME }}
-            org.opencontainers.image.url=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
-            org.opencontainers.image.vendor=${{ github.repository_owner }}
-            org.opencontainers.image.version=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}}
-            io.artifacthub.package.deprecated=false
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
             io.artifacthub.package.keywords=${{ env.IMAGE_KEYWORDS }}
-            io.artifacthub.package.license=Apache-2.0
             io.artifacthub.package.logo-url=${{ env.IMAGE_LOGO_URL }}
-            io.artifacthub.package.prerelease=false
-            containers.bootc=1
-          sep-tags: " "
-          sep-annotations: " "
-
+	
       - name: Build image (rootful)
         id: build_image
         run: |
-          # Builds image in root store as root, to be picked up by Rechunker
           sudo buildah bud \
             --format docker \
-            --tag "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}" \
+            --tag "localhost/${{ env.IMAGE_NAME }}:build" \
             --file Containerfile \
+            .
 
       - name: Remove source images
         run: |
@@ -116,65 +125,36 @@ jobs:
           if [ -n "${images}" ]; then
             for image in ${images}; do
               echo "Removing image: $image"
-              sudo podman rmi --force "$image"
+              sudo podman rmi --force "$image" || true
             done
           else
             echo "No images to remove."
           fi
 
+
+
       - name: Run Rechunker
         id: rechunk
-        uses: hhd-dev/rechunk@ded27feba22df48134eece2c66ba0fca1289ff40 # v1.2.3
+        uses: hhd-dev/rechunk@v1.2.3
         with:
-          rechunk: "ghcr.io/hhd-dev/rechunk:v1.2.2"
-          ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
+          rechunk: "ghcr.io/hhd-dev/rechunk:v1.2.3"
+          ref: "localhost/${{ env.IMAGE_NAME }}:build"
           prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           skip_compression: false
-          max-layers: 100
-          labels: ${{ steps.metadata.outputs.labels }} # Rechunk strips out all the labels during build, this needs to be reapplied here with newline separator
-
-      - name: Rechunk output
-        run: |
-          if [[ "${STEPS_RECHUNK_CONCLUSION}" == "success" ]]; then
-            echo "${STEPS_RECHUNK_OUTPUTS_CHANGELOG}"
-            echo "${STEPS_RECHUNK_OUTPUTS_MANIFEST}"
-            cat "${STEPS_RECHUNK_OUTPUTS_CHANGELOG}"
-            cat "${STEPS_RECHUNK_OUTPUTS_MANIFEST}"
-
-          else
-            echo "Rechunk conclusion:"
-            echo "${STEPS_RECHUNK_CONCLUSION}"
-          fi
-        env:
-          STEPS_RECHUNK_CONCLUSION: ${{ steps.rechunk.conclusion }}
-          STEPS_RECHUNK_OUTPUTS_CHANGELOG: ${{ steps.rechunk.outputs.changelog }}
-          STEPS_RECHUNK_OUTPUTS_MANIFEST: ${{ steps.rechunk.outputs.manifest }}
-
-      - name: Remove Rechunker image
-        run: |
-          image=$(sudo podman images -n --sort repository --format '{{.ID}} {{.Repository}}' | grep rechunk | awk '{print $1}')
-          if [ -n "${image}" ]; then
-            sudo podman rmi --force "$image"
-          else
-            echo "No image to remove"
-          fi
+          max-layers: 80
+          labels: ${{ steps.metadata.outputs.labels }}
 
       - name: Load in podman and tag
         run: |
-          IMAGE=$(podman pull ${STEPS_RECHUNK_OUTPUTS_REF})
-          sudo rm -rf ${STEPS_RECHUNK_OUTPUTS_LOCATION}
-          for tag in ${STEPS_METADATA_OUTPUTS_TAGS}; do
-            podman tag $IMAGE ${IMAGE_NAME}:$tag
+          IMAGE=$(sudo podman pull ${{ steps.rechunk.outputs.ref }})
+          sudo rm -rf ${{ steps.rechunk.outputs.location }}
+          for tag in ${{ steps.generate-tags.outputs.tags }}; do
+            sudo podman tag $IMAGE ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
           done
-        env:
-          STEPS_RECHUNK_OUTPUTS_REF: ${{ steps.rechunk.outputs.ref }}
-          STEPS_RECHUNK_OUTPUTS_LOCATION: ${{ steps.rechunk.outputs.location }}
-          STEPS_METADATA_OUTPUTS_TAGS: ${{ steps.metadata.outputs.tags }}
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -186,45 +166,34 @@ jobs:
         with:
           string: ${{ env.IMAGE_REGISTRY }}
 
-      - name: Push To GHCR
-        uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        id: push
-        env:
-          REGISTRY_USER: ${{ github.actor }}
-          REGISTRY_PASSWORD: ${{ github.token }}
-          SIGNING_SECRET: ${{ secrets.SIGNING_SECRET }}
-        with:
-          registry: ${{ steps.registry_case.outputs.lowercase }}
-          image: ${{ env.IMAGE_NAME }}
-          tags: ${{ steps.metadata.outputs.tags }}
-          username: ${{ env.REGISTRY_USER }}
-          password: ${{ env.REGISTRY_PASSWORD }}
-          extra-args: |
-            --compression-format=gzip
-            --compression-level=9
+- name: Push To GHCR
+        if: github.event_name != 'pull_request'
+        run: |
+          for tag in ${{ steps.generate-tags.outputs.tags }}; do
+            echo "Pushing ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}"
+            sudo podman push \
+              --compress \
+              --format v2s2 \
+              ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
+          done
 
-      # This section is optional and only needs to be enabled if you plan on distributing
-      # your project for others to consume. You will need to create a public and private key
-      # using Cosign and save the private key as a repository secret in Github for this workflow
-      # to consume. For more details, review the image signing section of the README.
+
       - name: Install Cosign
-        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: sigstore/cosign-installer@v3
+        if: github.event_name != 'pull_request' && env.COSIGN_PRIVATE_KEY != ''
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
 
       - name: Sign container image
-        id: sign_container_image
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        run: |
-          echo "${STEPS_PUSH_OUTPUTS_REGISTRY_PATHS}"
-          IMAGE_FULL="${STEPS_REGISTRY_CASE_OUTPUTS_LOWERCASE}/${IMAGE_NAME}"
-          cosign sign -y --key env://COSIGN_PRIVATE_KEY $IMAGE_FULL@"${STEPS_PUSH_OUTPUTS_DIGEST}"
+        if: github.event_name != 'pull_request' && env.COSIGN_PRIVATE_KEY != ''
         env:
           COSIGN_EXPERIMENTAL: false
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
-          STEPS_PUSH_OUTPUTS_REGISTRY_PATHS: ${{ steps.push.outputs.registry-paths }}
-          STEPS_REGISTRY_CASE_OUTPUTS_LOWERCASE: ${{ steps.registry_case.outputs.lowercase }}
-          STEPS_PUSH_OUTPUTS_DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          for tag in ${{ steps.generate-tags.outputs.tags }}; do
+            cosign sign -y --key env://COSIGN_PRIVATE_KEY \
+              ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
+          done
 
       - name: Create changelog annotation
         id: changelog
