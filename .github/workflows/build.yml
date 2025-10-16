@@ -5,22 +5,22 @@ on:
     branches:
       - main
   schedule:
-    - cron: "05 8 */4 * *" # 2:05am Mountain time every 4 days
+    - cron: '05 8 */4 * *'  # 2:05am Mountain time every 4 days
   push:
     branches:
       - main
     paths-ignore:
-      - ".github/**"
-      - "**/README.md"
-      - "**/claude.md"
-      - "repo_files/**"
+      - '.github/**'
+      - '**/README.md'
+      - '**/claude.md'
+      - 'repo_files/**'
   workflow_dispatch:
 
 env:
   IMAGE_DESC: "Bazzite but with custom modifications"
-  IMAGE_NAME: "${{ github.event.repository.name }}"
+  IMAGE_NAME: "distinctionos"  # Hardcoded to avoid case issues
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
-  DEFAULT_TAG: "testing"
+  DEFAULT_TAG: "stable"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
@@ -30,7 +30,7 @@ jobs:
   build_push:
     name: Build and push image
     runs-on: ubuntu-24.04
-
+    
     permissions:
       contents: read
       packages: write
@@ -40,8 +40,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # For changelog generation
 
       - name: Maximize build space
         uses: jlumbroso/free-disk-space@v1.3.1
@@ -50,48 +48,65 @@ jobs:
           dotnet: true
           haskell: true
           large-packages: true
-          docker-images: false # Keep docker images for caching
+          docker-images: false
           swap-storage: true
 
       - name: Prepare environment
         run: |
+          # Ensure lowercase for registry
           echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
-          echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
           echo "TIMESTAMP=$(date +%Y%m%d)" >> ${GITHUB_ENV}
-
+          
       - name: Generate tags
         id: generate-tags
         shell: bash
         run: |
           TIMESTAMP="${{ env.TIMESTAMP }}"
           BUILD_TAGS=()
-
+          
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
               BUILD_TAGS+=("pr-${{ github.event.number }}")
-              BUILD_TAGS+=("${GITHUB_SHA::7}")
           else
-              BUILD_TAGS+=("${DEFAULT_TAG}")
-              BUILD_TAGS+=("${DEFAULT_TAG}-${TIMESTAMP}")
+              BUILD_TAGS+=("${{ env.DEFAULT_TAG }}")
+              BUILD_TAGS+=("${{ env.DEFAULT_TAG }}-${TIMESTAMP}")
               BUILD_TAGS+=("latest")
+              BUILD_TAGS+=("${TIMESTAMP}")
           fi
 
+          echo "Generated tags: ${BUILD_TAGS[*]}"
           echo "tags=${BUILD_TAGS[*]}" >> $GITHUB_OUTPUT
+
+      - name: Check for cache image
+        id: cache-check
+        run: |
+          # Check if we have a previous build to use as cache
+          if skopeo inspect docker://${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }} &>/dev/null; then
+            echo "cache_exists=true" >> $GITHUB_OUTPUT
+            echo "cache_from=--cache-from ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}" >> $GITHUB_OUTPUT
+            echo "Found cache image: ${{ env.DEFAULT_TAG }}"
+          else
+            echo "cache_exists=false" >> $GITHUB_OUTPUT
+            echo "cache_from=" >> $GITHUB_OUTPUT
+            echo "No cache image found, will build without cache"
+          fi
 
       - name: Get previous image reference
         id: prev-ref
         run: |
           # Try to get yesterday's build for better rechunk optimization
           YESTERDAY=$(date -d "yesterday" +%Y%m%d)
-          PREV_TAG="${DEFAULT_TAG}-${YESTERDAY}"
-
+          PREV_TAG="${{ env.DEFAULT_TAG }}-${YESTERDAY}"
+          
           # Check if yesterday's image exists
           if skopeo inspect docker://${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${PREV_TAG} &>/dev/null; then
             echo "prev_ref=${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${PREV_TAG}" >> $GITHUB_OUTPUT
             echo "Found previous build: ${PREV_TAG}"
-          else
-            # Fall back to stable tag
-            echo "prev_ref=${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${DEFAULT_TAG}" >> $GITHUB_OUTPUT
+          elif skopeo inspect docker://${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }} &>/dev/null; then
+            echo "prev_ref=${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}" >> $GITHUB_OUTPUT
             echo "Using stable tag as previous reference"
+          else
+            echo "prev_ref=" >> $GITHUB_OUTPUT
+            echo "No previous reference found"
           fi
 
       - name: Image Metadata
@@ -107,17 +122,101 @@ jobs:
             io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ github.repository }}/main/README.md
             containers.bootc=1
 
+      - name: Pull previous image for package comparison
+        id: prev-packages
+        if: steps.prev-ref.outputs.prev_ref != ''
+        run: |
+          # Pull previous image and extract package list
+          echo "Pulling previous image for package comparison..."
+          CONTAINER=$(sudo podman create ${{ steps.prev-ref.outputs.prev_ref }})
+          MOUNT=$(sudo podman mount $CONTAINER)
+          
+          # Extract package list from previous build
+          sudo rpm --root $MOUNT -qa | sort > /tmp/prev-packages.txt
+          
+          # Cleanup
+          sudo podman umount $CONTAINER
+          sudo podman rm $CONTAINER
+          
+          echo "Found $(wc -l < /tmp/prev-packages.txt) packages in previous build"
+
       - name: Build image (rootful)
         id: build_image
         run: |
-          # Build with caching for faster rebuilds
+          # Build with optional caching
           sudo buildah bud \
             --format docker \
             --layers \
-            --cache-from ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${DEFAULT_TAG} \
+            ${{ steps.cache-check.outputs.cache_from }} \
             --tag "localhost/${{ env.IMAGE_NAME }}:build" \
             --file Containerfile \
             .
+
+      - name: Extract current package list and generate changelog
+        id: package-diff
+        run: |
+          # Extract package list from current build
+          CONTAINER=$(sudo podman create localhost/${{ env.IMAGE_NAME }}:build)
+          MOUNT=$(sudo podman mount $CONTAINER)
+          
+          # Get current package list
+          sudo rpm --root $MOUNT -qa | sort > /tmp/current-packages.txt
+          
+          # Cleanup
+          sudo podman umount $CONTAINER
+          sudo podman rm $CONTAINER
+          
+          # Generate package changelog
+          echo "## Package Changes" > /tmp/package-changelog.md
+          echo "" >> /tmp/package-changelog.md
+          
+          if [ -f /tmp/prev-packages.txt ]; then
+            # Find added packages
+            echo "### Added Packages" >> /tmp/package-changelog.md
+            comm -13 /tmp/prev-packages.txt /tmp/current-packages.txt > /tmp/added.txt
+            if [ -s /tmp/added.txt ]; then
+              cat /tmp/added.txt | sed 's/^/- /' >> /tmp/package-changelog.md
+            else
+              echo "- None" >> /tmp/package-changelog.md
+            fi
+            echo "" >> /tmp/package-changelog.md
+            
+            # Find removed packages
+            echo "### Removed Packages" >> /tmp/package-changelog.md
+            comm -23 /tmp/prev-packages.txt /tmp/current-packages.txt > /tmp/removed.txt
+            if [ -s /tmp/removed.txt ]; then
+              cat /tmp/removed.txt | sed 's/^/- /' >> /tmp/package-changelog.md
+            else
+              echo "- None" >> /tmp/package-changelog.md
+            fi
+            echo "" >> /tmp/package-changelog.md
+            
+            # Find upgraded/downgraded packages (simplified - checks version changes)
+            echo "### Modified Packages" >> /tmp/package-changelog.md
+            comm -12 <(sed 's/-[^-]*-[^-]*$//' /tmp/prev-packages.txt | sort -u) \
+                     <(sed 's/-[^-]*-[^-]*$//' /tmp/current-packages.txt | sort -u) > /tmp/common-names.txt
+            
+            MODIFIED=false
+            while read pkg_name; do
+              prev_ver=$(grep "^${pkg_name}-" /tmp/prev-packages.txt | head -1)
+              curr_ver=$(grep "^${pkg_name}-" /tmp/current-packages.txt | head -1)
+              if [ "$prev_ver" != "$curr_ver" ]; then
+                echo "- ${pkg_name}: ${prev_ver} → ${curr_ver}" >> /tmp/package-changelog.md
+                MODIFIED=true
+              fi
+            done < /tmp/common-names.txt
+            
+            if [ "$MODIFIED" = false ]; then
+              echo "- None" >> /tmp/package-changelog.md
+            fi
+          else
+            echo "No previous build for comparison - this is the first build" >> /tmp/package-changelog.md
+            echo "" >> /tmp/package-changelog.md
+            echo "### Total Packages: $(wc -l < /tmp/current-packages.txt)" >> /tmp/package-changelog.md
+          fi
+          
+          # Output to GitHub summary
+          cat /tmp/package-changelog.md >> $GITHUB_STEP_SUMMARY
 
       - name: Clean up pre-rechunk
         run: |
@@ -138,42 +237,15 @@ jobs:
           max-layers: 100
           labels: ${{ steps.metadata.outputs.labels }}
 
-      - name: Generate changelog
-        id: changelog
-        if: github.event_name != 'pull_request'
+      - name: Add rechunker stats to changelog
         run: |
-          cat > .github/scripts/generate-changelog.sh << 'EOF'
-          #!/bin/bash
-          # Generate changelog based on commits since last stable build
-
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -z "$LAST_TAG" ]; then
-            LAST_TAG=$(git rev-list --max-parents=0 HEAD)
-          fi
-
-          echo "## Changes in this build" > /tmp/changelog.md
-          echo "" >> /tmp/changelog.md
-
-          # Get commits since last tag
-          git log ${LAST_TAG}..HEAD --pretty=format:"- %s (%h)" >> /tmp/changelog.md
-
-          echo "" >> /tmp/changelog.md
-          echo "### Rechunker Statistics" >> /tmp/changelog.md
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Rechunker Statistics" >> $GITHUB_STEP_SUMMARY
           if [ -f "${{ steps.rechunk.outputs.changelog }}" ]; then
-            echo '```' >> /tmp/changelog.md
-            cat "${{ steps.rechunk.outputs.changelog }}" >> /tmp/changelog.md
-            echo '```' >> /tmp/changelog.md
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat "${{ steps.rechunk.outputs.changelog }}" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
           fi
-
-          # Output to GitHub summary
-          cat /tmp/changelog.md >> $GITHUB_STEP_SUMMARY
-
-          # Save for potential release notes
-          echo "changelog_file=/tmp/changelog.md" >> $GITHUB_OUTPUT
-          EOF
-
-          chmod +x .github/scripts/generate-changelog.sh
-          .github/scripts/generate-changelog.sh
 
       - name: Login to GitHub Container Registry
         if: github.event_name != 'pull_request'
@@ -189,7 +261,7 @@ jobs:
           # Optimized push directly from rechunker OCI directory
           for tag in ${{ steps.generate-tags.outputs.tags }}; do
             echo "Pushing ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}"
-
+            
             sudo skopeo copy \
               --dest-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
               --dest-compress \
@@ -198,7 +270,7 @@ jobs:
               oci:${{ steps.rechunk.outputs.location }} \
               docker://${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
           done
-
+          
           # Clean up rechunker output
           sudo rm -rf ${{ steps.rechunk.outputs.location }}
 
@@ -206,46 +278,25 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@v3
 
-      - name: Sign container image with Cosign
+      - name: Sign container image (keyless)
         if: github.event_name != 'pull_request'
-        env:
-          COSIGN_EXPERIMENTAL: false
         run: |
-          # Cosign login using GitHub OIDC (keyless signing)
+          # Sign with GitHub OIDC identity
           for tag in ${{ steps.generate-tags.outputs.tags }}; do
             echo "Signing ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}"
-
-            # Use keyless signing with GitHub OIDC
+            
             cosign sign --yes \
               ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
           done
 
-      # Alternative: If you have a private key
-      - name: Sign with private key (if available)
-        if: github.event_name != 'pull_request' && env.HAS_SIGNING_KEY == 'true'
-        env:
-          COSIGN_EXPERIMENTAL: false
-          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
-          HAS_SIGNING_KEY: ${{ secrets.SIGNING_SECRET != '' }}
-        run: |
-          if [ -n "$COSIGN_PRIVATE_KEY" ]; then
-            for tag in ${{ steps.generate-tags.outputs.tags }}; do
-              echo "Signing with private key: ${tag}"
-              cosign sign --yes --key env://COSIGN_PRIVATE_KEY \
-                ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
-            done
-          fi
-
-      - name: Generate SBOM
+      - name: Verify signatures
         if: github.event_name != 'pull_request'
         run: |
-          # Generate Software Bill of Materials
           for tag in ${{ steps.generate-tags.outputs.tags }}; do
-            syft ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag} \
-              -o spdx-json=/tmp/sbom-${tag}.json
-
-            # Attach SBOM to image
-            cosign attach sbom \
-              --sbom /tmp/sbom-${tag}.json \
+            echo "Verifying ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}"
+            
+            cosign verify \
+              --certificate-identity-regexp "https://github.com/${{ github.repository }}/.github/workflows/.*.yml@refs/.*" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
               ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
           done
