@@ -1,5 +1,7 @@
-# Note:
-### DistinctionOS built upon [Bazzite](https://github.com/ublue-os/bazzite).
+# DistinctionOS
+
+### DistinctionOS is built upon [Bazzite](https://github.com/ublue-os/bazzite). DistinctionOS is intended as a full experience and the opposite of minimalism. 
+##### Please note: I'm not a Developer, Just someone who keeps tinkering until something finally works and sometimes I learn from it.
 
 # Noteable Additions
  #### Cider (Apple Music Client) 
@@ -19,12 +21,16 @@
  - [zoxide](https://github.com/ajeetdsouza/zoxide)
  - [dysk](https://github.com/Canop/dysk)
  - Flatpak-builder 
- - Various apps that bazzite wants as flatpak that are now reinstalled as native RPMs 
+ - Various apps that bazzite wants as flatpak that are now reinstalled as native RPMs
+ - Image-raw thumbnails (tested with Sony's .ARW format from my own camera. Other formats untested.)
+ - Video thumbnails
+ - .dds texture thumbnails (This won't work for every last texture, but should work on most)
 
  ### Misc /bin
 - advcp
 - advmv
-- rpm-ostree-search-hl (rpm-ostree search highlighting) 
+- rpm-ostree-search-hl (rpm-ostree search highlighting)
+- xiso renamed from: [extract-xiso](https://github.com/XboxDev/extract-xiso) 
 
 ---
 ## Special thanks for making this unholy creation possible
