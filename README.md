@@ -10,10 +10,8 @@
  #### xpadneo
  - [xpadneo](https://github.com/atar-axis/xpadneo) compiled from source.
  - Xpadneo is here for controller input over bluetooth and support for xbox series elite controllers (which I have and use)
- 
  #### BlackBox-Terminal
-  [BlackBox-Terminal](https://github.com/yonasBSD/blackbox-terminal) BlackBox-Terminal is currently unmaintained But I still love it, Which is why it's here. 
- 
+  [BlackBox-Terminal](https://github.com/yonasBSD/blackbox-terminal) is currently unmaintained But I still love it, Which is why it's here. 
  #### Audacity (Freeworld)
  - [Audacity](https://github.com/audacity/audacity) [Freeworld spec](https://github.com/rpmfusion/audacity-freeworld/blob/master/audacity-freeworld.spec) 'Freeworld' is better than fedora's default audacity package in the sense that it ships patent encumbered codecs that fedora can't/won't ship in their official repositories. (If you use audacity, Consider donating!)
  
