@@ -20,7 +20,7 @@ env:
   IMAGE_DESC: "Bazzite but with custom modifications"
   IMAGE_NAME: "distinctionos"  # Hardcoded to avoid case issues
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
-  DEFAULT_TAG: "stable"
+  DEFAULT_TAG: "testing"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
