@@ -119,14 +119,14 @@ jobs:
       - name: Build image (rootful)
         id: build_image
         run: |
-          # Build with optional caching
+          # Builds image in root store as root, to be picked up by Rechunker
           sudo buildah bud \
             --format docker \
-            --layers \
-            ${{ steps.cache-check.outputs.cache_from }} \
-            --tag "localhost/${{ env.IMAGE_NAME }}:build" \
+            --tag "localhost/${IMAGE_NAME}:${{ env.DEFAULT_TAG }}" \
             --file Containerfile \
             .
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
 
       - name: Remove source images
         run: |
@@ -159,14 +159,36 @@ jobs:
           else
             echo "No image to remove"
           fi
+          
+      - name: Rechunk output
+        run: |
+          if [[ "${STEPS_RECHUNK_CONCLUSION}" == "success" ]]; then
+            echo "${STEPS_RECHUNK_OUTPUTS_CHANGELOG}"
+            echo "${STEPS_RECHUNK_OUTPUTS_MANIFEST}"
+            cat "${STEPS_RECHUNK_OUTPUTS_CHANGELOG}"
+            cat "${STEPS_RECHUNK_OUTPUTS_MANIFEST}"
 
+          else
+            echo "Rechunk conclusion:"
+            echo "${STEPS_RECHUNK_CONCLUSION}"
+          fi
+        env:
+          STEPS_RECHUNK_CONCLUSION: ${{ steps.rechunk.conclusion }}
+          STEPS_RECHUNK_OUTPUTS_CHANGELOG: ${{ steps.rechunk.outputs.changelog }}
+          STEPS_RECHUNK_OUTPUTS_MANIFEST: ${{ steps.rechunk.outputs.manifest }}
+          
       - name: Load in podman and tag
         run: |
-          IMAGE=$(sudo podman pull ${{ steps.rechunk.outputs.ref }})
-          sudo rm -rf ${{ steps.rechunk.outputs.location }}
-          for tag in ${{ steps.generate-tags.outputs.tags }}; do
-            sudo podman tag $IMAGE ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}
+          IMAGE=$(podman pull ${STEPS_RECHUNK_OUTPUTS_REF})
+          sudo rm -rf ${STEPS_RECHUNK_OUTPUTS_LOCATION}
+          for tag in ${STEPS_METADATA_OUTPUTS_TAGS}; do
+            podman tag $IMAGE ${IMAGE_NAME}:$tag
           done
+        env:
+          STEPS_RECHUNK_OUTPUTS_REF: ${{ steps.rechunk.outputs.ref }}
+          STEPS_RECHUNK_OUTPUTS_LOCATION: ${{ steps.rechunk.outputs.location }}
+          STEPS_METADATA_OUTPUTS_TAGS: ${{ steps.metadata.outputs.tags }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
           
       # These `if` statements are so that pull requests for your custom images do not make it publish any packages under your name without you knowing
       # They also check if the runner is on the default branch so that things like the merge queue (if you enable it), are going to work
@@ -222,3 +244,9 @@ jobs:
           STEPS_PUSH_OUTPUTS_REGISTRY_PATHS: ${{ steps.push.outputs.registry-paths }}
           STEPS_REGISTRY_CASE_OUTPUTS_LOWERCASE: ${{ steps.registry_case.outputs.lowercase }}
           STEPS_PUSH_OUTPUTS_DIGEST: ${{ steps.push.outputs.digest }}
+          
+      - name: Create changelog annotation
+        id: changelog
+        run: |
+          CHANGELOG=$(.github/workflows/shared/changelog.py ublue-aurora-dx -)
+          echo "$CHANGELOG" >> $GITHUB_STEP_SUMMARY
