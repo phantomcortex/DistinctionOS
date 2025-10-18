@@ -144,26 +144,26 @@ jobs:
             touch /tmp/prev-packages.txt
           fi
 
-       name: Build image (rootful)
-  id: build_image
-  run: |
-    # Build with optional caching
-    if [ -n "${{ steps.cache-check.outputs.cache_from }}" ]; then
-      sudo buildah bud \
-        --format docker \
-        --layers \
-        --cache-from ${{ steps.cache-check.outputs.cache_from }} \
-        --tag "localhost/${{ env.IMAGE_NAME }}:build" \
-        --file Containerfile \
-        .
-    else
-      sudo buildah bud \
-        --format docker \
-        --layers \
-        --tag "localhost/${{ env.IMAGE_NAME }}:build" \
-        --file Containerfile \
-        .
-    fi
+      - name: Build image (rootful)
+        id: build_image
+        run: |
+          # Build with optional caching
+          if [ -n "${{ steps.cache-check.outputs.cache_from }}" ]; then
+            sudo buildah bud \
+            --format docker \
+            --layers \
+            --cache-from ${{ steps.cache-check.outputs.cache_from }} \
+            --tag "localhost/${{ env.IMAGE_NAME }}:build" \
+            --file Containerfile \
+            .
+          else
+            sudo buildah bud \
+            --format docker \
+          --layers \
+          --tag "localhost/${{ env.IMAGE_NAME }}:build" \
+          --file Containerfile \
+          .
+          fi
             
       - name: Extract current package list and generate changelog
         id: package-diff
