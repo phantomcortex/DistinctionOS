@@ -151,7 +151,94 @@ jobs:
             --tag "localhost/${{ env.IMAGE_NAME }}:build" \
             --file Containerfile \
             .
+            
+      - name: Extract current package list and generate changelog
+        id: package-diff
+        run: |
+          # Extract package list from current build
+          # Create container with dummy command
+          CONTAINER=$(sudo podman create --entrypoint /bin/bash localhost/${{ env.IMAGE_NAME }}:build -c "sleep 1")
+          MOUNT=$(sudo podman mount $CONTAINER)
 
+          # Get current package list - check both possible locations
+          if [ -d "${MOUNT}/usr/lib/sysimage/rpm" ]; then
+            # OSTree path
+            sudo rpm --root $MOUNT/usr/lib/sysimage -qa | sort > /tmp/current-packages.txt
+          elif [ -d "${MOUNT}/var/lib/rpm" ]; then
+            # Traditional path
+            sudo rpm --root $MOUNT -qa | sort > /tmp/current-packages.txt
+          else
+            echo "Warning: Could not find RPM database in current image"
+            touch /tmp/current-packages.txt
+          fi
+
+          # Cleanup
+          sudo podman umount $CONTAINER
+          sudo podman rm $CONTAINER
+
+          # Generate package changelog
+          echo "## Package Changes" > /tmp/package-changelog.md
+          echo "" >> /tmp/package-changelog.md
+
+          if [ -f /tmp/prev-packages.txt ] && [ -s /tmp/prev-packages.txt ]; then
+            # Find added packages
+            echo "### Added Packages" >> /tmp/package-changelog.md
+            comm -13 /tmp/prev-packages.txt /tmp/current-packages.txt > /tmp/added.txt
+            if [ -s /tmp/added.txt ]; then
+              cat /tmp/added.txt | sed 's/^/- /' >> /tmp/package-changelog.md
+            else
+              echo "- None" >> /tmp/package-changelog.md
+            fi
+            echo "" >> /tmp/package-changelog.md
+
+            # Find removed packages
+            echo "### Removed Packages" >> /tmp/package-changelog.md
+            comm -23 /tmp/prev-packages.txt /tmp/current-packages.txt > /tmp/removed.txt
+            if [ -s /tmp/removed.txt ]; then
+              cat /tmp/removed.txt | sed 's/^/- /' >> /tmp/package-changelog.md
+            else
+              echo "- None" >> /tmp/package-changelog.md
+            fi
+            echo "" >> /tmp/package-changelog.md
+
+            # Find upgraded/downgraded packages
+            echo "### Modified Packages" >> /tmp/package-changelog.md
+
+            # Create temp files for comparison
+            cat /tmp/prev-packages.txt | sed 's/\(.*\)-[^-]*-[^-]*$/\1/' | sort > /tmp/prev-names.txt
+            cat /tmp/current-packages.txt | sed 's/\(.*\)-[^-]*-[^-]*$/\1/' | sort > /tmp/curr-names.txt
+
+            # Find common package names
+            comm -12 /tmp/prev-names.txt /tmp/curr-names.txt > /tmp/common-names.txt
+
+            MODIFIED=false
+            while read pkg_name; do
+              prev_ver=$(grep "^${pkg_name}-" /tmp/prev-packages.txt | head -1 || true)
+              curr_ver=$(grep "^${pkg_name}-" /tmp/current-packages.txt | head -1 || true)
+              if [ -n "$prev_ver" ] && [ -n "$curr_ver" ] && [ "$prev_ver" != "$curr_ver" ]; then
+                echo "- ${curr_ver} (was: ${prev_ver})" >> /tmp/package-changelog.md
+                MODIFIED=true
+              fi
+            done < /tmp/common-names.txt
+
+            if [ "$MODIFIED" = false ]; then
+              echo "- None" >> /tmp/package-changelog.md
+            fi
+
+            echo "" >> /tmp/package-changelog.md
+            echo "### Summary" >> /tmp/package-changelog.md
+            echo "- Added: $(wc -l < /tmp/added.txt) packages" >> /tmp/package-changelog.md
+            echo "- Removed: $(wc -l < /tmp/removed.txt) packages" >> /tmp/package-changelog.md
+            echo "- Modified: $(grep -c '^- ' /tmp/package-changelog.md | tail -1) packages" >> /tmp/package-changelog.md
+            echo "- Total: $(wc -l < /tmp/current-packages.txt) packages" >> /tmp/package-changelog.md
+          else
+            echo "No previous build for comparison - this is the first build" >> /tmp/package-changelog.md
+            echo "" >> /tmp/package-changelog.md
+            echo "### Total Packages: $(wc -l < /tmp/current-packages.txt)" >> /tmp/package-changelog.md
+          fi
+
+          # Output to GitHub summary
+          cat /tmp/package-changelog.md >> $GITHUB_STEP_SUMMARY
           
       - name: Clean up pre-rechunk
         run: |
