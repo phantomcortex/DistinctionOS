@@ -128,17 +128,21 @@ jobs:
         run: |
           # Pull previous image and extract package list
           echo "Pulling previous image for package comparison..."
-          CONTAINER=$(sudo podman create ${{ steps.prev-ref.outputs.prev_ref }})
+          # Create container with dummy command
+          CONTAINER=$(sudo podman create --entrypoint /bin/bash ${{ steps.prev-ref.outputs.prev_ref }} -c "sleep 1")
           MOUNT=$(sudo podman mount $CONTAINER)
           
           # Extract package list from previous build
-          sudo rpm --root $MOUNT -qa | sort > /tmp/prev-packages.txt
-          
-          # Cleanup
-          sudo podman umount $CONTAINER
-          sudo podman rm $CONTAINER
-          
-          echo "Found $(wc -l < /tmp/prev-packages.txt) packages in previous build"
+          if [ -d "${MOUNT}/usr/lib/sysimage/rpm" ]; then
+            # OSTree path
+            sudo rpm --root $MOUNT/usr/lib/sysimage -qa | sort > /tmp/prev-packages.txt
+          elif [ -d "${MOUNT}/var/lib/rpm" ]; then
+            # Traditional path
+            sudo rpm --root $MOUNT -qa | sort > /tmp/prev-packages.txt
+          else
+            echo "Warning: Could not find RPM database in previous image"
+            touch /tmp/prev-packages.txt
+          fi
 
       - name: Build image (rootful)
         id: build_image
