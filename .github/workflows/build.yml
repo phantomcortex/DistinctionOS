@@ -82,7 +82,7 @@ jobs:
           # Check if we have a previous build to use as cache
           if skopeo inspect docker://${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }} &>/dev/null; then
             echo "cache_exists=true" >> $GITHUB_OUTPUT
-            echo "cache_from=--cache-from ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}" >> $GITHUB_OUTPUT
+            echo "cache_from=${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}" >> $GITHUB_OUTPUT
             echo "Found cache image: ${{ env.DEFAULT_TAG }}"
           else
             echo "cache_exists=false" >> $GITHUB_OUTPUT
@@ -144,17 +144,26 @@ jobs:
             touch /tmp/prev-packages.txt
           fi
 
-      - name: Build image (rootful)
-        id: build_image
-        run: |
-          # Build with optional caching
-          sudo buildah bud \
-            --format docker \
-            --layers \
-            ${{ steps.cache-check.outputs.cache_from }} \
-            --tag "localhost/${{ env.IMAGE_NAME }}:build" \
-            --file Containerfile \
-            .
+       name: Build image (rootful)
+  id: build_image
+  run: |
+    # Build with optional caching
+    if [ -n "${{ steps.cache-check.outputs.cache_from }}" ]; then
+      sudo buildah bud \
+        --format docker \
+        --layers \
+        --cache-from ${{ steps.cache-check.outputs.cache_from }} \
+        --tag "localhost/${{ env.IMAGE_NAME }}:build" \
+        --file Containerfile \
+        .
+    else
+      sudo buildah bud \
+        --format docker \
+        --layers \
+        --tag "localhost/${{ env.IMAGE_NAME }}:build" \
+        --file Containerfile \
+        .
+    fi
             
       - name: Extract current package list and generate changelog
         id: package-diff
