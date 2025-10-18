@@ -145,7 +145,7 @@ jobs:
         uses: hhd-dev/rechunk@v1.2.3
         with:
           rechunk: "ghcr.io/hhd-dev/rechunk:v1.2.3"
-          ref: "localhost/${{ env.IMAGE_NAME }}:build"
+          ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           skip_compression: false
           max-layers: 100
