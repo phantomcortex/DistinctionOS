@@ -88,9 +88,7 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
               BUILD_TAGS=("${COMMIT_TAGS[@]}")
           else
-              BUILD_TAGS+=("${DEFAULT_TAG}")
               BUILD_TAGS+=("${DEFAULT_TAG}-${TIMESTAMP}")
-              BUILD_TAGS+=("latest")
           fi
 
           echo "Generated the following build tags: "
