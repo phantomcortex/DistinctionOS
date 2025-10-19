@@ -36,6 +36,8 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/fix_opt.sh && \
     echo -e "\033[31mSYSTEM CONFIG >>>>\033[0m" && \
     /ctx/config.sh && \
+    echo -e "\033[31mWINE INSTALLER >>>>\033[0m" && \
+    /ctx/wine-installer.sh && \
     echo -e "\033[31mKERENEL SCRIPT >>>>\033[0m" && \
     /ctx/kernel_modules.sh && \
     echo -e "\033[31mREMOTE GRABBER >>>>\033[0m" && \
