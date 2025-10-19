@@ -148,7 +148,7 @@ dnf5 -y install wine --skip-broken
 # in retrospec I should've had a ujust recipe for crossover.
 dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
 
-dnf5 -y upgrade --bugfix --security
+dnf5 -y upgrade
 
 # custom kora icon theme
 
