@@ -253,7 +253,7 @@ extract_wine_build() {
         fi
         
         log_info "Copying: $basename_item"
-        if ! cp -r "$item" "$EXTRACTION_TARGET/"; then
+        if ! cp -rf "$item" "$EXTRACTION_TARGET/"; then
             log_error "Failed to copy $basename_item to $EXTRACTION_TARGET"
             exit 1
         fi
