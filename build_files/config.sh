@@ -83,4 +83,9 @@ fi
  [ -e /usr/share/applications/gnome-ssh-askpass.desktop ] && rm -f /usr/share/applications/gnome-ssh-askpass.desktop
  [ -e /etc/yum.repos.d/charm.repo ] && rm -f /etc/yum.repos.d/charm.repo
 
-
+# rm dumb wine things
+[ -e /usr/share/applications/wine-notepad.desktop ] && rm -f /usr/share/applications/wine-notepad.desktop
+[ -e /usr/share/applications/wine-oleview.desktop ] && rm -f /usr/share/applications/wine-oleview.desktop
+[ -e /usr/share/applications/wine-winemine.desktop ] && rm -f /usr/share/applications/wine-winemine.desktop
+[ -e /usr/share/applications/wine-wordpad.desktop ] && rm -f /usr/share/applications/wine-wordpad.desktop
+[ -e /usr/share/applications/wine-winhelp.desktop ] && rm -f /usr/share/applications/wine-winhelp.desktop
