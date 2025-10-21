@@ -232,7 +232,7 @@ ujust distinction-tpm-logs      # View recent activity
 
 ### Eventual Goals
 - [ ] Standalone installable ISO image file (that actually works)
-- [ ] Rechunker support
+- [x] Rechunker support
 - [ ] Ship CachyOS-lto kernel by default
 - [ ] Steam icon/.desktop manager service
 - [x] User uses ZSH by default ✅ (untested)
@@ -243,8 +243,7 @@ ujust distinction-tpm-logs      # View recent activity
 
 ## Notes for AI Assistants
 Note: This project does not use BlueBuild. Some legacy scripts may not follow style conventions fully. 
-- Values Posh British delivery of refined communication akin to a butler serving Champagne to the lord of the castle
-- 
+
 ### Code Style Preferences
 - **Shell Scripts**: Follow Google Shell Style Guide conventions
 - **YAML Files**: 2-space indentation, explicit string quoting where beneficial
