@@ -147,6 +147,7 @@ jobs:
           fi
           
       - name: Rechunk output
+        continue-on-error: true
         run: |
           if [[ "${STEPS_RECHUNK_CONCLUSION}" == "success" ]]; then
             echo "=== Rechunk Changelog ==="
@@ -236,5 +237,5 @@ jobs:
         id: changelog
         continue-on-error: true
         run: |
-          CHANGELOG=$(.github/workflows/shared/changelog.py distinctionos -)
+          CHANGELOG=$(.github/workflows/changelog.py distinctionos -)
           echo "$CHANGELOG" >> $GITHUB_STEP_SUMMARY
