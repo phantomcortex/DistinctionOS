@@ -1,12 +1,20 @@
 # DistinctionOS
 
 ### DistinctionOS is built upon [Bazzite](https://github.com/ublue-os/bazzite). DistinctionOS is intended as a full experience and the opposite of minimalism. 
-##### Please note: I'm not a Developer, Just someone who keeps tinkering until something finally works and sometimes I learn from it.
+##### Please note: I'm not a Developer, Just someone who keeps tinkering until something finally works and sometimes I learn from it. 
 
+#### If you want to test out DistinctionOS you do so with:
+```bash
+sudo bootc switch ghcr.io/phantomcortex/distinctionos
+```
+or 
+```bash
+rpm-ostree rebase ostree-unverified-registry:docker://ghcr.io/phantomcortex/distinctionos:latest
+```
 # Noteable Additions
  #### Cider (Apple Music Client) 
  - See: [Cider collective](https://cider.sh/)
- -  **NOTE:** ***This is Cider version 3. You need to purchase an license from itch.io to use it, But it should be a one-time payment. See: https://cidercollective.itch.io/cider You will still need an active Apple Music subscription to use it.***
+ -  **NOTE:** ***This is Cider version 3. You need to purchase an license from itch.io to use it, But it should be a one-time payment. See: https://cidercollective.itch.io/cider You will still need an active Apple Music subscription to use it.*** Cider is also available as a free flatpak but only the legacy version 
  #### xpadneo
  - [xpadneo](https://github.com/atar-axis/xpadneo) compiled from source.
  - Xpadneo is here for controller input over bluetooth and support for xbox series elite controllers (which I have and use)
@@ -32,9 +40,11 @@
 
 ---
 ## Special thanks for making this unholy creation possible
-[UniveralBlue](https://github.com/ublue-os) and it's developers, maintainers and contributers for making [Bazzite](https://github.com/ublue-os/bazzite), and [Bluefin](https://github.com/ublue-os/bluefin) and the image-template.
-[Amy OS](https://github.com/astrovm/amyos) for being an example on cleaner build system.
-[vst-name's ublue-aurora-dx](https://github.com/vst-name/ublue-aurora-dx) for being example of working rechunker
+- [fedora linux](https://fedoraproject.org) and it's developers, maintainers, and it's community. for being an incredible OS by default.
+- [UniveralBlue](https://github.com/ublue-os) and it's developers, maintainers, and contributers for making [Bazzite](https://github.com/ublue-os/bazzite), [Bluefin](https://github.com/ublue-os/bluefin), and the [image-template](https://github.com/ublue-os/image-template).
+- [Amy OS](https://github.com/astrovm/amyos) for being an example on a cleaner build system.
+- [vst-name's ublue-aurora-dx](https://github.com/vst-name/ublue-aurora-dx) for being an example of working rechunker
+
 
 ## Community Examples
 
