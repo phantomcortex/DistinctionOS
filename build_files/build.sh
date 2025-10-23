@@ -139,12 +139,13 @@ dnf5 -y install --best \
 
 # Install traditional wine
 dnf5 -y install wine --skip-broken
-dnf5 versionlock add wine gcc make # probably unecessary
+dnf5 versionlock add wine gcc make bazaar glycin-loaders # probably unecessary
 
 # this should be temporary-- There seems to be an issue where [heif]-images become washed out/really bright 
 dnf5 -y remove libheif
-dnf5 -y  install --best libheif libheif-tools heif-pixbuf-loader || echo "install of libheif failed"
+dnf5 -y install --noautoremove libheif libheif-tools heif-pixbuf-loader || echo "install of libheif failed"
 dnf5 -y --enablerepo=rpmfusion-free install libheif-freeworld || echo "install of libheif-freeworld failed"
+[ rpm -q glycin-loaders ] && dnf install glycin-loaders
 # TODO: add ujust recipe for crossover or make custom rpm .spec
 dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
 
@@ -155,6 +156,6 @@ dnf5 -y upgrade
 # Install latest release directly with dnf5
 dnf5 -y install $(curl -s https://api.github.com/repos/phantomcortex/kora/releases/latest | grep "browser_download_url.*\.rpm" | cut -d '"' -f 4)
 # Winboat (Added @ 0.7.11)
-dnf5 -y install $(curl -s https://api.github.com/repos/TibixDev/winboat/releases/latest | grep "browser_download_url.*\.rpm" | cut -d '"' -f 4)
+#dnf5 -y install $(curl -s https://api.github.com/repos/TibixDev/winboat/releases/latest | grep "browser_download_url.*\.rpm" | cut -d '"' -f 4)
 
 
