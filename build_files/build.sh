@@ -145,7 +145,7 @@ dnf5 versionlock add wine gcc make bazaar glycin-loaders # probably unecessary
 dnf5 -y remove libheif
 dnf5 -y install --noautoremove libheif libheif-tools heif-pixbuf-loader || echo "install of libheif failed"
 dnf5 -y --enablerepo=rpmfusion-free install libheif-freeworld || echo "install of libheif-freeworld failed"
-[ rpm -q glycin-loaders ] && dnf install glycin-loaders
+[ rpm -q glycin-loaders ] || dnf install glycin-loaders
 # TODO: add ujust recipe for crossover or make custom rpm .spec
 dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
 
