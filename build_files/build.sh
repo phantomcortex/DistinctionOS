@@ -16,7 +16,6 @@ remove_packages=(waydroid \
   sunshine \
   gnome-shell-extension-compiz-windows-effect \
   openssh-askpass \
-  cockpit-bridge \
   zfs-fuse)
 # TODO: Rebrand Bazzite things to DistinctionOS
 # TODO: Figure out why certain packages seem to be omitted during install
@@ -140,10 +139,13 @@ dnf5 -y install --best \
 
 # Install traditional wine
 dnf5 -y install wine --skip-broken
+dnf5 versionlock add wine gcc make # probably unecessary
 
-dnf5 -y install --best libheif libheif-tools heif-pixbuf-loader libheif-freeworld
-#codeweavers seems to have changed their website I can't grab crossover anymore... 😞
-# in retrospec I should've had a ujust recipe for crossover.
+# this should be temporary-- There seems to be an issue where [heif]-images become washed out/really bright 
+dnf5 -y remove libheif
+dnf5 -y --enablerepo=fedora-testing,rpmfusion-free,rpmfusion-nonfree install --best libheif libheif-tools heif-pixbuf-loader libheif-freeworld
+
+# TODO: add ujust recipe for crossover or make custom rpm .spec
 dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
 
 dnf5 -y upgrade
