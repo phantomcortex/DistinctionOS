@@ -62,8 +62,6 @@ declare -A RPM_PACKAGES=(
     sassc \
     blackbox-terminal \
     gstreamer1-plugins-good-extras
-    heif-pixbuf-loader \
-    libheif-tools \
     decibels \
     dconf \
     gtk-murrine-engine \
@@ -114,14 +112,14 @@ for repo in "${!RPM_PACKAGES[@]}"; do
   else
     # Handle regular packages
     [[ $repo != "fedora" ]] && enable_opt="--enable-repo=$repo" || enable_opt=""
-    cmd=(dnf5 -y install)
+    cmd=(dnf5 -y install --best)
     [[ -n "$enable_opt" ]] && cmd+=("$enable_opt")
     cmd+=("${pkg_array[@]}")
     "${cmd[@]}"
   fi
 done
 
-dnf5 -y install \
+dnf5 -y install --best \
     dkms \
     nss-mdns.i686 \
     pcsc-lite-libs.i686 \
@@ -143,7 +141,7 @@ dnf5 -y install \
 # Install traditional wine
 dnf5 -y install wine --skip-broken
 
-
+dnf5 -y install --best libheif libheif-tools heif-pixbuf-loader libheif-freeworld
 #codeweavers seems to have changed their website I can't grab crossover anymore... 😞
 # in retrospec I should've had a ujust recipe for crossover.
 dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
