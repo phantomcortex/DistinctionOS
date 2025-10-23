@@ -30,6 +30,8 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     echo -e "\033[31mBUILD SCRIPT >>>>\033[0m" && \
     /ctx/build.sh && \
+    echo -e "\033[31mINSTALL ZFS >>>>\033[0m" && \
+    /ctx/install_zfs.sh && \
     echo -e "\033[31mLAYER APPIMAGES >>>>\033[0m" && \
     /ctx/layered_appimages.sh && \
     echo -e "\033[31mOPT FIXER >>>>\033[0m" && \
