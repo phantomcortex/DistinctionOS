@@ -143,8 +143,8 @@ dnf5 versionlock add wine gcc make # probably unecessary
 
 # this should be temporary-- There seems to be an issue where [heif]-images become washed out/really bright 
 dnf5 -y remove libheif
-dnf5 -y --enablerepo=fedora-testing,rpmfusion-free,rpmfusion-nonfree install --best libheif libheif-tools heif-pixbuf-loader libheif-freeworld
-
+dnf5 -y  install --best libheif libheif-tools heif-pixbuf-loader || echo "install of libheif failed"
+dnf5 -y --enablerepo=rpmfusion-free install libheif-freeworld || echo "install of libheif-freeworld failed"
 # TODO: add ujust recipe for crossover or make custom rpm .spec
 dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
 
