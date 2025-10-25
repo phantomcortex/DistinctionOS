@@ -140,12 +140,17 @@ dnf5 -y install --best \
 # Install traditional wine
 dnf5 -y install wine --skip-broken
 dnf5 versionlock add wine gcc make bazaar glycin-loaders # probably unecessary
-
+echo "VERSIONLOCK LIST >>"
+dnf versionlock list
 # this should be temporary-- There seems to be an issue where [heif]-images become washed out/really bright 
-dnf5 -y remove libheif
-dnf5 -y install --noautoremove libheif libheif-tools heif-pixbuf-loader || echo "install of libheif failed"
+rpm -e --nodeps libheif heif-pixbuf-loader 
+dnf5 -y install libheif libheif-tools heif-pixbuf-loader || echo "install of libheif failed"
 dnf5 -y --enablerepo=rpmfusion-free install libheif-freeworld || echo "install of libheif-freeworld failed"
 [ rpm -q glycin-loaders ] || dnf5 -y install glycin-loaders
+[ rpm -q bazaar ] || dnf5 -y install bazaar
+[ rpm -q glycin-gtk4-libs ] || dnf5 -y install glycin-gtk4-libs
+[ rpm -q loupe ] || dnf5 -y install loupe
+
 # TODO: add ujust recipe for crossover or make custom rpm .spec
 dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
 
