@@ -23,9 +23,9 @@ DistinctionOS/
 │   └── etc/
 │       └── sudoers.d/         # Sudo configuration
 ├── build_files/                # Build-time scripts
-│   ├── build_new.sh           # Main package installer
-│   ├── fix_opt.sh             # Fixes /opt packages at runtime
-│   ├── kernel_modules.sh      # Compiles xpadneo kernel module
+│   ├── build.sh           # Main package installer
+│   ├── fix-opt.sh             # Fixes /opt packages at runtime
+│   ├── kernel-modules.sh      # Compiles xpadneo kernel module
 │   ├── config.sh      			# Intended for System Configuration or miscellaneous things that don't have a proper place
 │   ├── layered_appimages.sh   # Layers AppImages (user aware of unconventional approach)
 │   ├── remote_grabber.sh      # GNOME Shell extension management
