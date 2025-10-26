@@ -31,17 +31,17 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     echo -e "\033[31mBUILD SCRIPT >>>>\033[0m" && \
     /ctx/build.sh && \
     echo -e "\033[31mINSTALL ZFS >>>>\033[0m" && \
-    /ctx/install_zfs.sh && \
+    /ctx/install-zfs.sh && \
     echo -e "\033[31mLAYER APPIMAGES >>>>\033[0m" && \
-    /ctx/layered_appimages.sh && \
+    /ctx/layered-appimages.sh && \
     echo -e "\033[31mOPT FIXER >>>>\033[0m" && \
-    /ctx/fix_opt.sh && \
+    /ctx/fix-opt.sh && \
     echo -e "\033[31mSYSTEM CONFIG >>>>\033[0m" && \
     /ctx/config.sh && \
     echo -e "\033[31mKERENEL SCRIPT >>>>\033[0m" && \
-    /ctx/kernel_modules.sh && \
+    /ctx/kernel-modules.sh && \
     echo -e "\033[31mREMOTE GRABBER >>>>\033[0m" && \
-    /ctx/remote_grabber_new.sh && \
+    /ctx/remote-grabber_new.sh && \
     echo -e "\033[31mOSTREE COMMIT\033[0m" && \
     ostree container commit
 
