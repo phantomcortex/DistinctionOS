@@ -4,6 +4,7 @@ set -euo pipefail
 # CREDIT: https://github.com/ExistingPerson08/amyos-gnome/blob/main/build_files/install-apps.sh
 # A good example on what to improve upon
 
+
 trap '[[ $BASH_COMMAND != echo* ]] && [[ $BASH_COMMAND != log* ]] && echo "+ $BASH_COMMAND"' DEBUG
 
 log() {
@@ -12,13 +13,12 @@ log() {
 
 
 #remove pesky bazzite things
+#zfs-fuse conflicts zfs kernel module
 remove_packages=(waydroid \
   sunshine \
   gnome-shell-extension-compiz-windows-effect \
   openssh-askpass \
   zfs-fuse)
-# TODO: Rebrand Bazzite things to DistinctionOS
-# TODO: Figure out why certain packages seem to be omitted during install
 
 for pkg in "${remove_packages[@]}"; do
   if rpm -q "$pkg" &>/dev/null; then
@@ -44,6 +44,10 @@ EOF
 
 dnf makecache
 #=================Cider=====================
+
+# remove current libheif due to heif-type images becoming extremely bright/washed-out
+rpm -e --nodeps libheif heif-pixbuf-loader 
+
 # RPM packages list
 declare -A RPM_PACKAGES=(
   ["fedora"]="\
@@ -76,13 +80,33 @@ declare -A RPM_PACKAGES=(
     docker-compose \
     flatpak-builder \
     gnome-tweaks \    
-    freerdp"
+    freerdp \
+    dkms \
+    nss-mdns.i686 \
+    pcsc-lite-libs.i686 \
+    freerdp \
+    nmap-ncat \
+    pandoc \
+    docker \
+    docker-compose \
+    gnome-tweaks \
+    sane-backends-libs.i686 \
+    sane-backends-libs.x86_64 \
+    sox \
+    totem-video-thumbnailer \
+    mediainfo \
+    dcraw \
+    perl-Image-ExifTool \
+    libheif \
+    libheif-tools \
+    heif-pixbuf-loader"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
     libavcodec-freeworld \
     gstreamer1-plugins-bad-freeworld \
-    gstreamer1-plugins-ugly"
+    gstreamer1-plugins-ugly \
+    libheif-freeworld"
 
   ["fedora-multimedia"]="mpv"
 
@@ -92,7 +116,6 @@ declare -A RPM_PACKAGES=(
   ["copr:fernando-debian/dysk"]="dysk"
   ["copr:atim/heroic-games-launcher"]="heroic-games-launcher-bin"
   ["copr:sergiomb/clonezilla"]="clonezilla"
-  #["copr:monkeygold/nautilus-open-any-terminal"]="nautilus-open-any-terminal"
   ["copr:alternateved/eza"]="eza"
 )
 
@@ -118,49 +141,17 @@ for repo in "${!RPM_PACKAGES[@]}"; do
   fi
 done
 
-dnf5 -y install --best \
-    dkms \
-    nss-mdns.i686 \
-    pcsc-lite-libs.i686 \
-    freerdp \
-    nmap-ncat \
-    pandoc \
-    docker \
-    docker-compose \
-    flatpak-builder \
-    gnome-tweaks \
-    sane-backends-libs.i686 \
-    sane-backends-libs.x86_64 \
-    sox \
-    totem-video-thumbnailer \
-    mediainfo \
-    dcraw \
-    perl-Image-ExifTool
-
 # Install traditional wine
 dnf5 -y install wine --skip-broken
-dnf5 versionlock add wine gcc make bazaar glycin-loaders # probably unecessary
-echo "VERSIONLOCK LIST >>"
-dnf versionlock list
-# this should be temporary-- There seems to be an issue where [heif]-images become washed out/really bright 
-rpm -e --nodeps libheif heif-pixbuf-loader 
-dnf5 -y install libheif libheif-tools heif-pixbuf-loader || echo "install of libheif failed"
-dnf5 -y --enablerepo=rpmfusion-free install libheif-freeworld || echo "install of libheif-freeworld failed"
-[ rpm -q glycin-loaders ] || dnf5 -y install glycin-loaders
-[ rpm -q bazaar ] || dnf5 -y install bazaar
-[ rpm -q glycin-gtk4-libs ] || dnf5 -y install glycin-gtk4-libs
-[ rpm -q loupe ] || dnf5 -y install loupe
+dnf5 versionlock add wine 
+
 
 # TODO: add ujust recipe for crossover or make custom rpm .spec
 dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm 
 
+# upgrade packages since bazzite sometimes ships older packages
 dnf5 -y upgrade
 
 # custom kora icon theme
-
 # Install latest release directly with dnf5
 dnf5 -y install $(curl -s https://api.github.com/repos/phantomcortex/kora/releases/latest | grep "browser_download_url.*\.rpm" | cut -d '"' -f 4)
-# Winboat (Added @ 0.7.11)
-#dnf5 -y install $(curl -s https://api.github.com/repos/TibixDev/winboat/releases/latest | grep "browser_download_url.*\.rpm" | cut -d '"' -f 4)
-
-
