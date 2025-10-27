@@ -195,7 +195,7 @@ dnf5 versionlock list
 # ============================================================================
 
 log_info "Group-Install"
-if dnf5 -y group install security-lab  then
+if dnf5 -y group install security-lab; then
   log_success "security-lab installed successfully"
 else
   log_error "security-lab installation failed"
