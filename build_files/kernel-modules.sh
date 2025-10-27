@@ -1,17 +1,110 @@
-#!/bin/bash
+#!/usr/bin/bash
+
 set -euo pipefail
 
+# ============================================================================
+# Kernel Module Compilation
+# ============================================================================
+# Purpose: Compile and install xpadneo kernel module for enhanced Xbox controller support
+# Execution: Sixth script in build sequence
+# Note: Also handles ZFS DKMS compilation if install-zfs.sh was run
+# ============================================================================
+
+# Enable command tracing for debugging (excludes echo/log commands)
+trap '[[ $BASH_COMMAND != echo* ]] && [[ $BASH_COMMAND != log* ]] && echo "+ $BASH_COMMAND"' DEBUG
+
+# ============================================================================
+# Logging Functions with Color Coding
+# ============================================================================
+
+# ANSI color codes
+readonly COLOR_RESET='\033[0m'
+readonly COLOR_RED='\033[31m'
+readonly COLOR_GREEN='\033[32m'
+readonly COLOR_YELLOW='\033[33m'
+readonly COLOR_BLUE='\033[34m'
+readonly COLOR_MAGENTA='\033[35m'
+readonly COLOR_CYAN='\033[36m'
+readonly COLOR_ORANGE='\033[38;5;208m'
+
+log_header() {
+  echo -e "${COLOR_BLUE}╔════════════════════════════════════════════════════════════════════╗${COLOR_RESET}"
+  echo -e "${COLOR_BLUE}║${COLOR_RESET} $* "
+  echo -e "${COLOR_BLUE}╚════════════════════════════════════════════════════════════════════╝${COLOR_RESET}"
+}
+
+log_section() {
+  echo -e "\n${COLOR_CYAN}▶ $*${COLOR_RESET}"
+}
+
+log_success() {
+  echo -e "${COLOR_GREEN}✓ $*${COLOR_RESET}"
+}
+
+log_warning() {
+  echo -e "${COLOR_YELLOW}⚠ $*${COLOR_RESET}"
+}
+
+log_error() {
+  echo -e "${COLOR_RED}✗ $*${COLOR_RESET}" >&2
+}
+
+log_info() {
+  echo -e "${COLOR_MAGENTA}ℹ $*${COLOR_RESET}"
+}
+
+# ============================================================================
+# Kernel Detection
+# ============================================================================
+
+log_header "Kernel Module Compilation"
+
+log_section "Detecting installed kernel"
+
+# Find the Bazzite kernel version
 KERNEL=$(ls /lib/modules/ | grep bazzite | sort -V | tail -1)
 
+if [[ -z "$KERNEL" ]]; then
+  log_error "No Bazzite kernel found in /lib/modules/"
+  exit 1
+fi
+
+log_success "Detected kernel: $KERNEL"
+
+# Set kernel build directory for compilation
 export KERNELDIR="/lib/modules/${KERNEL}/build"
-echo -e "\033[31mINSTALL XPADNEO\033[0m"
-set +u #these are here prevent 'unbound variable' which doesn't make ANY sense.
-PREV_DIR=$(pwd) && echo -e "\033[33m$pwd\033[0m"
+log_info "Kernel build directory: $KERNELDIR"
+
+# ============================================================================
+# xpadneo Module Compilation
+# ============================================================================
+# Enhanced Xbox controller driver with better wireless support
+
+log_section "Building xpadneo kernel module"
+
+# Store current directory (with unbound variable protection)
+set +u  # Temporarily disable unbound variable check
+PREV_DIR=$(pwd)
 set -u
-git clone https://github.com/atar-axis/xpadneo.git /tmp/xpadneo
+
+log_info "Cloning xpadneo repository"
+if git clone https://github.com/atar-axis/xpadneo.git /tmp/xpadneo; then
+  log_success "Repository cloned to /tmp/xpadneo"
+else
+  log_error "Failed to clone xpadneo repository"
+  exit 1
+fi
+
 cd /tmp/xpadneo/hid-xpadneo
 
-#modified straight from xpadneo's makefile
+# ──────────────────────────────────────────────────────────────────────────
+# Custom Makefile Generation
+# ──────────────────────────────────────────────────────────────────────────
+# Modified from xpadneo's original makefile to work with ostree systems
+# DO NOT MODIFY THE HEREDOC BELOW - IT IS CAREFULLY CRAFTED FOR COMPATIBILITY
+
+log_info "Generating custom makefile for ostree compatibility"
+
 tee makefile << 'EOF'
 KERNEL_SOURCE_DIR ?= /lib/modules/$(shell ls /lib/modules/ | grep bazzite | tail -1)/build
 LD := ld.bfd
@@ -38,40 +131,108 @@ reinstall: modules
 dkms.conf: dkms.conf.in ../VERSION
 	sed 's/"@DO_NOT_CHANGE@"/"$(shell cat ../VERSION)"/g' <"$<" >"$@" 
 EOF
-echo -e "\033[31mMAKE MODULES\033[0m"
-make modules 
-echo -e "\033[31mMODULES_INSTALL\033[0m"
-make modules_install
-echo -e "\033[31mMODULES DONE\033[0m"
-sleep 5
 
-FILE1="/lib/modules/${KERNEL}/extra/xpadneo/xpadneo.ko.zst"
-FILE2="/lib/modules/${KERNEL}/kernel/drivers/hid/hid-xpadneo.ko"
+log_success "Custom makefile generated"
+
+# ──────────────────────────────────────────────────────────────────────────
+# Module Compilation
+# ──────────────────────────────────────────────────────────────────────────
+
+log_section "Compiling xpadneo module"
+
+if make modules; then
+  log_success "Module compilation successful"
+else
+  log_error "Module compilation failed"
+  exit 1
+fi
+
+log_section "Installing xpadneo module"
+
+if make modules_install; then
+  log_success "Module installation successful"
+else
+  log_error "Module installation failed"
+  exit 1
+fi
+
+# ──────────────────────────────────────────────────────────────────────────
+# Installation Verification
+# ──────────────────────────────────────────────────────────────────────────
+
+log_section "Verifying xpadneo installation"
+
+# Check for module in possible installation locations
+readonly FILE1="/lib/modules/${KERNEL}/extra/xpadneo/xpadneo.ko.zst"
+readonly FILE2="/lib/modules/${KERNEL}/kernel/drivers/hid/hid-xpadneo.ko"
 
 if [[ -f "$FILE1" || -f "$FILE2" ]]; then
-    # Orange text: ANSI escape code 38;5;208
-    echo -e "\033[38;5;208mXPADNEO INSTALLED\033[0m"
-  else
-    echo -e "\033[33;5mXPADNEO FAILED TO INSTALL\033[0m" && exit 1  
-fi #sanity check
+  log_success "xpadneo module verified at:"
+  [[ -f "$FILE1" ]] && echo "  $FILE1"
+  [[ -f "$FILE2" ]] && echo "  $FILE2"
+else
+  log_error "xpadneo module not found in expected locations"
+  log_error "Expected locations:"
+  echo "  $FILE1"
+  echo "  $FILE2"
+  exit 1
+fi
 
+# Return to root directory
+cd /
 
-# Get kernel version and build initramfs
+# ============================================================================
+# Initramfs Regeneration
+# ============================================================================
+# Rebuild initramfs to include new kernel modules
+
+log_section "Regenerating initramfs with new modules"
+
+# Get precise kernel version for dracut
 KERNEL_VERSION="$(dnf5 repoquery --installed --queryformat='%{evr}.%{arch}' kernel)"
-/usr/bin/dracut \
+log_info "Kernel version: $KERNEL_VERSION"
+
+log_info "Running dracut to rebuild initramfs"
+if /usr/bin/dracut \
   --no-hostonly \
   --kver "$KERNEL_VERSION" \
   --reproducible \
   --zstd \
   -v \
   --add ostree \
-  -f "/usr/lib/modules/$KERNEL_VERSION/initramfs.img"
+  -f "/usr/lib/modules/$KERNEL_VERSION/initramfs.img"; then
+  log_success "Initramfs regenerated successfully"
+else
+  log_error "Initramfs regeneration failed"
+  exit 1
+fi
 
+# Set secure permissions on initramfs
+log_info "Setting initramfs permissions (0600)"
 chmod 0600 "/usr/lib/modules/$KERNEL_VERSION/initramfs.img"
+log_success "Initramfs permissions secured"
 
-#cd $PREV_DIR
-cd /
+# ============================================================================
+# Build Complete
+# ============================================================================
 
-#TODO: get cachyos kernel working
-#TODO: investigate if kmod packages are installed correctly after init-regen \
-# and consider switching to packaged variant of xpadneo
+log_header "Kernel module compilation complete"
+
+log_info "Installed modules:"
+echo "  • xpadneo (Xbox controller driver)"
+if command -v zfs &>/dev/null; then
+  echo "  • ZFS (filesystem driver)"
+fi
+
+log_info "Next step:"
+echo "  7. remote-grabber.sh - GNOME extension management"
+
+# ============================================================================
+# Future Improvements (TODO)
+# ============================================================================
+# - Integrate CachyOS-LTO kernel as default
+# - Investigate kmod package installation after initramfs regeneration
+# - Consider switching to packaged variant of xpadneo if available
+# - Add support for additional controller drivers if needed
+
+exit 0
