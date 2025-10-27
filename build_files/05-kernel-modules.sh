@@ -7,7 +7,7 @@ set -euo pipefail
 # ============================================================================
 
 # Source utility functions
-source /ctx/utility-functions.sh
+source /ctx/95-utility-functions.sh
 
 # ============================================================================
 # Kernel Detection
