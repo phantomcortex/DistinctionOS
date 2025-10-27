@@ -9,17 +9,8 @@ set -euo pipefail
 # Note: DKMS compilation handled by kernel-modules.sh
 # ============================================================================
 
-readonly COLOR_RESET='\033[0m'
-readonly COLOR_GREEN='\033[32m'
-readonly COLOR_CYAN='\033[36m'
-
-log_section() {
-  echo -e "\n${COLOR_CYAN}▶ $*${COLOR_RESET}"
-}
-
-log_success() {
-  echo -e "${COLOR_GREEN}✓ $*${COLOR_RESET}"
-}
+# Source utility functions
+source /ctx/utility-functions.sh
 
 # ============================================================================
 # ZFS Repository & Package Installation

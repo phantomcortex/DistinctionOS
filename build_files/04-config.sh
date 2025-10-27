@@ -10,47 +10,8 @@ set -euo pipefail
 # Note: Miscellaneous tasks that don't fit elsewhere in the build process
 # ============================================================================
 
-# Enable command tracing for debugging (excludes echo/log commands)
-trap '[[ $BASH_COMMAND != echo* ]] && [[ $BASH_COMMAND != log* ]] && echo "+ $BASH_COMMAND"' DEBUG
-
-# ============================================================================
-# Logging Functions with Color Coding
-# ============================================================================
-
-# ANSI color codes
-readonly COLOR_RESET='\033[0m'
-readonly COLOR_RED='\033[31m'
-readonly COLOR_GREEN='\033[32m'
-readonly COLOR_YELLOW='\033[33m'
-readonly COLOR_BLUE='\033[34m'
-readonly COLOR_MAGENTA='\033[35m'
-readonly COLOR_CYAN='\033[36m'
-
-log_header() {
-  echo -e "${COLOR_BLUE}╔════════════════════════════════════════════════════════════════════╗${COLOR_RESET}"
-  echo -e "${COLOR_BLUE}║${COLOR_RESET} $* "
-  echo -e "${COLOR_BLUE}╚════════════════════════════════════════════════════════════════════╝${COLOR_RESET}"
-}
-
-log_section() {
-  echo -e "\n${COLOR_CYAN}▶ $*${COLOR_RESET}"
-}
-
-log_success() {
-  echo -e "${COLOR_GREEN}✓ $*${COLOR_RESET}"
-}
-
-log_warning() {
-  echo -e "${COLOR_YELLOW}⚠ $*${COLOR_RESET}"
-}
-
-log_error() {
-  echo -e "${COLOR_RED}✗ $*${COLOR_RESET}" >&2
-}
-
-log_info() {
-  echo -e "${COLOR_MAGENTA}ℹ $*${COLOR_RESET}"
-}
+# Source utility functions
+source /ctx/utility-functions.sh
 
 # ============================================================================
 # Main Configuration Process
