@@ -137,9 +137,9 @@ declare -A RPM_PACKAGES=(
   ["copr:alternateved/eza"]="eza"                               # Modern ls replacement
 )
 
-log "Starting DistinctionOS build process"
+log_info "Starting DistinctionOS build process"
 
-log "Installing RPM packages"
+log_info "Installing RPM packages"
 
 # Create directory for /opt packages (required for fix-opt.sh)
 mkdir -p /var/opt
