@@ -6,7 +6,7 @@
 [![Fedora Atomic](https://img.shields.io/badge/Fedora-Atomic-51A2DA)](https://fedoraproject.org/)
 [![License](https://img.shields.io/github/license/phantomcortex/distinctionos)](./LICENSE)
 
-**DistinctionOS** embraces the philosophy of abundance over minimalism—a curated, batteries-included experience built for creators, gamers, and tinkerers who want it all, out of the box.
+**DistinctionOS** embraces the philosophy of abundance. a curated experience built for creators, gamers, and tinkerers who want it all, out of the box.
 
 ---
 
@@ -33,7 +33,6 @@ ujust distinction-install
 
 ### 🎮 Gaming Enhancements
 - **xpadneo** - Enhanced Xbox controller support with full Bluetooth functionality
-- All Bazzite gaming optimizations (Proton, GameMode, MangoHud, etc.)
 
 ### 🎨 Creative Tools
 - **Cider** - Premium Apple Music client ([requires license](https://cidercollective.itch.io/cider))
@@ -46,7 +45,7 @@ ujust distinction-install
 - Flatpak Builder
 - FreeRDP (for remote Windows applications)
 - Pandoc (universal document converter)
-- BlackBox Terminal
+- Zfs kernel module
 
 ### 📦 Quality of Life
 - **zoxide** - Smart directory navigation (`z` command)
@@ -78,7 +77,6 @@ ujust distinction-install
 **DistinctionOS is for those who want:**
 - A complete, ready-to-use system without manual configuration
 - Gaming performance with development tools side-by-side
-- The stability of immutable systems with the flexibility of extensive customization
 - Professional applications without hunting through repositories
 
 If you prefer minimalism and building from scratch, this isn't your distribution—and that's perfectly fine.
@@ -94,18 +92,13 @@ If you prefer minimalism and building from scratch, this isn't your distribution
 
 ## 🙏 Acknowledgements
 
-Standing on the shoulders of giants:
+Special Thanks:
 
 - **[Fedora Project](https://fedoraproject.org)** - The foundation of it all
 - **[Universal Blue](https://github.com/ublue-os)** - Bazzite, Bluefin, and the image template
 - **[Bazzite](https://github.com/ublue-os/bazzite)** - The direct parent of this project
 - **Community Examples**: [Amy OS](https://github.com/astrovm/amyos), [vst-name's Aurora DX](https://github.com/vst-name/ublue-aurora-dx), [m2OS](https://github.com/m2giles/m2os), [bOS](https://github.com/bsherman/bos), [Homer](https://github.com/bketelsen/homer/), [VeneOS](https://github.com/Venefilyn/veneos)
 
----
-
-## 📜 License
-
-Licensed under the Apache License 2.0. See [LICENSE](./LICENSE) for details.
 
 ---
 
