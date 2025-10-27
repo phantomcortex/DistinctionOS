@@ -32,8 +32,6 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/build.sh && \
     echo -e "\033[31mINSTALL ZFS >>>>\033[0m" && \
     /ctx/install-zfs.sh && \
-    echo -e "\033[31mLAYER APPIMAGES >>>>\033[0m" && \
-    /ctx/layered-appimages.sh && \
     echo -e "\033[31mOPT FIXER >>>>\033[0m" && \
     /ctx/fix-opt.sh && \
     echo -e "\033[31mSYSTEM CONFIG >>>>\033[0m" && \
