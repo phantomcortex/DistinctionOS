@@ -5,8 +5,6 @@ set -euo pipefail
 # ============================================================================
 # DistinctionOS Build Script - Package Management & Repository Configuration
 # ============================================================================
-# Install system packages, configure repositories, manage package removal
-# ============================================================================
 
 # Source utility functions
 source /ctx/utility-functions.sh
@@ -60,7 +58,6 @@ rpm -e --nodeps libheif heif-pixbuf-loader
 # ============================================================================
 
 # Associative array mapping repositories to their packages
-# Format: ["repository"]="space-separated package list"
 declare -A RPM_PACKAGES=(
   # Core Fedora repositories
   ["fedora"]="\
@@ -74,7 +71,6 @@ declare -A RPM_PACKAGES=(
     evince \
     loupe \
     zoxide \
-    ardour8 \
     sassc \
     blackbox-terminal \
     gstreamer1-plugins-good-extras
@@ -110,10 +106,14 @@ declare -A RPM_PACKAGES=(
     mediainfo \
     dcraw \
     perl-Image-ExifTool \
-    libheif \
+    libheif \ 
     libheif-tools \
     heif-pixbuf-loader \
-    wine"
+    wine \
+    meson \
+    cmake \
+    gcc-c++ \
+    boost"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
@@ -189,6 +189,17 @@ log_info "Current version locks:"
 dnf5 versionlock list
 
 [ rpm -q wine ] && log_success "Wine installed and version-locked"
+
+# ============================================================================
+# dnf group Installation
+# ============================================================================
+
+log_info "Group-Install"
+if dnf5 -y group install security-lab  then
+  log_success "security-lab installed successfully"
+else
+  log_error "security-lab installation failed"
+fi
 
 # ============================================================================
 # CrossOver Installation
