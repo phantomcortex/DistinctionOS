@@ -187,7 +187,7 @@ fi
 
 # GLib schemas compilation (required after GNOME extension installation)
 log_info "Compiling GLib schemas"
-if glib-compile-schemas /usr/share/glib-2.0/; then
+if glib-compile-schemas /usr/share/glib-2.0/schemas; then
   log_success "GLib schemas compiled"
 else
   log_warning "GLib schema compilation failed (non-critical)"
