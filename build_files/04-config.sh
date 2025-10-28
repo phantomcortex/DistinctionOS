@@ -216,7 +216,7 @@ log_section "Removing unwanted application shortcuts"
 log_info "Removing Waydroid application shortcuts"
 waydroid_count=$(find /usr/share/applications -iname '*waydroid*' 2>/dev/null | wc -l)
 if [[ $waydroid_count -gt 0 ]]; then
-  find /usr/share/applications -iname '*waydroid*' -exec rm -f {} +
+  find /usr/share/applications -iname '*waydroid*' -exec rm -rf {} +
   log_success "Removed $waydroid_count Waydroid shortcut(s)"
 else
   log_info "No Waydroid shortcuts found"
