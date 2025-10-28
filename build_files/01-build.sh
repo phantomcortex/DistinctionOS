@@ -73,7 +73,7 @@ declare -A RPM_PACKAGES=(
     zoxide \
     sassc \
     blackbox-terminal \
-    gstreamer1-plugins-good-extras
+    gstreamer1-plugins-good-extras \
     decibels \
     dconf \
     gtk-murrine-engine \
