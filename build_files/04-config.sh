@@ -170,7 +170,7 @@ fi
 log_section "Updating system caches"
 
 #some of the steps here are excessively error prone, thus breaking the build constantly
-unset -e
+set +eu
 
 # Icon cache refresh (required after Kora theme installation)
 log_info "Updating icon cache"
