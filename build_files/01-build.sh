@@ -88,7 +88,7 @@ declare -A RPM_PACKAGES=(
     docker \
     docker-compose \
     flatpak-builder \
-    gnome-tweaks \    
+    gnome-tweaks \
     freerdp \
     dkms \
     nss-mdns.i686 \
@@ -106,7 +106,7 @@ declare -A RPM_PACKAGES=(
     mediainfo \
     dcraw \
     perl-Image-ExifTool \
-    libheif \ 
+    libheif \
     libheif-tools \
     heif-pixbuf-loader \
     wine \
