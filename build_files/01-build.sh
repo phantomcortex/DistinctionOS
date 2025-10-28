@@ -112,7 +112,6 @@ declare -A RPM_PACKAGES=(
     wine \
     meson \
     cmake \
-    gcc-c++ \
     boost"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
@@ -168,7 +167,7 @@ for repo in "${!RPM_PACKAGES[@]}"; do
     [[ $repo != "fedora" ]] && enable_opt="--enable-repo=$repo" || enable_opt=""
 
     log_info "Installing from $repo: ${pkg_array[*]}"
-    cmd=(dnf5 -y install --best)
+    cmd=(dnf5 -y install )
     [[ -n "$enable_opt" ]] && cmd+=("$enable_opt")
     cmd+=("${pkg_array[@]}")
     "${cmd[@]}"
