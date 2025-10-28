@@ -250,7 +250,9 @@ readonly -a CRITICAL_PACKAGES=(
   "blackbox-terminal"
 
 )
-
+if ! rpm -q wine; then
+  dnf5 -y install wine --skip-broken
+fi 
 validate_critical_packages "${CRITICAL_PACKAGES[@]}"
 
 # ============================================================================
