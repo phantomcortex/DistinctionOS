@@ -17,8 +17,8 @@ log_header "Kernel Module Compilation"
 
 log_section "Detecting installed kernel"
 
-# Find the Bazzite kernel version
-KERNEL=$(ls /lib/modules/ | grep bazzite | sort -V | tail -1)
+# Find the Bazzite kernel version 
+KERNEL=$(ls /lib/modules/ | grep ba | tail -1)
 
 if [[ -z "$KERNEL" ]]; then
   log_error "No Bazzite kernel found in /lib/modules/"
