@@ -62,7 +62,7 @@ cd /tmp/xpadneo/hid-xpadneo
 log_info "Generating custom makefile for ostree compatibility"
 
 tee makefile << 'EOF'
-KERNEL_SOURCE_DIR ?= /lib/modules/$(shell ls /lib/modules/ | grep bazzite | tail -1)/build
+KERNEL_SOURCE_DIR ?= /lib/modules/$(shell ls /lib/modules/ | grep ba | tail -1)/build
 LD := ld.bfd
 
 all: modules
