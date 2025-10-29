@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-set -euo pipefail
+set -uo pipefail
 
 # ============================================================================
 # DistinctionOS Build Script - Package Management & Repository Configuration
