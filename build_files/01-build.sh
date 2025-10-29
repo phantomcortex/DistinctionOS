@@ -1,38 +1,212 @@
 #!/usr/bin/bash
 set -euo pipefail
 
-
 # ============================================================================
 # DistinctionOS Build Script - Package Management & Repository Configuration
+# ============================================================================
+# Purpose: Install system packages with resilient "best-effort" approach
+# Strategy: Attempt bulk installation, fall back to individual installation on failure
+# Note: Build continues even if some packages fail (repository outages, etc.)
+# repository outages have occured with openzfs, crossover, and Cider
 # ============================================================================
 
 # Source utility functions
 source /ctx/95-utility-functions.sh
 
-#remove pesky bazzite things
-#zfs-fuse conflicts zfs kernel module
-remove_packages=(waydroid \
-  sunshine \
-  gnome-shell-extension-compiz-windows-effect \
-  openssh-askpass \
-  zfs-fuse)
+# ============================================================================
+# Package Installation Tracking
+# ============================================================================
 
-for pkg in "${remove_packages[@]}"; do
+# Arrays to track installation results
+declare -a FAILED_PACKAGES=()
+declare -a SUCCEEDED_PACKAGES=()
+declare -a SKIPPED_REPOS=()
+
+# ============================================================================
+# Best-Effort Package Installation Function
+# ============================================================================
+# Attempts bulk installation first, falls back to individual installation
+# Tracks successes and failures without halting the build
+
+install_packages_resilient() {
+  local repo="$1"
+  shift
+  local -a packages=("$@")
+  
+  log_section "Installing from repository: $repo"
+  log_info "Attempting to install ${#packages[@]} package(s)"
+  
+  # Attempt bulk installation first
+  local enable_opt=""
+  [[ $repo != "fedora" ]] && enable_opt="--enablerepo=$repo"
+  
+  local -a install_cmd=(dnf5 -y install)
+  [[ -n "$enable_opt" ]] && install_cmd+=("$enable_opt")
+  install_cmd+=("${packages[@]}")
+  
+  if "${install_cmd[@]}" &>/dev/null; then
+    log_success "Bulk installation from $repo succeeded"
+    SUCCEEDED_PACKAGES+=("${packages[@]}")
+    return 0
+  fi
+  
+  log_warning "Bulk installation from $repo failed, attempting individual installation"
+  
+  # Fall back to individual package installation
+  local success_count=0
+  local fail_count=0
+  
+  for pkg in "${packages[@]}"; do
+    local -a single_install_cmd=(dnf5 -y install)
+    [[ -n "$enable_opt" ]] && single_install_cmd+=("$enable_opt")
+    single_install_cmd+=("$pkg")
+    
+    if "${single_install_cmd[@]}" &>/dev/null; then
+      log_success "  ✓ $pkg"
+      SUCCEEDED_PACKAGES+=("$pkg")
+      ((success_count++))
+    else
+      log_warning "  ✗ $pkg (failed)"
+      FAILED_PACKAGES+=("$pkg")
+      ((fail_count++))
+    fi
+  done
+  
+  log_info "Repository $repo: $success_count succeeded, $fail_count failed"
+}
+
+# ============================================================================
+# Best-Effort COPR Installation Function
+# ============================================================================
+
+install_copr_resilient() {
+  local copr_repo="$1"
+  shift
+  local -a packages=("$@")
+  
+  log_section "Installing from COPR: $copr_repo"
+  
+  # Enable COPR repository
+  if ! dnf5 -y copr enable "$copr_repo" &>/dev/null; then
+    log_error "Failed to enable COPR: $copr_repo"
+    SKIPPED_REPOS+=("copr:$copr_repo")
+    FAILED_PACKAGES+=("${packages[@]}")
+    return 1
+  fi
+  
+  log_info "Attempting to install ${#packages[@]} package(s)"
+  
+  # Attempt bulk installation
+  if dnf5 -y install "${packages[@]}" &>/dev/null; then
+    log_success "Bulk installation from $copr_repo succeeded"
+    SUCCEEDED_PACKAGES+=("${packages[@]}")
+    dnf5 -y copr disable "$copr_repo" &>/dev/null || true
+    return 0
+  fi
+  
+  log_warning "Bulk installation from $copr_repo failed, attempting individual installation"
+  
+  # Fall back to individual installation
+  local success_count=0
+  local fail_count=0
+  
+  for pkg in "${packages[@]}"; do
+    if dnf5 -y install "$pkg" &>/dev/null; then
+      log_success "  ✓ $pkg"
+      SUCCEEDED_PACKAGES+=("$pkg")
+      ((success_count++))
+    else
+      log_warning "  ✗ $pkg (failed)"
+      FAILED_PACKAGES+=("$pkg")
+      ((fail_count++))
+    fi
+  done
+  
+  log_info "COPR $copr_repo: $success_count succeeded, $fail_count failed"
+  
+  # Disable COPR
+  dnf5 -y copr disable "$copr_repo" &>/dev/null || true
+}
+
+# ============================================================================
+# Resilient Single Package Installation
+# ============================================================================
+# For special cases like CrossOver, Kora theme, etc.
+
+install_single_package_resilient() {
+  local package_source="$1"
+  local package_name="$2"
+  
+  log_info "Installing $package_name from: $package_source"
+  
+  if dnf5 -y install "$package_source" &>/dev/null; then
+    log_success "$package_name installed successfully"
+    SUCCEEDED_PACKAGES+=("$package_name")
+    return 0
+  else
+    log_warning "$package_name installation failed"
+    FAILED_PACKAGES+=("$package_name")
+    return 1
+  fi
+}
+
+# ============================================================================
+# Script Start
+# ============================================================================
+
+script_start "DistinctionOS Package Installation" "Best-effort resilient installation"
+
+log_info "Build strategy: Continue despite individual package failures"
+log_info "Repositories and packages will be retried individually if bulk fails"
+
+# ============================================================================
+# Package Removal - Critical Packages Only
+# ============================================================================
+
+log_section "Removing conflicting packages"
+
+# These packages MUST be removed (conflicts or unwanted)
+readonly -a REMOVE_PACKAGES=(
+  "waydroid"                                # Not needed
+  "sunshine"                                # Not needed
+  "gnome-shell-extension-compiz-windows-effect"  # Not needed
+  "openssh-askpass"                         # Not needed
+  "zfs-fuse"                                # Conflicts with ZFS kernel module
+)
+
+removed_count=0
+for pkg in "${REMOVE_PACKAGES[@]}"; do
   if rpm -q "$pkg" &>/dev/null; then
-    echo "Removing $pkg..."
-    dnf5 -y remove "$pkg"
-  fi 
-done 
+    if dnf5 -y remove "$pkg" &>/dev/null; then
+      log_success "Removed: $pkg"
+      ((removed_count++))
+    else
+      log_warning "Failed to remove: $pkg (non-critical)"
+    fi
+  fi
+done
 
+counter_display "$removed_count" "package" "packages" "removed"
 
-#=================Cider=====================
-# Cider workaround because I don't want to \ 
-# mess with the main installer portion
-#
+# ============================================================================
+# Repository Configuration
+# ============================================================================
+
+log_section "Configuring additional repositories"
+
+# ──────────────────────────────────────────────────────────────────────────
+# Cider Collective Repository
+# ──────────────────────────────────────────────────────────────────────────
+
 log_info "Adding Cider Collective repository"
-rpm --import https://repo.cider.sh/RPM-GPG-KEY
 
-tee /etc/yum.repos.d/cider.repo << 'EOF'
+if rpm --import https://repo.cider.sh/RPM-GPG-KEY &>/dev/null; then
+  log_success "Cider GPG key imported"
+else
+  log_warning "Failed to import Cider GPG key (repository may be unavailable)"
+fi
+
+tee /etc/yum.repos.d/cider.repo > /dev/null << 'EOF'
 [cidercollective]
 name=Cider Collective Repository
 baseurl=https://repo.cider.sh/rpm/RPMS
@@ -41,21 +215,58 @@ gpgcheck=1
 gpgkey=https://repo.cider.sh/RPM-GPG-KEY
 EOF
 
-
 log_success "Cider repository configured"
 
-# Refresh repository metadata
+# ──────────────────────────────────────────────────────────────────────────
+# Refresh Repository Metadata
+# ──────────────────────────────────────────────────────────────────────────
+
 log_info "Refreshing repository metadata"
-dnf makecache
-log_success "Metadata cache updated"
-#=================Cider=====================
-
-# remove current libheif due to heif-type images becoming extremely bright/washed-out
-#rpm -e --nodeps libheif heif-pixbuf-loader #disable for now
+if dnf5 makecache &>/dev/null; then
+  log_success "Metadata cache updated"
+else
+  log_warning "Metadata refresh encountered issues (continuing anyway)"
+fi
 
 # ============================================================================
-# Package Installation - Organized by Source
+# ZFS Repository & Package Installation
 # ============================================================================
+# Issue: ZFS repository occasionally experiences downtime
+# Solution: Best-effort installation, build continues if unavailable
+
+log_section "Installing ZFS (best-effort)"
+
+log_info "Adding ZFS repository"
+if install_single_package_resilient \
+  "https://zfsonlinux.org/fedora/zfs-release-2-8.fc42.noarch.rpm" \
+  "zfs-release"; then
+  
+  log_info "Installing ZFS packages"
+  if dnf5 -y install zfs &>/dev/null; then
+    log_success "ZFS packages installed (DKMS compilation in kernel-modules.sh)"
+    SUCCEEDED_PACKAGES+=("zfs")
+  else
+    log_warning "ZFS package installation failed (repository may be down)"
+    FAILED_PACKAGES+=("zfs")
+  fi
+else
+  log_warning "ZFS repository unavailable (skipping ZFS installation)"
+  SKIPPED_REPOS+=("zfs-release")
+fi
+
+# ============================================================================
+# Create Required Directories
+# ============================================================================
+
+log_section "Creating required directories"
+
+create_dir_with_log "/var/opt" "Package directory for fix-opt.sh"
+
+# ============================================================================
+# Package Installation - Organized by Repository
+# ============================================================================
+
+log_section "Installing packages from configured repositories"
 
 # Associative array mapping repositories to their packages
 declare -A RPM_PACKAGES=(
@@ -93,17 +304,9 @@ declare -A RPM_PACKAGES=(
     dkms \
     nss-mdns.i686 \
     pcsc-lite-libs.i686 \
-    freerdp \
     nmap-ncat \
-    pandoc \
-    docker \
-    docker-compose \
-    gnome-tweaks \
     sane-backends-libs.i686 \
     sane-backends-libs.x86_64 \
-    sox \
-    totem-video-thumbnailer \
-    mediainfo \
     dcraw \
     perl-Image-ExifTool \
     libheif-tools \
@@ -126,131 +329,210 @@ declare -A RPM_PACKAGES=(
   # Third-party repositories
   ["brave-browser"]="brave-browser"
   ["cidercollective"]="Cider"
-  
-  # COPR repositories (community-maintained packages)
-  ["copr:ilyaz/LACT"]="lact"                                    # AMD GPU control
-  ["copr:fernando-debian/dysk"]="dysk"                          # Disk usage analyzer
-  ["copr:atim/heroic-games-launcher"]="heroic-games-launcher-bin"  # Epic/GOG launcher
-  ["copr:sergiomb/clonezilla"]="clonezilla"                     # Disk cloning utility
-  ["copr:alternateved/eza"]="eza"                               # Modern ls replacement
 )
 
-log_info "Starting DistinctionOS build process"
-
-log_info "Installing RPM packages"
-
-# Create directory for /opt packages (required for fix-opt.sh)
-mkdir -p /var/opt
-
-# Install packages organized by repository
+# Install packages from standard repositories
 for repo in "${!RPM_PACKAGES[@]}"; do
   read -ra pkg_array <<<"${RPM_PACKAGES[$repo]}"
-
-  if [[ $repo == copr:* ]]; then
-    # Handle COPR packages
-    copr_repo=${repo#copr:}
-    log_info "Enabling COPR: $copr_repo"
-    dnf5 -y copr enable "$copr_repo"
-    
-    log_info "Installing from $copr_repo: ${pkg_array[*]}"
-    if dnf5 -y install "${pkg_array[@]}"; then
-      log_success "Installed packages from $copr_repo"
-    else
-      log_warning "Some packages from $copr_repo may have failed"
-    fi
-    
-    dnf5 -y copr disable "$copr_repo"
-
-  else
-    # Handle regular packages
-    [[ $repo != "fedora" ]] && enable_opt="--enable-repo=$repo" || enable_opt=""
-
-    log_info "Installing from $repo: ${pkg_array[*]}"
-    cmd=(dnf5 -y install )
-    [[ -n "$enable_opt" ]] && cmd+=("$enable_opt")
-    cmd+=("${pkg_array[@]}")
-    "${cmd[@]}"
-
-    if "${cmd[@]}"; then
-      log_success "Installed packages from $repo"
-    else
-      log_warning "Some packages from $repo may have failed"
-    fi
-
-  fi
+  install_packages_resilient "$repo" "${pkg_array[@]}"
 done
 
-log_info "Locking Wine and build dependencies to prevent updates"
-dnf5 versionlock add wine 
+# ──────────────────────────────────────────────────────────────────────────
+# COPR Repository Packages
+# ──────────────────────────────────────────────────────────────────────────
 
-log_info "Current version locks:"
-dnf5 versionlock list
+log_section "Installing packages from COPR repositories"
 
-[ rpm -q wine ] && log_success "Wine installed and version-locked"
+# COPR packages (handled separately due to enable/disable requirement)
+declare -A COPR_PACKAGES=(
+  ["ilyaz/LACT"]="lact"                                    # AMD GPU control
+  ["fernando-debian/dysk"]="dysk"                          # Disk usage analyzer
+  ["atim/heroic-games-launcher"]="heroic-games-launcher-bin"  # Epic/GOG launcher
+  ["sergiomb/clonezilla"]="clonezilla"                     # Disk cloning utility
+  ["alternateved/eza"]="eza"                               # Modern ls replacement
+)
+
+for copr_repo in "${!COPR_PACKAGES[@]}"; do
+  read -ra pkg_array <<<"${COPR_PACKAGES[$copr_repo]}"
+  install_copr_resilient "$copr_repo" "${pkg_array[@]}"
+done
 
 # ============================================================================
-# CrossOver Installation
+# Wine Version Locking
 # ============================================================================
-# Commercial Wine implementation for running Windows applications
-# Note: Direct download from CodeWeavers (not in standard repos)
 
-log_section "Installing CrossOver"
+log_section "Applying Wine version lock"
 
-log_info "Downloading and installing CrossOver from CodeWeavers"
-if dnf5 -y install http://crossover.codeweavers.com/redirect/crossover.rpm; then
-  log_success "CrossOver installed successfully"
+if rpm -q wine &>/dev/null; then
+  if dnf5 versionlock add wine &>/dev/null; then
+    log_success "Wine version locked"
+    log_info "Current version locks:"
+    dnf5 versionlock list || true
+  else
+    log_warning "Wine version lock failed (non-critical)"
+  fi
 else
-  log_error "CrossOver installation failed"
+  log_warning "Wine not installed, cannot apply version lock"
 fi
 
+# ============================================================================
+# Special Package Installations
+# ============================================================================
+
+log_section "Installing special packages"
+
+# ──────────────────────────────────────────────────────────────────────────
+# CrossOver (Commercial Wine Implementation)
+# ──────────────────────────────────────────────────────────────────────────
+
+log_info "Installing CrossOver from CodeWeavers"
+install_single_package_resilient \
+  "http://crossover.codeweavers.com/redirect/crossover.rpm" \
+  "crossover"
+
+# ──────────────────────────────────────────────────────────────────────────
+# Kora Icon Theme (Custom Build)
+# ──────────────────────────────────────────────────────────────────────────
+
+log_info "Installing Kora icon theme (latest release)"
+
+# Get latest release URL
+kora_url=$(curl -s https://api.github.com/repos/phantomcortex/kora/releases/latest 2>/dev/null | \
+  grep "browser_download_url.*\.rpm" | \
+  cut -d '"' -f 4)
+
+if [[ -n "$kora_url" ]]; then
+  install_single_package_resilient "$kora_url" "kora-icon-theme"
+else
+  log_warning "Failed to retrieve Kora theme URL (GitHub API may be down)"
+  FAILED_PACKAGES+=("kora-icon-theme")
+fi
 
 # ============================================================================
-# System Upgrade
+# System Upgrade (Best-Effort)
 # ============================================================================
-# Ensure all packages are at latest versions
 
-log_section "Performing system upgrade"
+log_section "Performing system upgrade (best-effort)"
 
 log_info "Upgrading all packages to latest versions"
-if dnf5 -y upgrade; then
+if dnf5 -y upgrade &>/dev/null; then
   log_success "System upgrade complete"
 else
-  log_warning "System upgrade encountered issues"
-fi 
+  log_warning "System upgrade encountered issues (non-critical)"
+fi
 
 # ============================================================================
-# Validation
+# Critical Package Validation
 # ============================================================================
-# Verify critical packages installed correctly
+# These packages are essential - report if missing but don't fail build
 
-log_section "Validating critical package installation"
+log_section "Validating critical packages"
 
 readonly -a CRITICAL_PACKAGES=(
   "zsh"
   "neovim"
-  "Cider"
-  "wine"
+  "docker"
   "brave-browser"
-  "crossover"
-  "totem-video-thumbnailer"
-  "libheif"
+  "wine"
   "blackbox-terminal"
-
+  "totem-video-thumbnailer"
 )
-if ! rpm -q wine; then
-  dnf5 -y install wine --skip-broken
-fi 
-validate_critical_packages "${CRITICAL_PACKAGES[@]}"
+
+validation_failures=0
+for pkg in "${CRITICAL_PACKAGES[@]}"; do
+  if rpm -q "$pkg" &>/dev/null; then
+    log_success "  ✓ $pkg"
+  else
+    log_warning "  ✗ $pkg (CRITICAL - missing)"
+    ((validation_failures++))
+  fi
+done
+
+if [[ $validation_failures -eq 0 ]]; then
+  log_success "All critical packages validated"
+else
+  log_warning "$validation_failures critical package(s) missing"
+fi
+
+# ============================================================================
+# Wine Fallback Installation
+# ============================================================================
+# If Wine failed earlier, try one more time with --skip-broken
+
+if ! rpm -q wine &>/dev/null; then
+  log_section "Wine fallback installation"
+  log_info "Attempting Wine installation with --skip-broken"
+  
+  if dnf5 -y install wine --skip-broken &>/dev/null; then
+    log_success "Wine installed via fallback method"
+    SUCCEEDED_PACKAGES+=("wine")
+  else
+    log_warning "Wine installation failed even with --skip-broken"
+  fi
+fi
 
 # ============================================================================
 # Cleanup
 # ============================================================================
 
-log_section "Cleaning up package manager cache"
+log_section "Cleaning package manager cache"
 
-dnf5 clean all
-log_success "Cache cleaned"
+if dnf5 clean all &>/dev/null; then
+  log_success "Cache cleaned"
+else
+  log_warning "Cache cleanup failed (non-critical)"
+fi
 
-# custom kora icon theme
-# Install latest release directly with dnf5
-dnf5 -y install $(curl -s https://api.github.com/repos/phantomcortex/kora/releases/latest | grep "browser_download_url.*\.rpm" | cut -d '"' -f 4)
+# ============================================================================
+# Installation Summary Report
+# ============================================================================
+
+script_complete "Package Installation" "Review summary below"
+
+log_header "Installation Summary"
+
+# Calculate statistics
+total_attempted=$((${#SUCCEEDED_PACKAGES[@]} + ${#FAILED_PACKAGES[@]}))
+success_rate=0
+[[ $total_attempted -gt 0 ]] && success_rate=$(( (${#SUCCEEDED_PACKAGES[@]} * 100) / total_attempted ))
+
+echo ""
+log_info "Package Installation Statistics:"
+echo "  Total Attempted:    $total_attempted"
+echo "  Successful:         ${#SUCCEEDED_PACKAGES[@]}"
+echo "  Failed:             ${#FAILED_PACKAGES[@]}"
+echo "  Success Rate:       ${success_rate}%"
+
+if [[ ${#SKIPPED_REPOS[@]} -gt 0 ]]; then
+  echo ""
+  log_warning "Skipped Repositories (unavailable):"
+  for repo in "${SKIPPED_REPOS[@]}"; do
+    echo "  - $repo"
+  done
+fi
+
+if [[ ${#FAILED_PACKAGES[@]} -gt 0 ]]; then
+  echo ""
+  log_warning "Failed Package Installations:"
+  for pkg in "${FAILED_PACKAGES[@]}"; do
+    echo "  - $pkg"
+  done
+  echo ""
+  log_info "Failed packages may be due to:"
+  echo "  • Repository downtime (e.g., ZFS repository)"
+  echo "  • Package name changes"
+  echo "  • Temporary network issues"
+  echo "  • Dependency conflicts"
+  echo ""
+  log_info "Build will continue - these packages can be installed later if needed"
+fi
+
+if [[ ${#SUCCEEDED_PACKAGES[@]} -gt 0 ]]; then
+  echo ""
+  log_success "Build completed successfully with ${#SUCCEEDED_PACKAGES[@]} packages installed"
+fi
+
+echo ""
+log_info "Next: 03-fix-opt.sh will configure /opt persistence"
+
+exit 0
