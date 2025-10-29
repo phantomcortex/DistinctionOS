@@ -15,7 +15,7 @@ accent-color='red'
 cursor-theme='capitaine-cursors'
 cursor-size=36
 font-antialiasing='rgba'
-icon-theme=kora
+icon-theme='kora'
 
 [org.gnome.desktop.sound]
 theme-name='_custom'
@@ -28,7 +28,6 @@ titlebar-font='Berserker Bold Medium 12'
 color-shading-type='solid'
 picture-options='zoom'
 picture-uri='file:///usr/share/backgrounds/michal-kus-skyrimspeed2.jpeg'
-picture-uri-dark='file:///usr/share/backgrounds/michal-kus-skyrimspeed2.jpeg'
 primary-color='#310042'
 secondary-color='#000622'
 
@@ -41,6 +40,7 @@ secondary-color='#000622'
 
 [org.gnome.shell.extensions.just-perfection]
 theme=true
+panel-size=36
 window-demands-attention-focus=true
 switcher-popup-delay=true
 workspace-wrap-around=true
@@ -78,7 +78,7 @@ blur=true
 [org.gnome.shell.extensions.blur-my-shell.applications]
 opacity=200
 sigma=70
-whilelist=['org.gnome.Nautilus', 'org.gnome.Shell.Extensions', 'com.mattjakeman.ExtensionManager', 'org.gnome.Shell.Extensions', 'com.raggesilver.BlackBox', 'crossover', 'org.gnome.TextEditor', 'io.github.ilya_zlobintsev.LACT', 'org.gnome.Settings', 'org.gnome.clocks', 'org.gnome.font-viewer', 'gnome-disks', 'org.gnome.baobab', 'org.gnome.Logs', 'io.github.realmazharhussain.GdmSettings', 'io.missioncenter.MissionCenter', 'it.mijorus.gearlever', 'io.gitlab.adhami3310.Impression', 'io.github.flattool.Ignition', 'org.gnome.FileRoller', 'openrgb', 'org.gnome.tweaks', 'com.vysp3r.ProtonPlus', 'opensnitch_ui', 'gnome-abrt', 'zenity', 'com.github.tchx84.Flatseal', 'page.codeberg.JakobDev.jdDesktopEntryEdit', 'app.drey.EarTag', 'dconf-editor', 'com.github.unrud.VideoDownloader', 'com.github.unrud.VideoDownloader', 'org.gnome.Decibels', 'org.gnome.Loupe', 'io.bassi.Amberol', 'zen', 'com.github.neithern.g4music', 'org.gnome.Boxes', 're.sonny.Workbench', 'org.gnome.Builder', 'yelp', 'io.github.dvlv.boxbuddyrs', 'gnome-builder', 'org.gnome.Software', 'org.gnome.Ptyxis']
+whitelist=['org.gnome.Nautilus', 'org.gnome.Shell.Extensions', 'com.mattjakeman.ExtensionManager', 'org.gnome.Shell.Extensions', 'com.raggesilver.BlackBox', 'crossover', 'org.gnome.TextEditor', 'io.github.ilya_zlobintsev.LACT', 'org.gnome.Settings', 'org.gnome.clocks', 'org.gnome.font-viewer', 'gnome-disks', 'org.gnome.baobab', 'org.gnome.Logs', 'io.github.realmazharhussain.GdmSettings', 'io.missioncenter.MissionCenter', 'it.mijorus.gearlever', 'io.gitlab.adhami3310.Impression', 'io.github.flattool.Ignition', 'org.gnome.FileRoller', 'openrgb', 'org.gnome.tweaks', 'com.vysp3r.ProtonPlus', 'opensnitch_ui', 'gnome-abrt', 'zenity', 'com.github.tchx84.Flatseal', 'page.codeberg.JakobDev.jdDesktopEntryEdit', 'app.drey.EarTag', 'dconf-editor', 'com.github.unrud.VideoDownloader', 'com.github.unrud.VideoDownloader', 'org.gnome.Decibels', 'org.gnome.Loupe', 'io.bassi.Amberol', 'zen', 'com.github.neithern.g4music', 'org.gnome.Boxes', 're.sonny.Workbench', 'org.gnome.Builder', 'yelp', 'io.github.dvlv.boxbuddyrs', 'gnome-builder', 'org.gnome.Software', 'org.gnome.Ptyxis']
 
 [org.gnome.shell.extensions.ncom.github.hermes83.compiz-alike-magic-lamp-effect]
 duration=250
@@ -91,12 +91,17 @@ pattern='EEEE, MMMM d  h:mm a'
 font-size=12
 
 [org.gnome.shell.extensions.dash-to-dock]
+running-indicator-dominant-color=true
 running-indicator-style='SEGMENTED'
 show-mounts=false
 show-dock-urgent-notify=false
 dash-max-icon-size=64
 intellihide-mode='ALL_WINDOWS'
 height-fraction=-0.9
+show-icons-emblems=false
+show-mounts=false
+show-mounts-network=false
+show-mounts-only-mounted=false
 
 [com.raggesilver.BlackBox]
 font='0xProto Nerd Font Bold 12'
@@ -105,9 +110,14 @@ theme-dark='Pencil Dark'
 pretty=false
 cursor-blink-mode=1
 fill-tabs=true
-window-width=1,800
-window-height=1,200
+window-width=uint32 1800
+window-height=uint32 1200
 scrollback-mode=1
+
+[org.gnome.shell.extensions.date-menu-formatter]
+font-size=12
+pattern='EEEE, MMMM d h:mm a'
+text-align='center'
 
 [org.gnome.shell.extensions.tilingshell]
 inner-gaps=8
@@ -124,10 +134,3 @@ enable-snap-assist=false
 [org.gnome.shell.extensions.SettingsCenter.items]
 items=Extensions Preferences;org.gnome.Extensions.desktop;1;gnome-extensions-app|Gnome Tweaks;gnome-tweaks.desktop;1;gnome-tweaks|Desktop Config Editor;dconf-editor.desktop;1;dconf-editor|Gnome Config Editor;gconf-editor.desktop;0;gconf-editor|Passwords and Keys;seahorse.desktop;0;seahorse|Session Properties;session-properties.desktop;0;gnome-session-properties
 
-[org/gnome/shell/extensions/desktop-cube]
-last-first-gap=false
-enable-desktop-edge-switch=false
-enable-panel-dragging=true
-enable-desktop-dragging=true
-enable-overview-edge-switch=false
-enable-overview-dragging=false
