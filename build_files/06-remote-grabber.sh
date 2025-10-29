@@ -1,34 +1,20 @@
 #!/bin/bash
 
-
-# Author Note: This entire script is from Claude Sonnet 4 
-# Yes I know, 'Vibe code bad!'
-# But I don't think I would've made it this far without it...
-# For better or worse I've managed to create an entire build system \
-# and Modify bazzite into an unholy creation of my design, without much expierence in shell scripts.
-# Make of that what you will.
-
 # =============================================================================
 # GNOME Shell Extensions Installation Script
 # Enhanced version with proper error handling and modular design
 # =============================================================================
 
+# Source utility functions
+source /ctx/95-utility-functions.sh
 
-
-set -euo pipefail  # Exit on any error, undefined variable, or pipe failure
+set -euo pipefail 
 
 # Constants and Configuration
 readonly SCRIPT_NAME="${0##*/}"
 readonly EXTENSIONS_DIR="/usr/share/gnome-shell/extensions"
 readonly TMP_DIR="/tmp/gnome-shell-extensions"
 readonly LOG_FILE="${TMP_DIR}/installation.log"
-
-# Colour constants for elegant output
-readonly RED='\033[31m'
-readonly GREEN='\033[32m'
-readonly YELLOW='\033[33m'
-readonly BLUE='\033[34m'
-readonly NC='\033[0m'
 
 # Extension definitions - structured data approach
 declare -A EXTENSIONS_GIT=(
@@ -58,17 +44,6 @@ readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca")
 setup_environment() {
     mkdir -p "$TMP_DIR" "$EXTENSIONS_DIR"
 }
-
-log() {
-    local level="$1"
-    shift
-    echo -e "[$(date '+%H:%M:%S')] [$level] $*"
-}
-
-log_info() { log "INFO" "$@"; }
-log_success() { log "SUCCESS" "${GREEN}$*${NC}"; }
-log_warning() { log "WARNING" "${YELLOW}$*${NC}"; }
-log_error() { log "ERROR" "${RED}$*${NC}"; }
 
 install_git_extension() {
     local extension_id="$1"
