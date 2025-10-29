@@ -51,7 +51,7 @@ log_success "Metadata cache updated"
 #=================Cider=====================
 
 # remove current libheif due to heif-type images becoming extremely bright/washed-out
-rpm -e --nodeps libheif heif-pixbuf-loader 
+#rpm -e --nodeps libheif heif-pixbuf-loader #disable for now
 
 # ============================================================================
 # Package Installation - Organized by Source
@@ -106,7 +106,6 @@ declare -A RPM_PACKAGES=(
     mediainfo \
     dcraw \
     perl-Image-ExifTool \
-    libheif \
     libheif-tools \
     heif-pixbuf-loader \
     wine \
@@ -188,17 +187,6 @@ log_info "Current version locks:"
 dnf5 versionlock list
 
 [ rpm -q wine ] && log_success "Wine installed and version-locked"
-
-# ============================================================================
-# dnf group Installation
-# ============================================================================
-
-log_info "Group-Install"
-if dnf5 -y group install security-lab; then
-  log_success "security-lab installed successfully"
-else
-  log_error "security-lab installation failed"
-fi
 
 # ============================================================================
 # CrossOver Installation
