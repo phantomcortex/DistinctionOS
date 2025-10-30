@@ -10,6 +10,9 @@ source /ctx/95-utility-functions.sh
 
 set -euo pipefail 
 
+#quick hack for blur-my-shell until Gnome 49 support is added
+[ -e /usr/share/gnome-shell/extensions/blur-my-shell@aunetx ] && rm -rf /usr/share/gnome-shell/extensions/blur-my-shell@aunetx || echo "failed to remove blur-my-shell"
+
 # Constants and Configuration
 readonly SCRIPT_NAME="${0##*/}"
 readonly EXTENSIONS_DIR="/usr/share/gnome-shell/extensions"
@@ -23,6 +26,7 @@ declare -A EXTENSIONS_GIT=(
     ["date-menu-formatter@marcinjakubowski.github.com"]="https://github.com/marcinjakubowski/date-menu-formatter.git"
     ["dash-to-dock@micxgx.gmail.com"]="https://github.com/micheleg/dash-to-dock.git"
     ["quick-settings-avatar@d-go"]="https://github.com/d-go/quick-settings-avatar.git"
+    ["blur-my-shell@aunetx"]="https://github.com/phantomcortex/blur-my-shell"
 )
 
 declare -A EXTENSIONS_ZIP=(
