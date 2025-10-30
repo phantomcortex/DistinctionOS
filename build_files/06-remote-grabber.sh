@@ -11,7 +11,8 @@ source /ctx/95-utility-functions.sh
 set -euo pipefail 
 
 #quick hack for blur-my-shell until Gnome 49 support is added
-[ -e /usr/share/gnome-shell/extensions/blur-my-shell@aunetx ] && rm -rf /usr/share/gnome-shell/extensions/blur-my-shell@aunetx || echo "failed to remove blur-my-shell"
+jq '.["shell-version"] += ["49"]' /usr/share/gnome-shell/extensions/blur-my-shell@aunetx/metadata.json > ~/tmp.json && mv ~/tmp.json metadata.json || log_warning "failed to update blur-my-shell"
+[ -f ~/tmp.json ] && rm -rf ~/tmp.json
 
 # Constants and Configuration
 readonly SCRIPT_NAME="${0##*/}"
@@ -26,13 +27,12 @@ declare -A EXTENSIONS_GIT=(
     ["date-menu-formatter@marcinjakubowski.github.com"]="https://github.com/marcinjakubowski/date-menu-formatter.git"
     ["dash-to-dock@micxgx.gmail.com"]="https://github.com/micheleg/dash-to-dock.git"
     ["quick-settings-avatar@d-go"]="https://github.com/d-go/quick-settings-avatar.git"
-    ["blur-my-shell@aunetx"]="https://github.com/phantomcortex/blur-my-shell"
 )
 
 declare -A EXTENSIONS_ZIP=(
-    ["burn-my-windows@schneegans.github.com"]="https://github.com/Schneegans/Burn-My-Windows/releases/download/v46/burn-my-windows@schneegans.github.com.zip"
-    ["gnome-ui-tune@itstime.tech"]="https://github.com/axxapy/gnome-ui-tune/releases/download/v1.10.2/gnome-ui-tune@itstime.tech.shell-extension.zip"
-    ["tophat@fflewddur.github.io"]="https://github.com/fflewddur/tophat/releases/download/v22/tophat@fflewddur.github.io.v22.shell-extension.zip"
+    ["burn-my-windows@schneegans.github.com"]="https://github.com/Schneegans/Burn-My-Windows/releases/download/v47/burn-my-windows@schneegans.github.com.zip"
+    ["gnome-ui-tune@itstime.tech"]="https://github.com/axxapy/gnome-ui-tune/releases/download/v1.11.0/gnome-ui-tune@itstime.tech.shell-extension.zip"
+    ["tophat@fflewddur.github.io"]="https://github.com/fflewddur/tophat/releases/download/v23/tophat@fflewddur.github.io.v23.shell-extension.zip"
 )
 
 # Extensions requiring schema compilation
@@ -198,6 +198,7 @@ main() {
     
     if install_all_extensions; then
         log_success "Extension installation completed successfully!"
+        log_info "Applying workaround for blur-my-shell"
         exit 0
     else
         log_error "Extension installation encountered errors"
