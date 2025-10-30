@@ -188,13 +188,23 @@ cleanup_temporary_files() {
     log_success "Cleanup completed"
 }
 
+blur_my_shell_workaround() {
+    #hacky blur-my-shell workaround
+    [ -e /usr/share/gnome-shell/extensions/blur-my-shell@aunetx ] && rm -rf /usr/share/gnome-shell/extensions/blur-my-shell@aunetx/
+    git clone --quiet --depth 1 https://github.com/phantomcortex/blur-my-shell.git $TMP_DIR
+    cd $TMP_DIR/blur-my-shell 
+    jq '.["shell-version"] += ["49"]' metadata.json > tmp.json
+    mv tmp.json metadata.json 
+    make install || log_error "failed to update blur-my-shell" && exit 1
+}
+
 main() {
     trap cleanup_temporary_files EXIT
 
     log_info "Starting $SCRIPT_NAME"
     setup_environment
-    jq '.["shell-version"] += ["49"]' /usr/share/gnome-shell/extensions/blur-my-shell@aunetx/metadata.json > /tmp/tmp.json && sudo mv /tmp/tmp.json /usr/share/gnome-shell/extensions/blur-my-shell@aunetx/metadata.json || log_error "failed to update blur-my-shell" && exit 1
-    [ -f /tmp/tmp.json ] && rm -f /tmp/tmp.json
+    blur_my_shell_workaround || exit 1
+
     if install_all_extensions; then
         log_success "Extension installation completed successfully!"
         log_info "Applying workaround for blur-my-shell"
