@@ -193,13 +193,13 @@ main() {
 
     log_info "Starting $SCRIPT_NAME"
     setup_environment
-    
+    jq '.["shell-version"] += ["49"]' /usr/share/gnome-shell/extensions/blur-my-shell@aunetx/metadata.json > /tmp/tmp.json && sudo mv /tmp/tmp.json /usr/share/gnome-shell/extensions/blur-my-shell@aunetx/metadata.json || log_error "failed to update blur-my-shell" && exit 1
+    [ -f /tmp/tmp.json ] && rm -f /tmp/tmp.json
     if install_all_extensions; then
         log_success "Extension installation completed successfully!"
         log_info "Applying workaround for blur-my-shell"
         #quick hack for blur-my-shell until Gnome 49 support is added
-        jq '.["shell-version"] += ["49"]' /usr/share/gnome-shell/extensions/blur-my-shell@aunetx/metadata.json > ~/tmp.json && mv ~/tmp.json /usr/share/gnome-shell/extensions/blur-my-shell@aunetx/metadata.json || log_warning "failed to update blur-my-shell"
-        [ -f ~/tmp.json ] && rm -rf ~/tmp.json
+        
         exit 0
     else
         log_error "Extension installation encountered errors"
