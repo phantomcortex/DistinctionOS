@@ -229,32 +229,6 @@ else
 fi
 
 # ============================================================================
-# ZFS Repository & Package Installation
-# ============================================================================
-# Issue: ZFS repository occasionally experiences downtime
-# Solution: Best-effort installation, build continues if unavailable
-
-log_section "Installing ZFS (best-effort)"
-
-log_info "Adding ZFS repository"
-if install_single_package_resilient \
-  "https://zfsonlinux.org/fedora/zfs-release-2-8.fc42.noarch.rpm" \
-  "zfs-release"; then
-  
-  log_info "Installing ZFS packages"
-  if dnf5 -y install zfs &>/dev/null; then
-    log_success "ZFS packages installed (DKMS compilation in kernel-modules.sh)"
-    SUCCEEDED_PACKAGES+=("zfs")
-  else
-    log_warning "ZFS package installation failed (repository may be down)"
-    FAILED_PACKAGES+=("zfs")
-  fi
-else
-  log_warning "ZFS repository unavailable (skipping ZFS installation)"
-  SKIPPED_REPOS+=("zfs-release")
-fi
-
-# ============================================================================
 # Create Required Directories
 # ============================================================================
 
