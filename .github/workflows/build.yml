@@ -148,6 +148,7 @@ jobs:
           
       - name: Rechunk output
         continue-on-error: true
+        if: github.event_name != 'pull_request'
         run: |
           if [[ "${STEPS_RECHUNK_CONCLUSION}" == "success" ]]; then
             echo "=== Rechunk Changelog ==="
@@ -167,7 +168,8 @@ jobs:
           STEPS_RECHUNK_OUTPUTS_CHANGELOG: ${{ steps.rechunk.outputs.changelog }}
           STEPS_RECHUNK_OUTPUTS_MANIFEST: ${{ steps.rechunk.outputs.manifest }}
           
-      - name: Load in podman and tag
+      - name: Load in podman and tag       
+        if: github.event_name != 'pull_request'
         run: |
           IMAGE=$(podman pull ${STEPS_RECHUNK_OUTPUTS_REF})
           sudo rm -rf ${STEPS_RECHUNK_OUTPUTS_LOCATION}
