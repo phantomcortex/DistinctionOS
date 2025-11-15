@@ -134,7 +134,7 @@ jobs:
           ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           skip_compression: false
-          max-layers: 100
+          max-layers: 90
           labels: ${{ steps.metadata.outputs.labels }} # Rechunk strips out all the labels during build, this needs to be reapplied here with newline separator
 
       - name: Remove Rechunker image
@@ -195,6 +195,13 @@ jobs:
         uses: ASzc/change-string-case-action@v6
         with:
           string: ${{ env.IMAGE_REGISTRY }}
+              
+      - name: Inspect layer sizes
+        run: |
+          echo "=== Layer size analysis ==="
+          podman inspect localhost/${IMAGE_NAME}:${DEFAULT_TAG} | jq '.[0].RootFS.Layers[] | length' | \
+          awk '{sum+=$1; print "Layer size: " $1/1024/1024 " MB"} END {print "Total: " sum/1024/1024 " MB"}'
+          #This should be temporary, builds are failing to upload, There are a few likely culprits
           
       - name: Push To GHCR
         uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
@@ -211,7 +218,7 @@ jobs:
           password: ${{ env.REGISTRY_PASSWORD }}
           extra-args: |
             --compression-format=gzip
-            --compression-level=9
+            --compression-level=6
 
       # This section is optional and only needs to be enabled if you plan on distributing
       # your project for others to consume. You will need to create a public and private key
