@@ -288,7 +288,23 @@ declare -A RPM_PACKAGES=(
     wine \
     meson \
     cmake \
-    boost"
+    openssl-devel \
+    zlib-devel \
+    elfutils-libelf-devel \
+    libudev-devel \
+    libuuid-devel \
+    libtirpc-devel \
+    libblkid-devel \
+    libtool \
+    autoconf \
+    automake \
+    ncompress \
+    rpm-build \
+    python3-devel \
+    python3-setuptools \
+    python3-cffi \
+    libaio-devel \
+    libattr-devel"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
