@@ -139,12 +139,4 @@ distinction-install-nautilus-scripts:
     
     echo "📂 Installing Nautilus scripts..."
     
-    # Clone and install
-    if [ ! -d ~/.local/share/nautilus/scripts ]; then
-        git clone https://github.com/cfgnunes/nautilus-scripts.git /tmp/nautilus-scripts
-        bash /tmp/nautilus-scripts/install.sh
-        rm -rf /tmp/nautilus-scripts
-        echo "✅ Nautilus scripts installed successfully."
-    else
-        echo "✓ Nautilus scripts already installed"
-    fi
+    bash -c "$(curl -fsSL https://cfgnunes.github.io/nautilus-scripts/install.sh)" -- -n
