@@ -468,7 +468,7 @@ fi
 #Hyprland may be temporary
 log_header "Hyprland"
 
-if dnf5 -y install --allowerasing --skip-broken
+if dnf5 -y install --allowerasing --skip-broken \
     rust \
     cargo \
     gcc-c++ \
