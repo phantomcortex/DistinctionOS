@@ -462,6 +462,62 @@ if ! rpm -q wine &>/dev/null; then
 fi
 
 # ============================================================================
+# Hyprland Installation
+# ============================================================================
+
+#Hyprland may be temporary
+dnf5 -y install rust \
+    cargo \
+    gcc-c++ \
+    pkg-config \
+    openssl-devel \
+    libX11-devel \
+    libXcursor-devel \
+    libXrandr-devel \
+    libXi-devel \
+    mesa-libGL-devel \
+    fontconfig-devel \
+    freetype-devel \
+    expat-devel \
+    polkit fontconfig \
+    cairo-gobject \
+    cairo-gobject-devel \
+    rust-gdk4-sys+default-devel \
+    gtk4-layer-shell-devel \
+    qt5-qtgraphicaleffects \
+    qt6-qt5compat \
+    python3-pyqt6 \
+    python3.11 \
+    python3.11-libs \
+    libxcrypt-compat \
+    libcurl \
+    libcurl-devel \
+    apr \
+    fuse-libs \
+    fuse2 \
+    fuse \
+    fush-libs \
+    golang git make \
+    hyprland \
+    hyprpicker \
+    swww \
+    xdg-desktop-portal-hyprland \
+    xdg-desktop-portal-wlr \
+    xdg-desktop-portal-gnome \
+    gnome-keyring \
+    cliphist \
+    easyeffects \
+    pavucontrol \
+    tesseract \
+    wl-clipboard \
+    wlogout \
+    yad \
+    qt6ct \
+    nwg-look \
+    pavucontrol 
+
+  log_success "Hyprland Installed!"
+# ============================================================================
 # Cleanup
 # ============================================================================
 
