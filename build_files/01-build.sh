@@ -466,11 +466,12 @@ fi
 # ============================================================================
 
 #Hyprland may be temporary
-dnf5 -y install rust \
+log_header "Hyprland"
+
+if dnf5 -y install --allowerasing --skip-broken
+    rust \
     cargo \
     gcc-c++ \
-    pkg-config \
-    openssl-devel \
     libX11-devel \
     libXcursor-devel \
     libXrandr-devel \
@@ -479,8 +480,7 @@ dnf5 -y install rust \
     fontconfig-devel \
     freetype-devel \
     expat-devel \
-    polkit fontconfig \
-    cairo-gobject \
+    polkit \
     cairo-gobject-devel \
     rust-gdk4-sys+default-devel \
     gtk4-layer-shell-devel \
@@ -489,34 +489,35 @@ dnf5 -y install rust \
     python3-pyqt6 \
     python3.11 \
     python3.11-libs \
-    libxcrypt-compat \
     libcurl \
     libcurl-devel \
-    apr \
-    fuse-libs \
-    fuse2 \
-    fuse \
-    fush-libs \
-    golang git make \
+    golang \
     hyprland \
     hyprpicker \
     swww \
     xdg-desktop-portal-hyprland \
     xdg-desktop-portal-wlr \
-    xdg-desktop-portal-gnome \
-    gnome-keyring \
     cliphist \
     easyeffects \
     pavucontrol \
     tesseract \
-    wl-clipboard \
     wlogout \
-    yad \
     qt6ct \
-    nwg-look \
-    pavucontrol 
+    nwg-bar \
+    nwg-dock \
+    nwg-dock-hyprland \
+    nwg-drawer \
+    nwg-launchers \
+    nwg-panel \
+    nwg-wrapper \
+    quickshell-git \
+    pavucontrol; then
+      log_success "Hyprland Installed!"
+    else
+      log_warning "Something may have gone wrong"
+    fi
 
-  log_success "Hyprland Installed!"
+    
 # ============================================================================
 # Cleanup
 # ============================================================================
