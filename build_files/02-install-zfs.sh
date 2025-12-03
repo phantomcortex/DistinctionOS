@@ -14,7 +14,7 @@ source /ctx/95-utility-functions.sh
 
 readonly ZFS_VERSION="2.3.5"  # Adjust as needed for latest stable
 readonly WORK_DIR="/tmp/kernel-module-build"
-
+NPROC=$(nproc)
 KERNEL=$(ls /lib/modules/ | grep ba | tail -1)
 
 # ============================================================================
