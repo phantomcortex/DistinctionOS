@@ -78,10 +78,10 @@ if dnf5 -y install \
   libuutil3-2.3.5-1.fc43.x86_64.rpm \
   libzfs6-devel-2.3.5-1.fc43.x86_64.rpm \
   python3-pyzfs-2.3.5-1.fc43.noarch.rpm; then
-  log_success "ZFS packages installed!"
+    log_success "ZFS packages installed!"
 else 
   log_warning "ZFS packages failed to install..."
-log_info "Installing ZFS kernel modules"
+fi
 
 
 cd ~
