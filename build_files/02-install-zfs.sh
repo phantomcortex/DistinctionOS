@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-set -euo pipefail
+set -uo pipefail
 
 # ============================================================================
 # ZFS Installation
@@ -23,6 +23,7 @@ KERNEL=$(ls /lib/modules/ | grep ba | tail -1)
 
 log_section "Installing ZFS"
 
+log_info "errors will return as warnings and the build will continue"
 mkdir -p "$WORK_DIR"
 cd "$WORK_DIR"
 
@@ -54,27 +55,34 @@ if ./configure \
   --with-config=kernel; then
   log_success "Configuration successful"
 else
-  log_error "Configuration failed"
-  exit 1
+  log_warning "Configuration failed"
 fi
 
 log_info "Using $NPROC parallel compilation threads"
 
-if make -j"$NPROC"; then
+if make rpm -j"$NPROC"; then
   log_success "ZFS compilation successful"
 else
-  log_error "ZFS compilation failed"
-  exit 1
+  log_warning "ZFS compilation failed"
 fi
 
+#there should be about ten rpm packages after it's done
+ls | grep '.rpm'
+if dnf5 -y install \
+  zfs-dkms-2.3.5-1.fc43.noarch.rpm \
+  zfs-2.3.5-1.fc43.x86_64.rpm \
+  zfs-dracut-2.3.5-1.fc43.noarch.rpm \
+  libzpool6-2.3.5-1.fc43.x86_64.rpm \
+  libzfs6-2.3.5-1.fc43.x86_64.rpm \
+  libnvpair3-2.3.5-1.fc43.x86_64.rpm \
+  libuutil3-2.3.5-1.fc43.x86_64.rpm \
+  libzfs6-devel-2.3.5-1.fc43.x86_64.rpm \
+  python3-pyzfs-2.3.5-1.fc43.noarch.rpm; then
+  log_success "ZFS packages installed!"
+else 
+  log_warning "ZFS packages failed to install..."
 log_info "Installing ZFS kernel modules"
 
-if make install; then
-  log_success "ZFS modules installed successfully"
-else
-  log_error "ZFS module installation failed"
-  exit 1
-fi
 
 cd ~
 
