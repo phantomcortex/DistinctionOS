@@ -30,8 +30,6 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     echo -e "\033[31mBUILD SCRIPT >>>>\033[0m" && \
     /ctx/01-build.sh && \
-    echo -e "\033[31mINSTALL ZFS >>>>\033[0m" && \
-    /ctx/02-install-zfs.sh && \
     echo -e "\033[31mOPT FIXER >>>>\033[0m" && \
     /ctx/03-fix-opt.sh && \
     echo -e "\033[31mSYSTEM CONFIG >>>>\033[0m" && \
