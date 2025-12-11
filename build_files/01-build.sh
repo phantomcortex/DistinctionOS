@@ -517,7 +517,14 @@ if dnf5 -y install --allowerasing --skip-broken \
       log_warning "Something may have gone wrong"
     fi
 
-    
+curl -L "https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip" -o /tmp/Inter.zip
+mkdir -p /usr/share/fonts/Inter/
+unzip -j /tmp/Inter.zip "InterVariable.ttf" "InterVariable-Italic.ttf" -d /usr/share/fonts/Inter/
+rm /tmp/Inter.zip && fc-cache -f
+
+curl -L "https://github.com/google/material-design-icons/raw/master/variablefont/MaterialSymbolsRounded%5BFILL%2CGRAD%2Copsz%2Cwght%5D.ttf" -o /usr/share/fonts/MaterialSymbolsRounded.ttf
+fc-cache -f
+
 # ============================================================================
 # Cleanup
 # ============================================================================
