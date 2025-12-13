@@ -45,7 +45,6 @@ ujust distinction-install
 - Flatpak Builder
 - FreeRDP (for remote Windows applications)
 - Pandoc (universal document converter)
-- Zfs kernel module
 
 ### 📦 Quality of Life
 - **zoxide** - Smart directory navigation (`z` command)
@@ -57,7 +56,7 @@ ujust distinction-install
 ### 🎨 Theming
 - Kora icon theme (custom build)
 - Coordinated GTK styling
-
+- Now shipping with hyprland! (Themeing not included)
 ---
 
 ## 🔑 Key Features
