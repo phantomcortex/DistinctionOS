@@ -3,7 +3,7 @@ FROM scratch AS ctx
 COPY build_files /
 
 # Base Image
-FROM ghcr.io/ublue-os/bazzite-gnome:latest as DistinctionOS
+FROM ghcr.io/ublue-os/bazzite-gnome:testing as DistinctionOS
 #FROM quay.io/fedora/fedora-bootc:42
 
 
