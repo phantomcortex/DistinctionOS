@@ -1,0 +1,27 @@
+[Unit]
+Description=DistinctionOS Steam Library Symlinker
+Documentation=https://github.com/yourusername/DistinctionOS
+After=default.target
+
+# Only run if Steam appears to be installed
+ConditionPathExists=%h/.local/share/Steam/steamapps/libraryfolders.vdf
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/distinctionos/steam-linker/steam-linker.sh
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-write
+PrivateTmp=true
+
+# Allow writing to specific locations
+ReadWritePaths=%h/Games
+ReadWritePaths=%h/.local/share/distinctionos
+ReadWritePaths=/var/log/distinctionos
+
+[Install]
+WantedBy=default.target
