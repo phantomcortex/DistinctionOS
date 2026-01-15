@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  DistinctionOS XWM Player MIME Type Definitions
+  
+  Registers Bethesda game audio formats with the system's MIME database.
+  Install to: /usr/share/mime/packages/
+  
+  After installation, run: update-mime-database /usr/share/mime
+-->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+
+  <!-- Microsoft xWMA Audio (used in Skyrim, Fallout, etc.) -->
+  <mime-type type="audio/x-xwm">
+    <comment>Microsoft xWMA Audio</comment>
+    <comment xml:lang="en_GB">Microsoft xWMA Audio</comment>
+    <acronym>xWMA</acronym>
+    <expanded-acronym>Xbox/Windows Media Audio</expanded-acronym>
+    
+    <!-- File extension patterns -->
+    <glob pattern="*.xwm" weight="80"/>
+    <glob pattern="*.XWM" weight="80"/>
+    <glob pattern="*.xwma" weight="80"/>
+    <glob pattern="*.XWMA" weight="80"/>
+    
+    <!-- Magic bytes: RIFF....XWMA (xWMA is a RIFF-based format) -->
+    <magic priority="60">
+      <match type="string" value="RIFF" offset="0">
+        <match type="string" value="XWMA" offset="8"/>
+      </match>
+    </magic>
+    
+    <!-- Generic icon since there's no specific one -->
+    <generic-icon name="audio-x-generic"/>
+    
+    <!-- Subclass of generic audio -->
+    <sub-class-of type="audio/x-ms-wma"/>
+  </mime-type>
+
+  <!-- Alternate registration for xwma extension -->
+  <mime-type type="audio/x-xwma">
+    <comment>Microsoft xWMA Audio</comment>
+    <alias type="audio/x-xwm"/>
+    <glob pattern="*.xwma" weight="70"/>
+    <generic-icon name="audio-x-generic"/>
+  </mime-type>
+
+  <!-- Bethesda FUZ Voice Files (contains lip sync + xWMA audio) -->
+  <mime-type type="audio/x-fuz">
+    <comment>Bethesda Voice File</comment>
+    <comment xml:lang="en_GB">Bethesda Voice File</comment>
+    <acronym>FUZ</acronym>
+    <expanded-acronym>Bethesda Fuze Voice Container</expanded-acronym>
+    
+    <!-- File extension patterns -->
+    <glob pattern="*.fuz" weight="80"/>
+    <glob pattern="*.FUZ" weight="80"/>
+    
+    <!-- Magic bytes: FUZE at start of file -->
+    <magic priority="70">
+      <match type="string" value="FUZE" offset="0"/>
+    </magic>
+    
+    <generic-icon name="audio-x-generic"/>
+  </mime-type>
+
+</mime-info>
