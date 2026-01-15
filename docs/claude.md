@@ -18,7 +18,7 @@
 DistinctionOS/
 ├── build-files/               # Build-time execution scripts (numerically ordered)
 │   ├── 01-build.sh            # Package management (RPM, repos, keys) - FIRST
-│   ├── 02-install-zfs.sh      # ZFS package installation - SECOND
+│   ├── 02-install-zfs.sh      # ZFS package installation - SECOND (INACTIVE - no longer planned)
 │   ├── 03-fix-opt.sh          # /opt persistence configuration - THIRD
 │   ├── 04-config.sh           # System services and misc config - FOURTH
 │   ├── 05-kernel-modules.sh   # xpadneo & ZFS DKMS compilation - FIFTH
@@ -30,7 +30,7 @@ DistinctionOS/
 │   ├── usr/
 │   │   ├── bin/               # Custom executables (firstrun, tpm-monitor, advmv, advcp)
 │   │   ├── lib/systemd/       # SystemD services and timers
-│   │   └── share/DistinctionOS/just/  # Just recipes
+│   │   └── share/distinctionos/just/  # Just recipes
 │   └── etc/
 │       └── sudoers.d/         # Sudo configuration
 │
@@ -53,6 +53,56 @@ DistinctionOS/
 └── .github/workflows/         # GitHub Actions (build.yml & build-disk.yml)
 ```
 
+## Housekeeper Architecture
+
+The Housekeeper Architecture is an ecosystem of simple automation services for home directory management. All housekeepers share common infrastructure:
+
+### Directory Convention
+| Purpose | Location |
+|---------|----------|
+| System defaults | `/usr/share/distinctionos/<service>/` |
+| Local overrides | `/usr/local/share/distinctionos/<service>/` |
+| User overrides | `~/.config/distinctionos/` |
+| Runtime state | `~/.local/share/distinctionos/<service>/` |
+| Logs | `/var/log/distinctionos/` (500MiB limit with rotation) |
+
+### Shared Library
+`/usr/share/distinctionos/lib/housekeeper-common.sh` provides:
+- Standardised logging with automatic rotation
+- Configuration management with override hierarchy
+- State persistence utilities
+- Symlink management functions
+- Locking to prevent concurrent execution
+
+### Current Housekeepers
+| Service | Purpose | Status |
+|---------|---------|--------|
+| Steam Linker | Unified game library symlinks | ✅ Complete |
+
+## Steam Linker
+
+Automatically creates symlinks to `~/Games/Steamlibrary/` from all Steam library locations.
+
+### Features
+- Auto-discovers libraries via `libraryfolders.vdf`
+- Tracks managed symlinks for restoration if accidentally deleted
+- Removes broken symlinks automatically
+- Duplicate detection with warnings
+
+### Quick Commands
+```bash
+ujust steam-link           # Update symlinks
+ujust steam-link-status    # Show status
+ujust steam-link-enable    # Enable at login
+ujust steam-link-logs      # View logs
+```
+
+### Files
+- Script: `/usr/share/distinctionos/steam-linker/steam-linker.sh`
+- Service: `/usr/lib/systemd/user/distinctionos-steam-linker.service`
+- Recipes: `/usr/share/DistinctionOS/just/steam-linker.just`
+- Docs: `docs/steam-linker.md`
+
 ## Technical Architecture
 
 ### Build Process Overview
@@ -74,14 +124,8 @@ Containerfile Execution:
   │    ├─ Remove unwanted Bazzite packages
   │    ├─ Configure repositories (Cider, COPR, etc.)
   │    ├─ Install RPM packages by repository
-  │    ├─ Version-lock Wine
   │    ├─ Install CrossOver and themes
   │    └─ Validate critical packages
-  │
-  ├─→ 02-install-zfs.sh
-  │    ├─ Source utility-functions.sh
-  │    ├─ Install ZFS repository
-  │    └─ Install ZFS packages (DKMS compilation happens later)
   │
   ├─→ 03-fix-opt.sh
   │    ├─ Source utility-functions.sh
@@ -151,32 +195,6 @@ Containerfile Execution:
 - **Workflow Optimization**: Shortcuts and automation for common tasks
 - **First-Run Automation**: SystemD service runs ujust distinction-install on first boot
 
-## Development Workflow
-
-### CI/CD Pipeline
-- **Trigger**: Push to main branch, pull requests, scheduled (every 5 days), or manual dispatch
-- **Build**: Multi-stage container build with Buildah
-- **Rechunker**: Layer optimization for efficient updates
-- **Test**: Validation of image integrity
-- **Sign**: Cosign image signing
-- **Deploy**: Automatic publishing to GitHub Container Registry
-
-### Local Development
-```bash
-# Build locally
-just build
-
-# Build and test in VM
-just build-qcow2
-just run-vm-qcow2
-
-# Lint and format shell scripts
-just lint
-just format
-
-# Clean build artifacts
-just clean
-```
 
 ## Key Files and Their Purposes
 
@@ -188,7 +206,6 @@ just clean
 - Color-coded logging with validation
 - Organized package installation by repository (associative array)
 - HEIF/Glycin workaround for image rendering
-- Wine version-locking
 - Critical package validation
 - CrossOver and theme installation from GitHub releases
 
@@ -397,8 +414,6 @@ Contains custom files added at build time (akin to BlueBuild's 'overlay'):
 ### 🚧 Known Issues
 - **NvChad root installation**: May need verification after first run (`sudo nvim` to complete)
 - **TPM re-enrollment**: Requires manual password entry (by design for security)
-- **Plymouth hang**: System occasionally hangs briefly at Plymouth screen after shutdown signal (cosmetic, under investigation)
-- **Build time**: ZFS compilation adds ~10-15 minutes (acceptable as system matures)
 
 ## Maintenance Procedures
 
@@ -433,41 +448,31 @@ declare -A RPM_PACKAGES=(
 - **Homebrews**: Add to `repo-files/brews` on GitHub
 - Run: `ujust distinction-install` or specific recipe
 
-### Modifying Build Scripts
-1. Edit appropriate numbered script (01-06)
-2. Maintain logging patterns using utility functions
-3. Test locally: `just build`
-4. Commit to feature branch
-5. Create pull request for CI/CD validation
-6. Merge after successful build
 
 ## Future Roadmap
 
-### Short-Term Goals (1-3 months)
-- [ ] Apply utility function patterns to system-files/ shell scripts
-- [ ] Create `wine.md` documentation for Wine installation process
-- [ ] Enhanced build time optimization strategies
-- [ ] Comprehensive testing suite for Just recipes
+### Short-Term Goals 
+- [ ] revisit and redesign DistinctionOS tpm auto-unlock (including ujust recipe)
+- [ ] maybe expand 'housekeeper' functionality ('housekeepers' are intended to keep things organized according to a set-design or blueprint. Future plans may include '.housekeeper' config files that maintain expansive directories and files)
 
-### Long-Term Goals (6-12 months)
+### Long-Term Goals 
 - [ ] **Standalone ISO**: Fully functional installer ISO (in progress via build-disk.yml)
-- [ ] **CachyOS-LTO Kernel**: Ship optimized kernel by default
-- [ ] **Steam Icon Manager**: Automated service for managing Steam game shortcuts
-- [ ] **Extended TPM Recovery**: Fully automated re-enrollment without password prompt
 - [ ] **Build Caching**: Implement layer caching for faster iteration
 
 ### Completed Goals ✅
-- Rechunker support for efficient updates
-- ZSH as default shell with automated configuration
-- Oh-my-zsh and Powerlevel10k automatic installation
-- TPM auto-unlock with proactive monitoring system
-- **Build Script Refactoring** (2025-10-27):
-  - Complete overhaul of all build scripts
-  - Utility functions library implementation
-  - Color-coded logging system
-  - Comprehensive error handling
-  - Professional code quality standards
-  - ~300 lines of duplication eliminated
+- [x] Rechunker support for efficient updates
+- [x] ZSH as default shell with automated configuration
+- [x] Oh-my-zsh and Powerlevel10k automatic installation
+- [x] TPM auto-unlock with proactive monitoring system
+- [x] Steam library symlink automation ✅
+- [x] xwm-player
+- [x] **Build Script Refactoring** (2025-10-27):
+  - [x] Complete overhaul of all build scripts
+  - [x] Utility functions library implementation
+  - [x] Color-coded logging system
+  - [x] Comprehensive error handling
+  - [x] Professional code quality standards
+  - [x] ~300 lines of duplication eliminated
 
 ## Notes for AI Assistants
 
@@ -545,6 +550,19 @@ exit 0
 - **Documentation**: References `build-files/` and `system-files/` (hyphens) for consistency
 - **Future**: Will be renamed to match documentation
 
+### Housekeeper Standards
+When creating new housekeepers:
+1. Source `/usr/share/distinctionos/lib/housekeeper-common.sh`
+2. Use `hk_init_logging` for standardised logging
+3. Use `hk_load_config` for configuration hierarchy
+4. Use `hk_lock` to prevent concurrent execution
+5. Store state in `~/.local/share/distinctionos/<service>/`
+6. Create corresponding `.just` recipe file
+
+### DistinctionOS file structure
+Some DistinctionOS projects should have their own directories inside `/usr/share/distinctionos/` and should respect overrides in `/usr/local/share/distinctionos/` and `~/.local/share/distinctionos/` and use `/var/log/distinctionos/` for logs(respecting a 500MiB size limit); Use of these directories depends on if a project has functionality that needs organization and should include a documentation file per project (documentation file should also include a tree-view for all files relavent to a project).
+
+
 ### User Technical Level
 - Intermediate Linux system administration skills
 - Comfortable with containers, package management, system configuration
@@ -564,15 +582,12 @@ At the end of a session, user will request updated context files:
 
 ## Document Metadata
 
-**Version**: 3.0  
-**Last Updated**: 2025-10-27  
+**Version**: 3.1  
+**Last Updated**: 2026-1-15  
 **Major Changes**: 
-- Complete build script refactoring documentation
-- Utility functions library implementation
-- Script renaming to numerical order (01-06, 95)
-- Enhanced code quality standards
-- Comprehensive error handling patterns
-- ~300 lines of duplication eliminated
+- Add Steam Linker
+- Add xwm-player
+- Add DistinctionOS File Structure to claude.md
 
 **Maintainer**: phantomcortex  
 **Purpose**: Provide comprehensive context to AI assistants working with DistinctionOS
