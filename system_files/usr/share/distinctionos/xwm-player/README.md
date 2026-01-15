@@ -1,4 +1,4 @@
-# DistinctionOS XWM Player
+# distinctionos XWM Player
 
 A seamless solution for playing Bethesda game audio formats (XWM, FUZ) on Linux using your preferred audio player.
 
@@ -29,13 +29,13 @@ This utility transparently converts these formats to standard audio (OGG by defa
 
 ```
 /usr/bin/xwm-player                                    # Main executable
-/usr/share/DistinctionOS/xwm-player/config             # Default configuration
-/usr/share/DistinctionOS/xwm-player/handlers/          # Format handlers
+/usr/share/distinctionos/xwm-player/config             # Default configuration
+/usr/share/distinctionos/xwm-player/handlers/          # Format handlers
 /usr/share/applications/xwm-player.desktop             # Desktop file
 /usr/share/mime/packages/xwm-player.xml                # MIME types
 ```
 
-### For DistinctionOS
+### For distinctionos
 
 Copy files to your `system_files/` directory:
 
@@ -44,8 +44,8 @@ Copy files to your `system_files/` directory:
 cp xwm-player system_files/usr/bin/
 
 # Configuration
-mkdir -p system_files/usr/share/DistinctionOS/xwm-player/handlers
-cp config system_files/usr/share/DistinctionOS/xwm-player/
+mkdir -p system_files/usr/share/distinctionos/xwm-player/handlers
+cp config system_files/usr/share/distinctionos/xwm-player/
 
 # Desktop integration
 cp applications/xwm-player.desktop system_files/usr/share/applications/
@@ -66,8 +66,8 @@ update-desktop-database /usr/share/applications
 sudo cp xwm-player /usr/bin/
 sudo chmod +x /usr/bin/xwm-player
 
-sudo mkdir -p /usr/share/DistinctionOS/xwm-player/handlers
-sudo cp config /usr/share/DistinctionOS/xwm-player/
+sudo mkdir -p /usr/share/distinctionos/xwm-player/handlers
+sudo cp config /usr/share/distinctionos/xwm-player/
 
 sudo cp applications/xwm-player.desktop /usr/share/applications/
 sudo cp mime/xwm-player.xml /usr/share/mime/packages/
@@ -123,9 +123,9 @@ xwm-player --cleanup
 
 Configuration is loaded in order (later files override earlier):
 
-1. `/usr/share/DistinctionOS/xwm-player/config` (system default)
-2. `/usr/local/share/DistinctionOS/xwm-player/config` (local override)
-3. `~/.config/DistinctionOS/xwm-player/config` (user override)
+1. `/usr/share/distinctionos/xwm-player/config` (system default)
+2. `/usr/local/share/distinctionos/xwm-player/config` (local override)
+3. `~/.config/distinctionos/xwm-player/config` (user override)
 
 ### Key Options
 
@@ -148,7 +148,7 @@ GUI_ERRORS="true"
 
 ### User Override Example
 
-To use VLC instead of Decibels, create `~/.config/DistinctionOS/xwm-player/config`:
+To use VLC instead of Decibels, create `~/.config/distinctionos/xwm-player/config`:
 
 ```bash
 PLAYER_COMMAND="org.videolan.VLC"
@@ -156,7 +156,7 @@ PLAYER_COMMAND="org.videolan.VLC"
 
 ## Adding Format Support
 
-1. Create a handler file in `/usr/share/DistinctionOS/xwm-player/handlers/`:
+1. Create a handler file in `/usr/share/distinctionos/xwm-player/handlers/`:
 
 ```bash
 # myformat.sh
@@ -236,7 +236,7 @@ xwm-player --debug music.xwm
 
 ## License
 
-Part of DistinctionOS. See repository for license details.
+Part of distinctionos. See repository for license details.
 
 ## Roadmap
 
@@ -248,4 +248,4 @@ Part of DistinctionOS. See repository for license details.
 
 ---
 
-*Crafted with care for DistinctionOS*
+*Crafted with care for distinctionos*

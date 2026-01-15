@@ -1,8 +1,8 @@
-# DistinctionOS XWM Player Configuration
+# distinctionos XWM Player Configuration
 # ========================================
-# System default: /usr/share/DistinctionOS/xwm-player/config
-# System override: /usr/local/share/DistinctionOS/xwm-player/config
-# User override: ~/.config/DistinctionOS/xwm-player/config
+# System default: /usr/share/distinctionos/xwm-player/config
+# System override: /usr/local/share/distinctionos/xwm-player/config
+# User override: ~/.config/distinctionos/xwm-player/config
 #
 # Override files need only contain the options you wish to change.
 # Values are loaded in order: system → local → user
@@ -53,7 +53,7 @@ FFMPEG_EXTRA_ARGS=""
 # SUPPORTED FORMATS
 # =============================================================================
 # Format handler mapping: extension → handler function
-# Handlers are defined in /usr/share/DistinctionOS/xwm-player/handlers/
+# Handlers are defined in /usr/share/distinctionos/xwm-player/handlers/
 # To add new formats, create a handler and add it here
 #
 # Format: HANDLER_<EXT>="handler_function_name"
@@ -83,7 +83,7 @@ CLEANUP_MODE="on-exit"
 
 # Cache conversions by file checksum (true/false)
 # If true, repeated plays of the same file skip conversion
-# Cache location: ~/.cache/DistinctionOS/xwm-player/
+# Cache location: ~/.cache/distinctionos/xwm-player/
 CACHE_CONVERSIONS="false"
 
 # =============================================================================

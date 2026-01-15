@@ -8,7 +8,7 @@
 #        xwm-player --convert <input> <output>
 #        xwm-player --cleanup
 #
-# Part of DistinctionOS - https://github.com/YOUR_REPO/DistinctionOS
+# Part of DistinctionOS - https://github.com/phantomcortex/distinctionos
 # =============================================================================
 
 set -euo pipefail
@@ -52,7 +52,7 @@ GUI_ERRORS="true"
 NOTIFY_MANUAL="true"
 NOTIFY_TIMEOUT="3000"
 LOG_LEVEL="error"
-LOG_FILE="/var/log/DistinctionOS/xwm-player.log"
+LOG_FILE="/var/log/distinctionos/xwm-player.log"
 FFMPEG_BIN=""
 CONVERSION_TIMEOUT="300"
 MAX_FILE_SIZE="0"

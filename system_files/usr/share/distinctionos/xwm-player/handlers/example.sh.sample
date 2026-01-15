@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# DistinctionOS XWM Player - Example Handler
+# distinctionos XWM Player - Example Handler
 # =============================================================================
 # This file demonstrates how to create custom format handlers.
 #
@@ -8,9 +8,9 @@
 # functions that convert a specific format to a standard audio format.
 #
 # Installation locations (in order of precedence):
-#   /usr/share/DistinctionOS/xwm-player/handlers/  (system)
-#   /usr/local/share/DistinctionOS/xwm-player/handlers/  (local override)
-#   ~/.config/DistinctionOS/xwm-player/handlers/  (user override)
+#   /usr/share/distinctionos/xwm-player/handlers/  (system)
+#   /usr/local/share/distinctionos/xwm-player/handlers/  (local override)
+#   ~/.config/distinctionos/xwm-player/handlers/  (user override)
 #
 # To enable a handler, add it to the config file:
 #   HANDLER_EXT="function_name"
