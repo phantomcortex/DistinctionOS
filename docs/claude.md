@@ -454,6 +454,7 @@ declare -A RPM_PACKAGES=(
 ### Short-Term Goals 
 - [ ] revisit and redesign DistinctionOS tpm auto-unlock (including ujust recipe)
 - [ ] maybe expand 'housekeeper' functionality ('housekeepers' are intended to keep things organized according to a set-design or blueprint. Future plans may include '.housekeeper' config files that maintain expansive directories and files)
+- [ ] update github-actions to more closely match bazzite (when bazzite runs github-actions to update bazzite images, it also creates a release page with updated packages and new new commits included in the new images)
 
 ### Long-Term Goals 
 - [ ] **Standalone ISO**: Fully functional installer ISO (in progress via build-disk.yml)
@@ -582,12 +583,14 @@ At the end of a session, user will request updated context files:
 
 ## Document Metadata
 
-**Version**: 3.1  
-**Last Updated**: 2026-1-15  
+**Version**: 3.3  
+**Last Updated**: 2026-1-16  
 **Major Changes**: 
 - Add Steam Linker
 - Add xwm-player
 - Add DistinctionOS File Structure to claude.md
+- Mark ZFS as no longer planned
+- Update Objectives
 
 **Maintainer**: phantomcortex  
 **Purpose**: Provide comprehensive context to AI assistants working with DistinctionOS
