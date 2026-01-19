@@ -74,11 +74,13 @@ log_section "Integrating DistinctionOS Just recipes"
 
 # Import DistinctionOS recipes into the main justfile
 readonly UBLUE_JUSTFILE="/usr/share/ublue-os/justfile"
-readonly DISTINCTION_JUST="/usr/share/DistinctionOS/just/distinction.just"
+readonly DISTINCTION_JUST="/usr/share/distinctionos/just/distinction.just"
+readonly STEAM_LINKER_JUST="/usr/share/distinctionos/just/steam-linker.just"
 
 if [[ -f "$UBLUE_JUSTFILE" ]]; then
   log_info "Adding DistinctionOS recipes to Universal Blue justfile"
   echo "import \"$DISTINCTION_JUST\"" >> "$UBLUE_JUSTFILE"
+  echo "import \"$STEAM_LINKER_JUST\"" >> "$UBLUE_JUSTFILE"
   log_success "DistinctionOS recipes imported"
 else
   log_error "Universal Blue justfile not found at $UBLUE_JUSTFILE"
@@ -90,7 +92,7 @@ log_section "Hiding incompatible Bazzite recipes"
 
 readonly -a INCOMPATIBLE_RECIPES=(
   "install-coolercontrol"  # Conflicts with our thermal management
-  "install-openrgb"        # Conflicts with our RGB control setup
+  #"install-openrgb"        # Conflicts with our RGB control setup
 )
 
 for recipe in "${INCOMPATIBLE_RECIPES[@]}"; do
