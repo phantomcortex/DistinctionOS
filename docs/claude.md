@@ -21,7 +21,7 @@ DistinctionOS/
 │   ├── 02-install-zfs.sh      # ZFS package installation - SECOND (INACTIVE - no longer planned)
 │   ├── 03-fix-opt.sh          # /opt persistence configuration - THIRD
 │   ├── 04-config.sh           # System services and misc config - FOURTH
-│   ├── 05-kernel-modules.sh   # xpadneo & ZFS DKMS compilation - FIFTH
+│   ├── 05-kernel-modules.sh   # xpadneo DKMS compilation - FIFTH
 │   ├── 06-remote-grabber.sh   # GNOME Shell extension management - SIXTH (FINAL)
 │   ├── 95-utility-functions.sh # Shared utility functions library - SOURCED BY ALL
 │   └── wine-installer.sh      # Custom Wine builds (INACTIVE - not in build sequence)
@@ -148,7 +148,7 @@ Containerfile Execution:
   │    ├─ Detect Bazzite kernel version
   │    ├─ Clone & compile xpadneo module
   │    ├─ Verify module installation
-  │    ├─ Run DKMS autoinstall (compiles ZFS + xpadneo)
+  │    ├─ Run DKMS autoinstall (compiles xpadneo)
   │    └─ Regenerate initramfs with new modules
   │
   └─→ 06-remote-grabber.sh
@@ -215,19 +215,6 @@ Containerfile Execution:
 - Modifying package removal list
 - Updating version locks
 
-#### `02-install-zfs.sh` - ZFS Package Installation
-**Purpose**: Install ZFS packages for later DKMS compilation
-**Key Features**:
-- Minimal, concise design
-- Repository configuration
-- Package installation only (compilation happens in 05-kernel-modules.sh)
-
-**When to Edit**:
-- Updating ZFS repository URL
-- Changing ZFS version
-
-**Note**: Can be disabled by commenting out in Containerfile during rapid development to speed builds.
-
 #### `03-fix-opt.sh` - /opt Directory Persistence
 **Purpose**: Ensure packages in /opt persist across reboots
 **Key Features**:
@@ -261,7 +248,7 @@ Containerfile Execution:
 - Kernel version detection
 - Custom makefile generation for ostree compatibility
 - Module compilation and verification
-- DKMS autoinstall (compiles both xpadneo and ZFS)
+- DKMS autoinstall (compiles xpadneo)
 - Initramfs regeneration with secure permissions
 
 **When to Edit**:
