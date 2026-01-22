@@ -8,23 +8,23 @@
 #        xwm-player --convert <input> <output>
 #        xwm-player --cleanup
 #
-# Part of DistinctionOS - https://github.com/phantomcortex/distinctionos
+# Part of DistinctionOS - https://github.com/YOUR_REPO/DistinctionOS
 # =============================================================================
 
 set -euo pipefail
 
-readonly VERSION="1.0.0"
+readonly VERSION="1.0.2"
 readonly SCRIPT_NAME="$(basename "$0")"
 
 # Configuration paths (in order of precedence, lowest to highest)
-readonly SYSTEM_CONFIG="/usr/share/DistinctionOS/xwm-player/config"
-readonly LOCAL_CONFIG="/usr/local/share/DistinctionOS/xwm-player/config"
-readonly USER_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/DistinctionOS/xwm-player/config"
+readonly SYSTEM_CONFIG="/usr/share/distinctionos/xwm-player/config"
+readonly LOCAL_CONFIG="/usr/local/share/distinctionos/xwm-player/config"
+readonly USER_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/distinctionos/xwm-player/config"
 
 # Handler paths
-readonly SYSTEM_HANDLERS="/usr/share/DistinctionOS/xwm-player/handlers"
-readonly LOCAL_HANDLERS="/usr/local/share/DistinctionOS/xwm-player/handlers"
-readonly USER_HANDLERS="${XDG_CONFIG_HOME:-$HOME/.config}/DistinctionOS/xwm-player/handlers"
+readonly SYSTEM_HANDLERS="/usr/share/distinctionos/xwm-player/handlers"
+readonly LOCAL_HANDLERS="/usr/local/share/distinctionos/xwm-player/handlers"
+readonly USER_HANDLERS="${XDG_CONFIG_HOME:-$HOME/.config}/distinctionos/xwm-player/handlers"
 
 # Runtime state
 INVOKED_BY_DESKTOP="false"
@@ -37,9 +37,9 @@ PLAYER_PID=""
 
 PLAYER_COMMAND="org.gnome.Decibels"
 PLAYER_TYPE="auto"
-FALLBACK_PLAYER="org.gnome.Totem"
+FALLBACK_PLAYER="mpv"
 FALLBACK_PLAYER_TYPE="auto"
-OUTPUT_FORMAT="ogg"
+OUTPUT_FORMAT="wav"
 AUDIO_QUALITY="6"
 PRESERVE_SAMPLE_RATE="true"
 FFMPEG_EXTRA_ARGS=""
@@ -194,8 +194,12 @@ handle_xwm() {
     
     log_info "Converting XWM: $input_file → $output_file"
     
-    local ffmpeg_cmd=("${FFMPEG_BIN:-ffmpeg}")
-    ffmpeg_cmd+=(-hide_banner -loglevel warning)
+    local ffmpeg_bin="${FFMPEG_BIN:-ffmpeg}"
+    local ffmpeg_cmd=("$ffmpeg_bin")
+    
+    # CRITICAL: -nostdin prevents ffmpeg from waiting on terminal input
+    # Without this, ffmpeg may hang indefinitely waiting for stdin
+    ffmpeg_cmd+=(-nostdin -hide_banner -loglevel warning)
     ffmpeg_cmd+=(-y -i "$input_file")
     
     # Sample rate handling
@@ -231,13 +235,37 @@ handle_xwm() {
     
     ffmpeg_cmd+=("$output_file")
     
+    # Debug: show the exact command being executed
     log_debug "FFmpeg command: ${ffmpeg_cmd[*]}"
     
-    if [[ "$CONVERSION_TIMEOUT" -gt 0 ]]; then
-        timeout "$CONVERSION_TIMEOUT" "${ffmpeg_cmd[@]}"
+    # For debug mode, also echo to stderr so user can see it immediately
+    if [[ "$LOG_LEVEL" == "debug" ]]; then
+        echo "[DEBUG] Executing: ${ffmpeg_cmd[*]}" >&2
+        echo "[DEBUG] Working directory: $(pwd)" >&2
+    fi
+    
+    local ffmpeg_result
+    
+    # Execute ffmpeg with optional timeout
+    if [[ "${CONVERSION_TIMEOUT:-0}" -gt 0 ]]; then
+        # Use --signal=TERM to allow graceful shutdown, with KILL as backup
+        timeout --signal=TERM --kill-after=10 "$CONVERSION_TIMEOUT" "${ffmpeg_cmd[@]}"
+        ffmpeg_result=$?
     else
         "${ffmpeg_cmd[@]}"
+        ffmpeg_result=$?
     fi
+    
+    # Log the result
+    if [[ "$ffmpeg_result" -eq 0 ]]; then
+        log_debug "FFmpeg completed successfully"
+    elif [[ "$ffmpeg_result" -eq 124 ]]; then
+        log_error "FFmpeg timed out after ${CONVERSION_TIMEOUT}s"
+    else
+        log_error "FFmpeg failed with exit code: $ffmpeg_result"
+    fi
+    
+    return $ffmpeg_result
 }
 
 # Built-in FUZ handler (Bethesda voice files)
@@ -356,7 +384,7 @@ get_cache_path() {
     local checksum
     
     checksum="$(sha256sum "$input_file" | cut -d' ' -f1)"
-    echo "${XDG_CACHE_HOME:-$HOME/.cache}/DistinctionOS/xwm-player/${checksum}.${OUTPUT_FORMAT}"
+    echo "${XDG_CACHE_HOME:-$HOME/.cache}/distinctionos/xwm-player/${checksum}.${OUTPUT_FORMAT}"
 }
 
 ensure_temp_dir() {
@@ -383,6 +411,23 @@ cleanup_all_temp() {
     if [[ -d "$TEMP_DIR" ]]; then
         rm -rf "${TEMP_DIR:?}"/*
         log_info "Cleaned up all files in: $TEMP_DIR"
+    fi
+}
+
+cleanup_stale_temp() {
+    # Clean up temp files older than 30 minutes
+    # This runs at startup to prevent accumulation from Flatpak sessions
+    # where we can't reliably wait for the player to finish
+    if [[ -d "$TEMP_DIR" ]]; then
+        local stale_count=0
+        while IFS= read -r -d '' old_file; do
+            rm -f "$old_file"
+            ((stale_count++))
+        done < <(find "$TEMP_DIR" -type f -mmin +30 -print0 2>/dev/null)
+        
+        if [[ "$stale_count" -gt 0 ]]; then
+            log_debug "Cleaned up $stale_count stale temp files (older than 30 min)"
+        fi
     fi
 }
 
@@ -482,6 +527,16 @@ convert_and_play() {
     launch_player "$output_file" "$player" "$player_type"
     
     # Handle cleanup based on mode
+    # IMPORTANT: Flatpak apps spawn a launcher that exits immediately, so
+    # wait $PLAYER_PID returns before the actual app reads the file.
+    # For Flatpak, we skip cleanup - files are in XDG_RUNTIME_DIR and will
+    # be cleaned on logout anyway.
+    if [[ "$player_type" == "flatpak" ]]; then
+        log_debug "Flatpak player detected - skipping cleanup (launcher exits immediately)"
+        log_info "Temp file retained: $output_file (will be cleaned on logout)"
+        return 0
+    fi
+    
     case "$CLEANUP_MODE" in
         on-exit)
             # Wait for player to exit, then cleanup
@@ -505,6 +560,10 @@ convert_only() {
     local input_file="$1"
     local output_file="$2"
     
+    log_debug "convert_only called with:"
+    log_debug "  input_file: '$input_file'"
+    log_debug "  output_file: '$output_file'"
+    
     # Validate input
     if [[ ! -f "$input_file" ]]; then
         echo "Error: Input file not found: $input_file" >&2
@@ -516,8 +575,16 @@ convert_only() {
     ext="$(get_file_extension "$input_file")"
     handler="$(get_handler_for_format "$ext")"
     
+    log_debug "Detected extension: '$ext', handler: '$handler'"
+    
     if [[ -z "$handler" ]]; then
         echo "Error: No handler for .$ext files" >&2
+        return 1
+    fi
+    
+    # Verify handler function exists
+    if ! declare -f "$handler" &>/dev/null; then
+        echo "Error: Handler function '$handler' not found" >&2
         return 1
     fi
     
@@ -532,14 +599,17 @@ convert_only() {
     ensure_temp_dir
     
     echo "Converting: $input_file → $output_file"
+    log_debug "Calling handler: $handler"
     
+    # Call the handler function
     if "$handler" "$input_file" "$output_file"; then
         show_notification "Conversion Complete" "Saved: $(basename "$output_file")"
         echo "Success: $output_file"
         cleanup_temp_files
         return 0
     else
-        echo "Error: Conversion failed" >&2
+        local handler_result=$?
+        echo "Error: Conversion failed (handler returned $handler_result)" >&2
         cleanup_temp_files
         return 1
     fi
@@ -651,6 +721,18 @@ main() {
     # Load configuration
     load_all_configs
     load_handlers
+    
+    # Clean up stale temp files from previous Flatpak sessions
+    cleanup_stale_temp
+    
+    # Debug: show parsed arguments
+    if [[ "$LOG_LEVEL" == "debug" ]]; then
+        echo "[DEBUG] Action: $action" >&2
+        echo "[DEBUG] Input file: '$input_file'" >&2
+        echo "[DEBUG] Output file: '$output_file'" >&2
+        echo "[DEBUG] Output format: $OUTPUT_FORMAT" >&2
+        echo "[DEBUG] Player: $PLAYER_COMMAND ($PLAYER_TYPE)" >&2
+    fi
     
     # Execute action
     case "$action" in
