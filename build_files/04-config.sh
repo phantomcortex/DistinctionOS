@@ -74,13 +74,14 @@ log_section "Integrating DistinctionOS Just recipes"
 
 # Import DistinctionOS recipes into the main justfile
 readonly UBLUE_JUSTFILE="/usr/share/ublue-os/justfile"
-readonly DISTINCTION_JUST="/usr/share/distinctionos/just/distinction.just"
-readonly STEAM_LINKER_JUST="/usr/share/distinctionos/just/steam-linker.just"
+readonly DISTINCTIONOS_JUST_DIR="/usr/share/distinctionos/just/"
+
 
 if [[ -f "$UBLUE_JUSTFILE" ]]; then
   log_info "Adding DistinctionOS recipes to Universal Blue justfile"
-  echo "import \"$DISTINCTION_JUST\"" >> "$UBLUE_JUSTFILE"
-  echo "import \"$STEAM_LINKER_JUST\"" >> "$UBLUE_JUSTFILE"
+  for file in "$DISTINCTIONOS_JUST_DIR"/*; do
+  	echo "import \"$file\"" >> "$UBLUE_JUSTFILE"
+  done
   log_success "DistinctionOS recipes imported"
 else
   log_error "Universal Blue justfile not found at $UBLUE_JUSTFILE"
