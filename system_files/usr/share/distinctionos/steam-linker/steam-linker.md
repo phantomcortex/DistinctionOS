@@ -28,7 +28,9 @@ A service that automatically creates symlinks to `~/Games/Steamlibrary/` from al
 - **State Tracking**: Remembers managed symlinks for automatic restoration
 - **Broken Link Cleanup**: Automatically removes symlinks to uninstalled games
 - **Duplicate Detection**: Warns when the same game exists in multiple libraries
+- **Smart Exclusions**: Filters out Proton, runtimes, and backup directories (`.bak`)
 - **Dry-Run Mode**: Preview changes before applying them
+- **Pretty Output**: Icons and formatted status display
 - **Comprehensive Logging**: All operations logged with rotation
 
 ---
@@ -89,6 +91,26 @@ STEAM_LINKER_TARGET_DIR="${HOME}/Games/Steamlibrary"
 
 # Path to Steam's library configuration
 STEAM_LINKER_VDF_PATH="${HOME}/.local/share/Steam/steamapps/libraryfolders.vdf"
+
+# Exclusion patterns (extended regex, pipe-separated)
+# Default excludes: Proton, GE-Proton, SteamLinuxRuntime, Steam Controller Configs,
+# Steamworks Shared, and .bak backup directories
+STEAM_LINKER_EXCLUDE_PATTERNS="^Proton |^Proton-|^GE-Proton|^SteamLinuxRuntime|^Steam Controller Configs$|^Steamworks Shared$|^Steam Linux Runtime|\.bak$"
+```
+
+### Exclusion Patterns
+
+The default exclusion patterns filter out:
+- **Proton versions**: `Proton 8.0`, `Proton Experimental`, `Proton-9.0-1`
+- **GE-Proton**: Community Proton builds like `GE-Proton8-25`
+- **Steam Linux Runtime**: `SteamLinuxRuntime_soldier`, `SteamLinuxRuntime_sniper`
+- **Steam utilities**: `Steam Controller Configs`, `Steamworks Shared`
+- **Backup directories**: Any directory ending in `.bak` (e.g., `Fallout 4.bak`)
+
+To add custom exclusions, create a user config with your patterns:
+```bash
+# ~/.config/distinctionos/steam-linker.conf
+STEAM_LINKER_EXCLUDE_PATTERNS="^Proton |^MyCustomGame$|\.backup$"
 ```
 
 ### Configuration Hierarchy

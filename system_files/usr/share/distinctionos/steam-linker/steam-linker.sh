@@ -50,6 +50,24 @@ STEAM_LINKER_VDF_PATH="${HOME}/.local/share/Steam/steamapps/libraryfolders.vdf"
 STEAM_LINKER_DRY_RUN="false"
 STEAM_LINKER_CLEANUP_ONLY="false"
 
+# Exclusion patterns (pipe-separated for grep -E)
+# These match directories that are Steam tools, not actual games
+STEAM_LINKER_EXCLUDE_PATTERNS="^Proton |^Proton-|^GE-Proton|^SteamLinuxRuntime|^Steam Controller Configs$|^Steamworks Shared$|^Steam Linux Runtime|\.bak$"
+
+# -----------------------------------------------------------------------------
+# Icons for prettier output
+# -----------------------------------------------------------------------------
+readonly ICON_GAME="🎮"
+readonly ICON_LINK="🔗"
+readonly ICON_SUCCESS="✅"
+readonly ICON_WARNING="⚠️ "
+readonly ICON_ERROR="❌"
+readonly ICON_SEARCH="🔍"
+readonly ICON_CLEANUP="🧹"
+readonly ICON_FOLDER="📂"
+readonly ICON_SKIP="⏭️ "
+readonly ICON_RESTORE="🔄"
+
 # -----------------------------------------------------------------------------
 # VDF Parser
 # -----------------------------------------------------------------------------
@@ -103,6 +121,22 @@ get_game_path() {
     local library_path="${1:?Library path required}"
     local game_name="${2:?Game name required}"
     echo "${library_path}/steamapps/common/${game_name}"
+}
+
+# Check if a game should be excluded from linking
+# Usage: if is_excluded "Game Name"; then skip; fi
+is_excluded() {
+    local game_name="${1:?Game name required}"
+    
+    # If no exclusion patterns defined, nothing is excluded
+    [[ -z "${STEAM_LINKER_EXCLUDE_PATTERNS:-}" ]] && return 1
+    
+    # Check if game name matches any exclusion pattern
+    if echo "$game_name" | grep -qE "$STEAM_LINKER_EXCLUDE_PATTERNS"; then
+        return 0  # Excluded
+    fi
+    
+    return 1  # Not excluded
 }
 
 # -----------------------------------------------------------------------------
@@ -172,7 +206,11 @@ get_tracked_symlinks() {
         # Fallback: read from individual files
         local state_dir
         state_dir=$(hk_state_dir "$SERVICE_NAME")
-        for f in "${state_dir}"/link_*.target 2>/dev/null; do
+        # Use nullglob to handle no matches gracefully
+        local old_nullglob
+        old_nullglob=$(shopt -p nullglob 2>/dev/null || true)
+        shopt -s nullglob
+        for f in "${state_dir}"/link_*.target; do
             [[ -f "$f" ]] || continue
             local name
             name=$(basename "$f" .target)
@@ -182,6 +220,8 @@ get_tracked_symlinks() {
             target=$(cat "$f")
             echo -e "${name}\t${target}"
         done
+        # Restore previous nullglob setting
+        eval "$old_nullglob" 2>/dev/null || true
     fi
 }
 
@@ -205,6 +245,7 @@ create_symlinks() {
     local state
     local created=0
     local skipped=0
+    local excluded=0
     local errors=0
     
     # Load current state
@@ -217,7 +258,7 @@ create_symlinks() {
     fi
     
     # Parse library folders
-    hk_info "Reading Steam libraries from: ${vdf_file}"
+    hk_info "${ICON_SEARCH} Reading Steam libraries from: ${vdf_file}"
     local libraries
     libraries=$(parse_library_folders "$vdf_file") || {
         hk_error "Failed to parse library folders"
@@ -226,7 +267,7 @@ create_symlinks() {
     
     local library_count
     library_count=$(echo "$libraries" | grep -c . || echo 0)
-    hk_info "Found ${library_count} Steam library location(s)"
+    hk_info "${ICON_FOLDER} Found ${library_count} Steam library location(s)"
     
     # Track which games we've seen (for duplicate detection)
     declare -A seen_games
@@ -235,10 +276,10 @@ create_symlinks() {
     while IFS= read -r library_path; do
         [[ -z "$library_path" ]] && continue
         
-        hk_info "Processing library: ${library_path}"
+        hk_info "${ICON_GAME} Processing library: ${library_path}"
         
         if [[ ! -d "$library_path" ]]; then
-            hk_warn "Library path does not exist: ${library_path}"
+            hk_warn "${ICON_WARNING}Library path does not exist: ${library_path}"
             continue
         fi
         
@@ -249,14 +290,21 @@ create_symlinks() {
         while IFS= read -r game_name; do
             [[ -z "$game_name" ]] && continue
             
+            # Check if this item should be excluded (Proton, runtimes, etc.)
+            if is_excluded "$game_name"; then
+                hk_debug "Excluding: ${game_name} (matches exclusion pattern)"
+                (( ++excluded ))
+                continue
+            fi
+            
             local game_path
             game_path=$(get_game_path "$library_path" "$game_name")
             local link_path="${target_dir}/${game_name}"
             
             # Check for duplicates
             if [[ -n "${seen_games[$game_name]:-}" ]]; then
-                hk_warn "Duplicate game '${game_name}' found in multiple libraries. Keeping link to: ${seen_games[$game_name]}"
-                ((skipped++))
+                hk_warn "${ICON_WARNING}Duplicate game '${game_name}' found in multiple libraries. Keeping link to: ${seen_games[$game_name]}"
+                (( ++skipped ))
                 continue
             fi
             seen_games["$game_name"]="$game_path"
@@ -267,22 +315,22 @@ create_symlinks() {
                 current_target=$(readlink -f "$link_path" 2>/dev/null || echo "")
                 if [[ "$current_target" == "$game_path" ]]; then
                     hk_debug "Symlink already correct: ${game_name}"
-                    ((skipped++))
+                    (( ++skipped ))
                     continue
                 fi
             fi
             
             # Create or update symlink
             if [[ "$STEAM_LINKER_DRY_RUN" == "true" ]]; then
-                hk_info "[DRY-RUN] Would create: ${link_path} -> ${game_path}"
-                ((created++))
+                hk_info "${ICON_LINK} [DRY-RUN] Would create: ${link_path} -> ${game_path}"
+                (( ++created ))
             else
                 if hk_create_symlink "$game_path" "$link_path" "$SERVICE_NAME"; then
-                    hk_info "Created symlink: ${game_name}"
+                    hk_info "${ICON_LINK} Linked: ${game_name}"
                     state=$(add_to_state "$state" "$game_name" "$game_path")
-                    ((created++))
+                    (( ++created ))
                 else
-                    ((errors++))
+                    (( ++errors ))
                 fi
             fi
             
@@ -295,7 +343,7 @@ create_symlinks() {
         echo "$state" | save_state
     fi
     
-    hk_info "Symlink creation complete: ${created} created, ${skipped} unchanged, ${errors} errors"
+    hk_info "${ICON_SUCCESS} Complete: ${created} linked, ${skipped} unchanged, ${excluded} excluded, ${errors} errors"
     return 0
 }
 
@@ -306,13 +354,13 @@ cleanup_broken_symlinks() {
     local state
     
     if [[ ! -d "$target_dir" ]]; then
-        hk_info "Target directory does not exist: ${target_dir}"
+        hk_info "${ICON_FOLDER} Target directory does not exist: ${target_dir}"
         return 0
     fi
     
     state=$(load_state)
     
-    hk_info "Scanning for broken symlinks in: ${target_dir}"
+    hk_info "${ICON_CLEANUP} Scanning for broken symlinks in: ${target_dir}"
     
     while IFS= read -r -d '' link_path; do
         if hk_is_broken_symlink "$link_path"; then
@@ -320,13 +368,13 @@ cleanup_broken_symlinks() {
             link_name=$(basename "$link_path")
             
             if [[ "$STEAM_LINKER_DRY_RUN" == "true" ]]; then
-                hk_info "[DRY-RUN] Would remove broken symlink: ${link_name}"
+                hk_info "${ICON_CLEANUP} [DRY-RUN] Would remove broken symlink: ${link_name}"
             else
-                hk_info "Removing broken symlink: ${link_name}"
+                hk_info "${ICON_CLEANUP} Removed broken: ${link_name}"
                 rm -f "$link_path"
                 state=$(remove_from_state "$state" "$link_name")
             fi
-            ((removed++))
+            (( ++removed ))
         fi
     done < <(find "$target_dir" -maxdepth 1 -type l -print0 2>/dev/null)
     
@@ -335,7 +383,7 @@ cleanup_broken_symlinks() {
         echo "$state" | save_state
     fi
     
-    hk_info "Cleanup complete: ${removed} broken symlink(s) removed"
+    hk_info "${ICON_SUCCESS} Cleanup complete: ${removed} broken symlink(s) removed"
     return 0
 }
 
@@ -348,11 +396,11 @@ restore_from_state() {
     state=$(load_state)
     
     if [[ "$state" == "{}" ]]; then
-        hk_info "No saved state to restore from"
+        hk_info "${ICON_SKIP}No saved state to restore from"
         return 0
     fi
     
-    hk_info "Attempting to restore symlinks from saved state..."
+    hk_info "${ICON_RESTORE} Attempting to restore symlinks from saved state..."
     
     while IFS=$'\t' read -r link_name target_path; do
         [[ -z "$link_name" ]] && continue
@@ -372,17 +420,17 @@ restore_from_state() {
         
         # Restore symlink
         if [[ "$STEAM_LINKER_DRY_RUN" == "true" ]]; then
-            hk_info "[DRY-RUN] Would restore: ${link_path} -> ${target_path}"
+            hk_info "${ICON_RESTORE} [DRY-RUN] Would restore: ${link_path} -> ${target_path}"
         else
             if hk_create_symlink "$target_path" "$link_path" "$SERVICE_NAME"; then
-                hk_info "Restored symlink: ${link_name}"
-                ((restored++))
+                hk_info "${ICON_RESTORE} Restored: ${link_name}"
+                (( ++restored ))
             fi
         fi
         
     done < <(get_tracked_symlinks "$state")
     
-    hk_info "Restoration complete: ${restored} symlink(s) restored"
+    hk_info "${ICON_SUCCESS} Restoration complete: ${restored} symlink(s) restored"
     return 0
 }
 
@@ -391,23 +439,26 @@ show_status() {
     local target_dir="$STEAM_LINKER_TARGET_DIR"
     local vdf_file="$STEAM_LINKER_VDF_PATH"
     
-    echo "=== DistinctionOS Steam Linker Status ==="
     echo ""
-    echo "Configuration:"
-    echo "  Target directory: ${target_dir}"
-    echo "  VDF file: ${vdf_file}"
-    echo "  VDF exists: $([[ -f "$vdf_file" ]] && echo "yes" || echo "no")"
+    echo "${ICON_GAME} DistinctionOS Steam Linker Status"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "📋 Configuration:"
+    echo "   Target directory: ${target_dir}"
+    echo "   VDF file: ${vdf_file}"
+    echo "   VDF exists: $([[ -f "$vdf_file" ]] && echo "${ICON_SUCCESS} yes" || echo "${ICON_ERROR} no")"
     echo ""
     
     # Count libraries
     if [[ -f "$vdf_file" ]]; then
         local library_count
-        library_count=$(parse_library_folders "$vdf_file" | grep -c . || echo 0)
-        echo "Steam Libraries: ${library_count}"
+        library_count=$(parse_library_folders "$vdf_file" | wc -l)
+        echo "${ICON_FOLDER} Steam Libraries: ${library_count}"
         parse_library_folders "$vdf_file" | while read -r lib; do
             local game_count
-            game_count=$(get_games_in_library "$lib" | grep -c . || echo 0)
-            echo "  - ${lib} (${game_count} games)"
+            game_count=$(get_games_in_library "$lib" | wc -l)
+            echo "   ${ICON_LINK} ${lib}"
+            echo "      └─ ${game_count} games"
         done
         echo ""
     fi
@@ -416,19 +467,26 @@ show_status() {
     if [[ -d "$target_dir" ]]; then
         local total_links
         local broken_links
+        local valid_links
         total_links=$(find "$target_dir" -maxdepth 1 -type l | wc -l)
         broken_links=$(find "$target_dir" -maxdepth 1 -xtype l | wc -l)
+        valid_links=$((total_links - broken_links))
         
-        echo "Symlinks in ${target_dir}:"
-        echo "  Total: ${total_links}"
-        echo "  Broken: ${broken_links}"
-        echo "  Valid: $((total_links - broken_links))"
+        echo "${ICON_LINK} Symlinks in target directory:"
+        echo "   ${ICON_SUCCESS} Valid:  ${valid_links}"
+        if (( broken_links > 0 )); then
+            echo "   ${ICON_ERROR} Broken: ${broken_links}"
+        else
+            echo "   ${ICON_SUCCESS} Broken: ${broken_links}"
+        fi
+        echo "   📊 Total:  ${total_links}"
     else
-        echo "Target directory does not exist yet"
+        echo "${ICON_FOLDER} Target directory does not exist yet"
     fi
     
     echo ""
-    echo "State file: $(hk_state_dir "$SERVICE_NAME")/state.json"
+    echo "💾 State file: $(hk_state_dir "$SERVICE_NAME")/state.json"
+    echo ""
 }
 
 # -----------------------------------------------------------------------------
@@ -541,9 +599,12 @@ main() {
     
     # Validate Steam installation
     if [[ ! -f "$STEAM_LINKER_VDF_PATH" ]]; then
+        # Output directly to stderr to ensure visibility
+        echo "ERROR: Steam library configuration not found at: ${STEAM_LINKER_VDF_PATH}" >&2
+        echo "ERROR: Please ensure Steam is installed and has been run at least once" >&2
         hk_error "Steam library configuration not found at: ${STEAM_LINKER_VDF_PATH}"
         hk_error "Please ensure Steam is installed and has been run at least once"
-        hk_exit 1
+        hk_exit 1 "Steam not configured"
     fi
     
     # Execute requested action
