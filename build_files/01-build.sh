@@ -22,9 +22,6 @@ declare -a FAILED_PACKAGES=()
 declare -a SUCCEEDED_PACKAGES=()
 declare -a SKIPPED_REPOS=()
 
-# temporary command for Stunkymonkey's 'nautilus-open-any-terminal'
-# remove later and add to system files or create a script-portion to enable copr repos
-dnf copr enable monkeygold/nautilus-open-any-terminal
 # ============================================================================
 # Best-Effort Package Installation Function
 # ============================================================================
@@ -343,7 +340,7 @@ declare -A COPR_PACKAGES=(
   ["atim/heroic-games-launcher"]="heroic-games-launcher-bin"  # Epic/GOG launcher
   ["sergiomb/clonezilla"]="clonezilla"                     # Disk cloning utility
   ["alternateved/eza"]="eza"                               # Modern ls replacement
-  ["moneygold/nautilus-open-any-terminal"]="nautilus-open-any-terminal"
+  ["monkeygold/nautilus-open-any-terminal"]="nautilus-open-any-terminal"
 )
 
 for copr_repo in "${!COPR_PACKAGES[@]}"; do
