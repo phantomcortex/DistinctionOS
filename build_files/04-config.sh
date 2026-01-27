@@ -241,6 +241,8 @@ readonly -a WINE_DESKTOP_FILES=(
   "wine-winemine.desktop"
   "wine-wordpad.desktop"
   "wine-winhelp.desktop"
+  "wine-winefile.desktop"
+  "wine-wineboot.desktop"
 )
 
 wine_removed=0
