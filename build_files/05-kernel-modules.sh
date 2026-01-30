@@ -35,7 +35,7 @@ log_info "Kernel build directory: $KERNELDIR"
 # xpadneo Module Compilation
 # ============================================================================
 # Enhanced Xbox controller driver with better wireless support
-
+: <<'END_COMMENT'
 log_section "Building xpadneo kernel module"
 
 # Store current directory (with unbound variable protection)
@@ -137,6 +137,7 @@ fi
 # Return to root directory
 cd /
 
+END_COMMENT
 # ============================================================================
 # Initramfs Regeneration
 # ============================================================================
@@ -174,11 +175,11 @@ log_success "Initramfs permissions secured"
 
 log_header "Kernel module compilation complete"
 
-log_info "Installed modules:"
-echo "  • xpadneo (Xbox controller driver)"
-if command -v zfs &>/dev/null; then
-  echo "  • ZFS (filesystem driver)"
-fi
+#log_info "Installed modules:"
+#echo "  • xpadneo (Xbox controller driver)"
+#if command -v zfs &>/dev/null; then
+#  echo "  • ZFS (filesystem driver)"
+#fi
 
 log_info "Next step:"
 echo "  7. remote-grabber.sh - GNOME extension management"
