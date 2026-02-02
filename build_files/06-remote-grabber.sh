@@ -25,6 +25,7 @@ declare -A EXTENSIONS_GIT=(
     ["date-menu-formatter@marcinjakubowski.github.com"]="https://github.com/marcinjakubowski/date-menu-formatter.git"
     ["dash-to-dock@micxgx.gmail.com"]="https://github.com/micheleg/dash-to-dock.git"
     ["quick-settings-avatar@d-go"]="https://github.com/d-go/quick-settings-avatar.git"
+    ["blur-my-shell@aunetx"]="https://github.com/phantomcortex/blur-my-shell.git"
 )
 
 declare -A EXTENSIONS_ZIP=(
@@ -34,7 +35,7 @@ declare -A EXTENSIONS_ZIP=(
 )
 
 # Extensions requiring schema compilation
-readonly SCHEMA_EXTENSIONS=("pip-on-top@rafostar.github.com" "dash-to-dock@micxgx.gmail.com" "burn-my-windows@schneegans.github.com")
+readonly SCHEMA_EXTENSIONS=("pip-on-top@rafostar.github.com" "dash-to-dock@micxgx.gmail.com" "burn-my-windows@schneegans.github.com" "blur-my-shell@phantomcortex")
 
 # Extensions to be removed (if present)
 readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca")
