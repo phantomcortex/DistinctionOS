@@ -466,6 +466,7 @@ fi
 # Hyprland Installation
 # ============================================================================
 
+<<'END_COMMENT'
 #Hyprland may be temporary
 log_header "Hyprland"
 
@@ -517,7 +518,7 @@ if dnf5 -y install --allowerasing --skip-broken \
     else
       log_warning "Something may have gone wrong"
     fi
-
+END_COMMENT
 curl -L "https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip" -o /tmp/Inter.zip
 mkdir -p /usr/share/fonts/Inter/
 unzip -j /tmp/Inter.zip "InterVariable.ttf" "InterVariable-Italic.ttf" -d /usr/share/fonts/Inter/
