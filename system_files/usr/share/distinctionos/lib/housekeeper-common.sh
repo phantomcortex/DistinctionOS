@@ -13,12 +13,16 @@
 #   - Common helper functions
 # =============================================================================
 
+# Prevent double-sourcing
+[[ -n "${_HOUSEKEEPER_COMMON_SOURCED:-}" ]] && return 0
+readonly _HOUSEKEEPER_COMMON_SOURCED=1
+
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
 # Constants & Defaults
 # -----------------------------------------------------------------------------
-readonly HOUSEKEEPER_VERSION="1.0.0"
+readonly HOUSEKEEPER_VERSION="1.1.0"
 readonly HOUSEKEEPER_LOG_DIR="/var/log/distinctionos"
 readonly HOUSEKEEPER_LOG_MAX_SIZE_MB=500
 readonly HOUSEKEEPER_SYSTEM_SHARE="/usr/share/distinctionos"
@@ -51,8 +55,9 @@ hk_init_logging() {
     # Check if we can write to the log directory
     if [[ ! -w "$HOUSEKEEPER_LOG_DIR" ]]; then
         # Fall back to user directory
-        HOUSEKEEPER_LOG_FILE="${HOUSEKEEPER_USER_DATA}/logs/${service_name}.log"
-        mkdir -p "$(dirname "$HOUSEKEEPER_LOG_FILE")"
+        local user_log_dir="${HOUSEKEEPER_USER_DATA}/logs"
+        HOUSEKEEPER_LOG_FILE="${user_log_dir}/${service_name}.log"
+        mkdir -p "$user_log_dir"
     fi
     
     # Perform log rotation if needed
@@ -73,7 +78,7 @@ hk_log() {
     
     # Write to log file
     if [[ -n "$HOUSEKEEPER_LOG_FILE" ]]; then
-        echo "$log_line" >> "$HOUSEKEEPER_LOG_FILE"
+        echo "$log_line" >> "$HOUSEKEEPER_LOG_FILE" 2>/dev/null || true
     fi
     
     # Also output to stderr for systemd journal capture
@@ -126,6 +131,10 @@ hk_rotate_logs() {
     
     # Rotate individual log files over 50MB
     local max_individual=$((50 * 1024 * 1024))
+    # Use nullglob to handle no matches gracefully
+    local old_nullglob
+    old_nullglob=$(shopt -p nullglob 2>/dev/null || echo "shopt -u nullglob")
+    shopt -s nullglob
     for logfile in "$log_dir"/*.log; do
         [[ -f "$logfile" ]] || continue
         local size
@@ -139,6 +148,8 @@ hk_rotate_logs() {
             touch "$logfile"
         fi
     done
+    # Restore previous nullglob setting
+    eval "$old_nullglob" 2>/dev/null || true
 }
 
 # -----------------------------------------------------------------------------
@@ -158,15 +169,18 @@ hk_load_config() {
     
     # System defaults
     local system_conf="${HOUSEKEEPER_SYSTEM_SHARE}/${service_name}/${config_file}"
-    [[ -f "$system_conf" ]] && source "$system_conf"
+    # shellcheck source=/dev/null
+    [[ -f "$system_conf" ]] && source "$system_conf" || true
     
     # Local overrides
     local local_conf="${HOUSEKEEPER_LOCAL_SHARE}/${service_name}/${config_file}"
-    [[ -f "$local_conf" ]] && source "$local_conf"
+    # shellcheck source=/dev/null
+    [[ -f "$local_conf" ]] && source "$local_conf" || true
     
     # User overrides
     local user_conf="${HOUSEKEEPER_USER_CONFIG}/${config_file}"
-    [[ -f "$user_conf" ]] && source "$user_conf"
+    # shellcheck source=/dev/null
+    [[ -f "$user_conf" ]] && source "$user_conf" || true
 }
 
 # Get a configuration value with default
@@ -331,20 +345,40 @@ hk_json_array_append() {
 # Locking
 # -----------------------------------------------------------------------------
 
+# File descriptor for lock (use a high number to avoid conflicts)
+declare -g _HK_LOCK_FD=""
+
 # Acquire an exclusive lock for a service
 # Usage: hk_lock "service-name" || exit 1
 hk_lock() {
     local service_name="${1:?Service name required}"
     local lock_file="/tmp/distinctionos-${service_name}.lock"
     
-    exec 200>"$lock_file"
-    if ! flock -n 200; then
+    # Use a unique file descriptor per service
+    # This avoids issues with the global exec approach
+    exec {_HK_LOCK_FD}>"$lock_file" || {
+        hk_warn "Failed to open lock file: ${lock_file}"
+        return 1
+    }
+    
+    if ! flock -n "$_HK_LOCK_FD"; then
         hk_warn "Another instance of ${service_name} is already running"
         return 1
     fi
     
     # Write PID to lock file
-    echo $$ >&200
+    echo $$ >&"$_HK_LOCK_FD"
+    return 0
+}
+
+# Release the lock (called automatically on exit, but can be called manually)
+# Usage: hk_unlock
+hk_unlock() {
+    if [[ -n "${_HK_LOCK_FD:-}" ]]; then
+        flock -u "$_HK_LOCK_FD" 2>/dev/null || true
+        eval "exec ${_HK_LOCK_FD}>&-" 2>/dev/null || true
+        _HK_LOCK_FD=""
+    fi
 }
 
 # -----------------------------------------------------------------------------
@@ -373,7 +407,29 @@ hk_exit() {
     fi
     
     hk_info "=== ${HOUSEKEEPER_SERVICE_NAME} finished (exit code: ${code}) ==="
+    
+    # Clean up lock
+    hk_unlock
+    
     exit "$code"
+}
+
+# -----------------------------------------------------------------------------
+# Utility Functions
+# -----------------------------------------------------------------------------
+
+# Check if running as root
+hk_is_root() {
+    [[ $EUID -eq 0 ]]
+}
+
+# Get the effective user's home directory (even when running as root via sudo)
+hk_get_user_home() {
+    if [[ -n "${SUDO_USER:-}" ]]; then
+        eval echo "~${SUDO_USER}"
+    else
+        echo "$HOME"
+    fi
 }
 
 # -----------------------------------------------------------------------------
