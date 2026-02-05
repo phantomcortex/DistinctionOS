@@ -29,30 +29,76 @@ set -euo pipefail
 
 # Service identity
 readonly SERVICE_NAME="steam-linker"
-readonly SERVICE_VERSION="1.0.0"
+readonly SERVICE_VERSION="1.1.0"
 
-# Source the common library
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -f "/usr/share/distinctionos/lib/housekeeper-common.sh" ]]; then
-    source "/usr/share/distinctionos/lib/housekeeper-common.sh"
-elif [[ -f "${SCRIPT_DIR}/../lib/housekeeper-common.sh" ]]; then
-    source "${SCRIPT_DIR}/../lib/housekeeper-common.sh"
-else
+# -----------------------------------------------------------------------------
+# Library Detection
+# -----------------------------------------------------------------------------
+# Find and source housekeeper-common.sh from multiple possible locations
+# Can be overridden with HOUSEKEEPER_LIB environment variable
+
+find_housekeeper_lib() {
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    
+    # Ordered list of paths to search (most specific to least)
+    local search_paths=(
+        # Environment variable override (highest priority)
+        "${HOUSEKEEPER_LIB:-}"
+        # Installed system location
+        "/usr/share/distinctionos/lib/housekeeper-common.sh"
+        # Local system override
+        "/usr/local/share/distinctionos/lib/housekeeper-common.sh"
+        # Relative: script in steam-linker/, lib in ../lib/
+        "${script_dir}/../lib/housekeeper-common.sh"
+        # Relative: script alongside lib/
+        "${script_dir}/lib/housekeeper-common.sh"
+        # Relative: lib in same directory
+        "${script_dir}/housekeeper-common.sh"
+        # Development: current working directory
+        "./lib/housekeeper-common.sh"
+        "./housekeeper-common.sh"
+    )
+    
+    for path in "${search_paths[@]}"; do
+        [[ -z "$path" ]] && continue
+        if [[ -f "$path" ]]; then
+            echo "$path"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+# Attempt to source the library
+HOUSEKEEPER_LIB_PATH=$(find_housekeeper_lib) || {
     echo "ERROR: Cannot find housekeeper-common.sh" >&2
+    echo "" >&2
+    echo "Searched in:" >&2
+    echo "  - /usr/share/distinctionos/lib/housekeeper-common.sh" >&2
+    echo "  - /usr/local/share/distinctionos/lib/housekeeper-common.sh" >&2
+    echo "  - Relative paths from script location" >&2
+    echo "" >&2
+    echo "You can specify the path explicitly with:" >&2
+    echo "  HOUSEKEEPER_LIB=/path/to/housekeeper-common.sh $0" >&2
     exit 1
-fi
+}
+
+# shellcheck source=/dev/null
+source "$HOUSEKEEPER_LIB_PATH"
 
 # -----------------------------------------------------------------------------
 # Configuration Defaults
 # -----------------------------------------------------------------------------
-STEAM_LINKER_TARGET_DIR="${HOME}/Games/Steamlibrary"
-STEAM_LINKER_VDF_PATH="${HOME}/.local/share/Steam/steamapps/libraryfolders.vdf"
-STEAM_LINKER_DRY_RUN="false"
-STEAM_LINKER_CLEANUP_ONLY="false"
+STEAM_LINKER_TARGET_DIR="${STEAM_LINKER_TARGET_DIR:-${HOME}/Games/Steamlibrary}"
+STEAM_LINKER_VDF_PATH="${STEAM_LINKER_VDF_PATH:-${HOME}/.local/share/Steam/steamapps/libraryfolders.vdf}"
+STEAM_LINKER_DRY_RUN="${STEAM_LINKER_DRY_RUN:-false}"
+STEAM_LINKER_CLEANUP_ONLY="${STEAM_LINKER_CLEANUP_ONLY:-false}"
 
 # Exclusion patterns (pipe-separated for grep -E)
 # These match directories that are Steam tools, not actual games
-STEAM_LINKER_EXCLUDE_PATTERNS="^Proton |^Proton-|^GE-Proton|^SteamLinuxRuntime|^Steam Controller Configs$|^Steamworks Shared$|^Steam Linux Runtime|\.bak$"
+STEAM_LINKER_EXCLUDE_PATTERNS="${STEAM_LINKER_EXCLUDE_PATTERNS:-^Proton |^Proton-|^GE-Proton|^SteamLinuxRuntime|^Steam Controller Configs$|^Steamworks Shared$|^Steam Linux Runtime|\.bak$}"
 
 # -----------------------------------------------------------------------------
 # Icons for prettier output
@@ -201,7 +247,7 @@ get_tracked_symlinks() {
     local state="${1:?State required}"
     
     if hk_has_jq; then
-        echo "$state" | jq -r '.symlinks // {} | to_entries[] | "\(.key)\t\(.value.target)"' 2>/dev/null
+        echo "$state" | jq -r '.symlinks // {} | to_entries[] | "\(.key)\t\(.value.target)"' 2>/dev/null || true
     else
         # Fallback: read from individual files
         local state_dir
@@ -218,7 +264,7 @@ get_tracked_symlinks() {
             name="${name//_/\/}"
             local target
             target=$(cat "$f")
-            echo -e "${name}\t${target}"
+            printf '%s\t%s\n' "$name" "$target"
         done
         # Restore previous nullglob setting
         eval "$old_nullglob" 2>/dev/null || true
@@ -279,7 +325,7 @@ create_symlinks() {
         hk_info "${ICON_GAME} Processing library: ${library_path}"
         
         if [[ ! -d "$library_path" ]]; then
-            hk_warn "${ICON_WARNING}Library path does not exist: ${library_path}"
+            hk_warn "${ICON_WARNING} Library path does not exist: ${library_path}"
             continue
         fi
         
@@ -303,7 +349,7 @@ create_symlinks() {
             
             # Check for duplicates
             if [[ -n "${seen_games[$game_name]:-}" ]]; then
-                hk_warn "${ICON_WARNING}Duplicate game '${game_name}' found in multiple libraries. Keeping link to: ${seen_games[$game_name]}"
+                hk_warn "${ICON_WARNING} Duplicate game '${game_name}' found in multiple libraries. Keeping link to: ${seen_games[$game_name]}"
                 (( ++skipped ))
                 continue
             fi
@@ -396,7 +442,7 @@ restore_from_state() {
     state=$(load_state)
     
     if [[ "$state" == "{}" ]]; then
-        hk_info "${ICON_SKIP}No saved state to restore from"
+        hk_info "${ICON_SKIP} No saved state to restore from"
         return 0
     fi
     
@@ -440,13 +486,14 @@ show_status() {
     local vdf_file="$STEAM_LINKER_VDF_PATH"
     
     echo ""
-    echo "${ICON_GAME} DistinctionOS Steam Linker Status"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "${ICON_GAME} DistinctionOS Steam Linker Status (v${SERVICE_VERSION})"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     echo "📋 Configuration:"
     echo "   Target directory: ${target_dir}"
     echo "   VDF file: ${vdf_file}"
     echo "   VDF exists: $([[ -f "$vdf_file" ]] && echo "${ICON_SUCCESS} yes" || echo "${ICON_ERROR} no")"
+    echo "   Library loaded from: ${HOUSEKEEPER_LIB_PATH}"
     echo ""
     
     # Count libraries
@@ -461,6 +508,9 @@ show_status() {
             echo "      └─ ${game_count} games"
         done
         echo ""
+    else
+        echo "${ICON_WARNING} Steam VDF file not found - is Steam installed?"
+        echo ""
     fi
     
     # Count symlinks
@@ -468,8 +518,8 @@ show_status() {
         local total_links
         local broken_links
         local valid_links
-        total_links=$(find "$target_dir" -maxdepth 1 -type l | wc -l)
-        broken_links=$(find "$target_dir" -maxdepth 1 -xtype l | wc -l)
+        total_links=$(find "$target_dir" -maxdepth 1 -type l 2>/dev/null | wc -l)
+        broken_links=$(find "$target_dir" -maxdepth 1 -xtype l 2>/dev/null | wc -l)
         valid_links=$((total_links - broken_links))
         
         echo "${ICON_LINK} Symlinks in target directory:"
@@ -494,8 +544,8 @@ show_status() {
 # -----------------------------------------------------------------------------
 
 show_help() {
-    cat << 'EOF'
-DistinctionOS Steam Linker - Unified Game Library Access
+    cat << EOF
+DistinctionOS Steam Linker v${SERVICE_VERSION} - Unified Game Library Access
 
 USAGE:
     steam-linker.sh [OPTIONS]
@@ -525,15 +575,18 @@ EXAMPLES:
     # Check current status
     steam-linker.sh --status
 
+ENVIRONMENT VARIABLES:
+    HOUSEKEEPER_LIB          Path to housekeeper-common.sh
+    STEAM_LINKER_TARGET_DIR  Where to create symlinks (default: ~/Games/Steamlibrary)
+    STEAM_LINKER_VDF_PATH    Path to libraryfolders.vdf
+    HOUSEKEEPER_VERBOSE      Set to "true" for verbose output
+    HOUSEKEEPER_DEBUG        Set to "true" for debug output
+
 CONFIGURATION:
     User config: ~/.config/distinctionos/steam-linker.conf
 
-    Available options:
-        STEAM_LINKER_TARGET_DIR - Where to create symlinks (default: ~/Games/Steamlibrary)
-        STEAM_LINKER_VDF_PATH   - Path to libraryfolders.vdf
-
 PART OF:
-    DistinctionOS Housekeeper Architecture v1.0
+    DistinctionOS Housekeeper Architecture v${HOUSEKEEPER_VERSION:-1.0.0}
 EOF
 }
 
@@ -595,15 +648,15 @@ main() {
     hk_load_config "$SERVICE_NAME"
     
     # Acquire lock to prevent concurrent runs
-    hk_lock "$SERVICE_NAME" || hk_exit 1 "Could not acquire lock"
+    if ! hk_lock "$SERVICE_NAME"; then
+        hk_exit 1 "Could not acquire lock - another instance may be running"
+    fi
     
     # Validate Steam installation
     if [[ ! -f "$STEAM_LINKER_VDF_PATH" ]]; then
-        # Output directly to stderr to ensure visibility
-        echo "ERROR: Steam library configuration not found at: ${STEAM_LINKER_VDF_PATH}" >&2
-        echo "ERROR: Please ensure Steam is installed and has been run at least once" >&2
         hk_error "Steam library configuration not found at: ${STEAM_LINKER_VDF_PATH}"
         hk_error "Please ensure Steam is installed and has been run at least once"
+        hk_info "You can override the path with: STEAM_LINKER_VDF_PATH=/path/to/libraryfolders.vdf"
         hk_exit 1 "Steam not configured"
     fi
     
