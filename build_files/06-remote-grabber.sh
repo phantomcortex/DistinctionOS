@@ -204,40 +204,43 @@ custom_blur-my-shell() {
   log_info "Custom blur-my-shell installer >>>>"
   # This is a hacky system-level installer for blur-my-shell since \
   # included installer don't install to system 
-  local NAME= "blur-my-shell"
-  local UUID ="$(NAME)@phantomcortex"
+  local NAME="blur-my-shell"
+  local UUID="$NAME@phantomcortex"
   # grab
-  git clone https://github.com/phantomcortex/blur-my-shell.git $TMP_DIR/blur-my-shell
-  cd $TMP_DIR/blur-my-shell
-  log_info "cloned blur-my-shell@phantomcortex"
+  git clone https://github.com/phantomcortex/$NAME.git $TMP_DIR/$NAME
+  cd $TMP_DIR/$NAME
+  log_info "cloned $NAME@phantomcortex"
   
   # build
   mkdir -p build/ 
   cd src
   gnome-extensions pack -f \
-    --extra-source=../metadata.json \
-		--extra-source=../LICENSE \
-		--extra-source=../resources/icons \
-		--extra-source=../resources/ui \
-		--extra-source=./components \
-		--extra-source=./conveniences \
-		--extra-source=./effects \
-		--extra-source=./preferences \
-		--extra-source=./dbus \
-		--podir=../po \
-		--schema=../schemas/org.gnome.shell.extensions.$(NAME).gschema.xml \
+	--extra-source=../metadata.json \
+	--extra-source=../LICENSE \
+	--extra-source=../resources/icons \
+	--extra-source=../resources/ui \
+	--extra-source=./components \
+	--extra-source=./conveniences \
+	--extra-source=./effects \
+	--extra-source=./preferences \
+	--extra-source=./dbus \
+	--podir=../po \
+	--schema=../schemas/org.gnome.shell.extensions.$(NAME).gschema.xml \
     -o ../build 
   cd ..
-  log_info "zipped blur-my-shell@phantomcortex"
+  log_info "zipped $NAME@phantomcortex"
 
 
   ls build 
   cd build
-  if [ -e blur-my-shell@phantomcortex.shell-extension.zip ]; then
-    unzip -o blur-my-shell@phantomcortex.shell-extension.zip /usr/share/gnome-shell/extensions/blur-my-shell@phantomcortex
-     log_info "cloned blur-my-shell@phantomcortex"
+  if [ -e $NAME@phantomcortex.shell-extension.zip ]; then
+    unzip -o $NAME@phantomcortex.shell-extension.zip /usr/share/gnome-shell/extensions/$NAME@phantomcortex
+    log_info "unzipped $NAME@phantomcortex"
+	log_info "DEBUG:"
+	ls /usr/share/gnome-shell/extensions/ |grep '$NAME'
+	ls /usr/share/gnome-shell/extensions/$NAME@phantomcortex
   fi
-  glib-compile-schemas /usr/share/gnome-shell/extensions/blur-my-shell@phantomcortex/
+  glib-compile-schemas /usr/share/gnome-shell/extensions/$NAME@phantomcortex/
   cd $TMP_DIR
 
   log_success "blur-my-shell should be installed"
@@ -247,20 +250,20 @@ custom_blur-my-shell() {
 custom_dash-to-dock() {
   log_info "Custom dash-to-dock installer >>>>"
   # 
-  local NAME= "dash-to-dock"
-  local UUID ="$(NAME)@phantomcortex"
+  local NAME="dash-to-dock"
+  local UUID="$NAME@phantomcortex"
   
   # grab
   cd $TMP_DIR
-  git clone https://github.com/phantomcortex/dash-to-dock.git $TMP_DIR/dash-to-dock
-  log_info "cloned dash-to-dock@phantomcortex"
+  git clone https://github.com/phantomcortex/$NAME.git $TMP_DIR/$NAME
+  log_info "cloned $NAME@phantomcortex"
 
-  cd $TMP_DIR/dash-to-dock
+  cd $TMP_DIR/$NAME
 
   make install DESTDIR="/" PREFIX="/usr"
-  glib-compile-schemas /usr/share/gnome-shell/extensions/dash-to-dock@phantomcortex/
+  glib-compile-schemas /usr/share/gnome-shell/extensions/$NAME@phantomcortex/
   
-  log_success "dash-to-dock should be installed"
+  log_success "$NAME should be installed"
 
 }
 
