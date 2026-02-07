@@ -206,10 +206,11 @@ custom_blur-my-shell() {
   # included installer don't install to system 
   local NAME="blur-my-shell"
   local UUID="$NAME@phantomcortex"
+  
   # grab
   git clone https://github.com/phantomcortex/$NAME.git $TMP_DIR/$NAME
   cd $TMP_DIR/$NAME
-  log_info "cloned $NAME@phantomcortex"
+  log_info "cloned $UUID"
   
   # build
   mkdir -p build/ 
@@ -228,19 +229,28 @@ custom_blur-my-shell() {
 	--schema=../schemas/org.gnome.shell.extensions.$NAME.gschema.xml \
     -o ../build 
   cd ..
-  log_info "zipped $NAME@phantomcortex"
+  log_info "zipped $UUID"
 
-
-  ls build 
+  log_info "See build: $(ls build)"
+  log_info "cd build"
   cd build
-  if [ -e $NAME@phantomcortex.shell-extension.zip ]; then
-    unzip -o $NAME@phantomcortex.shell-extension.zip /usr/share/gnome-shell/extensions/$NAME@phantomcortex
-    log_info "unzipped $NAME@phantomcortex"
+  if [ -e $UUID.shell-extension.zip ]; then
+  	log_info "$UUID.shell-extension.zip does exist."
+	find . -name *.zip -exec unzip -o {} /usr/share/gnome-shell/extensions/$UUID \;
+    log_info "unzipped $UUID"
+	glib-compile-schemas /usr/share/gnome-shell/extensions/$UUID/
 	log_info "DEBUG:"
-	ls /usr/share/gnome-shell/extensions/ |grep '$NAME'
-	ls /usr/share/gnome-shell/extensions/$NAME@phantomcortex
+	
+	ls /usr/share/gnome-shell/extensions/$UUID
+  else
+  	echo "$UUID.shell-extension.zip does NOT exist."
+	log_info "find:"
+	find . -iname '*.zip' &&
+	log_info "fuzzy unzip"
+	find . -name '*.zip' -exec unzip -o {} /usr/share/gnome-shell/extensions/$UUID \; && glib-compile-schemas /usr/share/gnome-shell/extensions/$UUID/
+
   fi
-  glib-compile-schemas /usr/share/gnome-shell/extensions/$NAME@phantomcortex/
+  
   cd $TMP_DIR
 
   log_success "blur-my-shell should be installed"
@@ -256,12 +266,12 @@ custom_dash-to-dock() {
   # grab
   cd $TMP_DIR
   git clone https://github.com/phantomcortex/$NAME.git $TMP_DIR/$NAME
-  log_info "cloned $NAME@phantomcortex"
+  log_info "cloned $UUID"
 
   cd $TMP_DIR/$NAME
 
   make install DESTDIR="/" PREFIX="/usr"
-  glib-compile-schemas /usr/share/gnome-shell/extensions/$NAME@phantomcortex/
+  glib-compile-schemas /usr/share/gnome-shell/extensions/$UUID/
   
   log_success "$NAME should be installed"
 
