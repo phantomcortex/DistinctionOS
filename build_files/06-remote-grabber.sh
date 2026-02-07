@@ -225,7 +225,7 @@ custom_blur-my-shell() {
 	--extra-source=./preferences \
 	--extra-source=./dbus \
 	--podir=../po \
-	--schema=../schemas/org.gnome.shell.extensions.$(NAME).gschema.xml \
+	--schema=../schemas/org.gnome.shell.extensions.$NAME.gschema.xml \
     -o ../build 
   cd ..
   log_info "zipped $NAME@phantomcortex"
