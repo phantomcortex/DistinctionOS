@@ -23,10 +23,7 @@ declare -A EXTENSIONS_GIT=(
     ["pip-on-top@rafostar.github.com"]="https://github.com/Rafostar/gnome-shell-extension-pip-on-top.git"
     ["clipboard-indicator@tudmotu.com"]="https://github.com/Tudmotu/gnome-shell-extension-clipboard-indicator.git"
     ["date-menu-formatter@marcinjakubowski.github.com"]="https://github.com/marcinjakubowski/date-menu-formatter.git"
-    ["dash-to-dock@phantomcortex"]="https://github.com/phantomcortex/dash-to-dock.git"
-    ["quick-settings-avatar@d-go"]="https://github.com/d-go/quick-settings-avatar.git"
-    ["blur-my-shell@phantomcortex"]="https://github.com/phantomcortex/blur-my-shell.git"
-)
+    ["quick-settings-avatar@d-go"]="https://github.com/d-go/quick-settings-avatar.git")
 
 declare -A EXTENSIONS_ZIP=(
     ["burn-my-windows@schneegans.github.com"]="https://github.com/Schneegans/Burn-My-Windows/releases/download/v47/burn-my-windows@schneegans.github.com.zip"
@@ -35,7 +32,7 @@ declare -A EXTENSIONS_ZIP=(
 )
 
 # Extensions requiring schema compilation
-readonly SCHEMA_EXTENSIONS=("pip-on-top@rafostar.github.com" "dash-to-dock@phantomcortex" "burn-my-windows@schneegans.github.com" "blur-my-shell@phantomcortex")
+readonly SCHEMA_EXTENSIONS=("pip-on-top@rafostar.github.com" "burn-my-windows@schneegans.github.com")
 
 # Extensions to be removed (if present)
 readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca" "blur-my-shell@aunetx")
@@ -51,60 +48,22 @@ setup_environment() {
 install_git_extension() {
     local extension_id="$1"
     local repository_url="$2"
-    local temp_clone_dir="$TMP_DIR/$extension_id"
     local target_dir="$EXTENSIONS_DIR/$extension_id"
     
     log_info "Installing Git-based extension: $extension_id"
     
-    if [[ -d "$temp_clone_dir" ]]; then
-      rm -rf "$temp_clone_dir"
+    if [[ -d "$target_dir" ]]; then
+        log_warning "Extension directory exists, removing: $target_dir"
+        rm -rf "$target_dir"
     fi
     
-    if git clone --quiet --depth 1 "$repository_url" "$temp_clone_dir"; then
-        log_success "Successfully cloned: $extension_id" 
-    fi
-
-        # Check for Makefile and handle accordingly
-    if [[ -f "$temp_clone_dir/Makefile" ]]; then
-        log_info "Makefile detected for: $extension_id - using make install"
-        
-        # Remove existing installation if present
-        [[ -d "$target_dir" ]] && rm -rf "$target_dir"
-        
-        if (cd "$temp_clone_dir" && make install DESTDIR="/" PREFIX="/usr" 2>>"$LOG_FILE"); then
-            log_success "Successfully installed via Makefile: $extension_id"
-            return 0
-        else
-            if [[ -e /root/.local/share/gnome-shell/extensions/$extension_id ]]; then
-                mv /root/.local/share/gnome-shell/extensions/$extension_id $EXTENSIONS_DIR
-                log_success "Successfully installed: $extension_id with some correction."
-                return 0
-            else
-                log_warning "Makefile installation failed for: $extension_id"
-                log_warning "DEBUG>>"
-                log_warning "EXTENSIONS_DIR:"
-                ls /usr/share/gnome-shell/extensions
-                log_warning "temp_clone_dir:"
-                ls $temp_clone_dir
-                log_warning "root extensions:"
-                tree /root/.local/share/gnome-shell 2>/dev/null
-                log_warning "CMD: 'find / -iname blur-my-shell@phantomcortex "
-                find / -iname "blur-my-shell@phantomcortex" 2>/dev/null 
-                find / -iname "blur-my-shell*"
-                
-            fi
-            
-        fi
-
+    if git clone --quiet --depth 1 "$repository_url" "$target_dir"; then
+        log_success "Successfully cloned: $extension_id"
         return 0
     else
-        log_info "No Makefile found - installing directly: $extension_id"
-        [[ -d "$target_dir" ]] && rm -rf "$target_dir"
-        mv "$temp_clone_dir" "$target_dir"
-        log_success "Successfully installed: $extension_id"
-        return 0    
+        log_error "Failed to clone: $extension_id from $repository_url"
+        return 1
     fi
-
 }
 
 install_zip_extension() {
@@ -118,7 +77,7 @@ install_zip_extension() {
     
     # Download archive
     if ! curl -L --silent --fail "$download_url" -o "$zip_path"; then
-        log_warning "Failed to download: $extension_id from $download_url"
+        log_error "Failed to download: $extension_id from $download_url"
         return 1
     fi
     
@@ -163,7 +122,7 @@ remove_extension() {
         if rm -rf "$target_dir"; then
             log_success "Successfully removed: $extension_id"
         else
-            log_warning "Failed to remove: $extension_id"
+            log_error "Failed to remove: $extension_id"
         fi
     else
         log_info "Extension not present (skipping): $extension_id"
@@ -212,7 +171,7 @@ install_all_extensions() {
     # Installation summary
     log_success "Successful installations: $successful_installations"
     if [[ $failed_installations -gt 0 ]]; then
-        log_warning "Failed installations: $failed_installations"
+        log_error "Failed installations: $failed_installations"
         log_info "Please review the log file: $LOG_FILE"
         return 1
     else
@@ -241,17 +200,86 @@ remove_git_directories() {
     log_success "Removed $git_dirs_removed .git directories"
 }
 
+custom_blur-my-shell() {
+  log_info "Custom blur-my-shell installer >>>>"
+  # This is a hacky system-level installer for blur-my-shell since \
+  # included installer don't install to system 
+  local NAME= "blur-my-shell"
+  local UUID ="$(NAME)@phantomcortex"
+  # grab
+  git clone https://github.com/phantomcortex/blur-my-shell.git $TMP_DIR/blur-my-shell
+  cd $TMP_DIR/blur-my-shell
+  log_info "cloned blur-my-shell@phantomcortex"
+  
+  # build
+  mkdir -p build/ 
+  cd src
+  gnome-extensions pack -f \
+    --extra-source=../metadata.json \
+		--extra-source=../LICENSE \
+		--extra-source=../resources/icons \
+		--extra-source=../resources/ui \
+		--extra-source=./components \
+		--extra-source=./conveniences \
+		--extra-source=./effects \
+		--extra-source=./preferences \
+		--extra-source=./dbus \
+		--podir=../po \
+		--schema=../schemas/org.gnome.shell.extensions.$(NAME).gschema.xml \
+    -o ../build 
+  cd ..
+  log_info "zipped blur-my-shell@phantomcortex"
+
+
+  ls build 
+  cd build
+  if [ -e blur-my-shell@phantomcortex.shell-extension.zip ]; then
+    unzip -o blur-my-shell@phantomcortex.shell-extension.zip /usr/share/gnome-shell/extensions/blur-my-shell@phantomcortex
+     log_info "cloned blur-my-shell@phantomcortex"
+  fi
+  glib-compile-schemas /usr/share/gnome-shell/extensions/blur-my-shell@phantomcortex/
+  cd $TMP_DIR
+
+  log_success "blur-my-shell should be installed"
+
+}
+
+custom_dash-to-dock() {
+  log_info "Custom dash-to-dock installer >>>>"
+  # 
+  local NAME= "dash-to-dock"
+  local UUID ="$(NAME)@phantomcortex"
+  
+  # grab
+  cd $TMP_DIR
+  git clone https://github.com/phantomcortex/dash-to-dock.git $TMP_DIR/dash-to-dock
+  log_info "cloned dash-to-dock@phantomcortex"
+
+  cd $TMP_DIR/dash-to-dock
+
+  make install DESTDIR="/" PREFIX="/usr"
+  glib-compile-schemas /usr/share/gnome-shell/extensions/dash-to-dock@phantomcortex/
+  
+  log_success "dash-to-dock should be installed"
+
+}
+
 main() {
     trap cleanup_temporary_files EXIT
 
     log_info "Starting $SCRIPT_NAME"
     setup_environment
-    log_info "print blur-my-shell metadata"
-    log_info "$(cat /usr/share/gnome-shell/blur-my-shell@aunetx/metadata.json)"
 
     if install_all_extensions; then
         log_success "Extension installation completed successfully!"
+        log_info "blur-my-shell section:"
+        custom_blur-my-shell
+        log_info "dash-to-dock section:"
+        custom_dash-to-dock
+        log_info ".git removal section:"
         remove_git_directories
+
+
         exit 0
     else
         log_error "Extension installation encountered errors"
