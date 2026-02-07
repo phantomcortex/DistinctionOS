@@ -81,12 +81,15 @@ install_git_extension() {
                 log_success "Successfully installed: $extension_id with some correction."
                 return 0
             else
-                log_error "Makefile installation failed for: $extension_id"
-                log_error "DEBUG>>"
-                log_error "EXTENSIONS_DIR: $(ls /usr/share/gnome-shell/)"
-                log_error "temp_clone_dir: $(ls $temp_clone_dir)"
-                log_error "root extensions: $(ls /root/.local/share/gnome-shell/extensions/)"
-                return 1
+                log_warning "Makefile installation failed for: $extension_id"
+                log_warning "DEBUG>>"
+                log_warning "EXTENSIONS_DIR:"
+                ls /usr/share/gnome-shell/extensions
+                log_warning "temp_clone_dir:"
+                ls $temp_clone_dir
+                log_warning "root extensions:"
+                ls /root/.local/share/gnome-shell/extensions/
+                
             fi
             
         fi
@@ -113,7 +116,7 @@ install_zip_extension() {
     
     # Download archive
     if ! curl -L --silent --fail "$download_url" -o "$zip_path"; then
-        log_error "Failed to download: $extension_id from $download_url"
+        log_warning "Failed to download: $extension_id from $download_url"
         return 1
     fi
     
@@ -158,7 +161,7 @@ remove_extension() {
         if rm -rf "$target_dir"; then
             log_success "Successfully removed: $extension_id"
         else
-            log_error "Failed to remove: $extension_id"
+            log_warning "Failed to remove: $extension_id"
         fi
     else
         log_info "Extension not present (skipping): $extension_id"
@@ -207,7 +210,7 @@ install_all_extensions() {
     # Installation summary
     log_success "Successful installations: $successful_installations"
     if [[ $failed_installations -gt 0 ]]; then
-        log_error "Failed installations: $failed_installations"
+        log_warning "Failed installations: $failed_installations"
         log_info "Please review the log file: $LOG_FILE"
         return 1
     else
