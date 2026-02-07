@@ -23,9 +23,9 @@ declare -A EXTENSIONS_GIT=(
     ["pip-on-top@rafostar.github.com"]="https://github.com/Rafostar/gnome-shell-extension-pip-on-top.git"
     ["clipboard-indicator@tudmotu.com"]="https://github.com/Tudmotu/gnome-shell-extension-clipboard-indicator.git"
     ["date-menu-formatter@marcinjakubowski.github.com"]="https://github.com/marcinjakubowski/date-menu-formatter.git"
-    ["dash-to-dock@micxgx.gmail.com"]="https://github.com/micheleg/dash-to-dock.git"
+    ["dash-to-dock@phantomcortex"]="https://github.com/phantomcortex/dash-to-dock.git"
     ["quick-settings-avatar@d-go"]="https://github.com/d-go/quick-settings-avatar.git"
-    ["blur-my-shell@aunetx"]="https://github.com/phantomcortex/blur-my-shell.git"
+    ["blur-my-shell@phantomcortex"]="https://github.com/phantomcortex/blur-my-shell.git"
 )
 
 declare -A EXTENSIONS_ZIP=(
@@ -35,7 +35,7 @@ declare -A EXTENSIONS_ZIP=(
 )
 
 # Extensions requiring schema compilation
-readonly SCHEMA_EXTENSIONS=("pip-on-top@rafostar.github.com" "dash-to-dock@micxgx.gmail.com" "burn-my-windows@schneegans.github.com" "blur-my-shell@phantomcortex")
+readonly SCHEMA_EXTENSIONS=("pip-on-top@rafostar.github.com" "dash-to-dock@phantomcortex" "burn-my-windows@schneegans.github.com" "blur-my-shell@phantomcortex")
 
 # Extensions to be removed (if present)
 readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca")
@@ -51,22 +51,44 @@ setup_environment() {
 install_git_extension() {
     local extension_id="$1"
     local repository_url="$2"
+    local temp_clone_dir="$TMP_DIR/$extension_id"
     local target_dir="$EXTENSIONS_DIR/$extension_id"
     
     log_info "Installing Git-based extension: $extension_id"
     
-    if [[ -d "$target_dir" ]]; then
-        log_warning "Extension directory exists, removing: $target_dir"
-        rm -rf "$target_dir"
+    if [[ -d "$temp_clone_dir" ]]; then
+      rm -rf "$temp_clone_dir"
     fi
     
-    if git clone --quiet --depth 1 "$repository_url" "$target_dir"; then
-        log_success "Successfully cloned: $extension_id"
+    if git clone --quiet --depth 1 "$repository_url" "$temp_clone_dir"; then
+        log_success "Successfully cloned: $extension_id" 
+    fi
+
+        # Check for Makefile and handle accordingly
+    if [[ -f "$temp_clone_dir/Makefile" ]]; then
+        log_info "Makefile detected for: $extension_id - using make install"
+        
+        # Remove existing installation if present
+        [[ -d "$target_dir" ]] && rm -rf "$target_dir"
+        
+        if (cd "$temp_clone_dir" && make install DESTDIR="" PREFIX="/usr" 2>>"$LOG_FILE"); then
+            log_success "Successfully installed via Makefile: $extension_id"
+            rm -rf "$temp_clone_dir"
+            return 0
+        else
+            log_error "Makefile installation failed for: $extension_id"
+            return 1
+        fi
+
         return 0
     else
-        log_error "Failed to clone: $extension_id from $repository_url"
-        return 1
+        log_info "No Makefile found - installing directly: $extension_id"
+        [[ -d "$target_dir" ]] && rm -rf "$target_dir"
+        mv "$temp_clone_dir" "$target_dir"
+        log_success "Successfully installed: $extension_id"
+        return 0    
     fi
+
 }
 
 install_zip_extension() {
@@ -189,6 +211,19 @@ cleanup_temporary_files() {
     log_success "Cleanup completed"
 }
 
+remove_git_directories() {
+    log_info "Removing git metadata from extensions..."
+    local git_dirs_removed=0
+    
+    for git_dir in "$EXTENSIONS_DIR"/*/.git; do
+        if [[ -d "$git_dir" ]]; then
+            rm -rf "$git_dir"
+            ((git_dirs_removed++))
+        fi
+    done
+    
+    log_success "Removed $git_dirs_removed .git directories"
+}
 
 main() {
     trap cleanup_temporary_files EXIT
@@ -200,9 +235,7 @@ main() {
 
     if install_all_extensions; then
         log_success "Extension installation completed successfully!"
-        log_info "Applying workaround for blur-my-shell"
-        #quick hack for blur-my-shell until Gnome 49 support is added
-        
+        remove_git_directories
         exit 0
     else
         log_error "Extension installation encountered errors"

@@ -246,7 +246,6 @@ log_section "Installing packages from configured repositories"
 declare -A RPM_PACKAGES=(
   # Core Fedora repositories
   ["fedora"]="\
-    yt-dlp \
     zsh \
     zsh-syntax-highlighting \
     zsh-autosuggestions \
@@ -286,25 +285,8 @@ declare -A RPM_PACKAGES=(
     libheif-tools \
     heif-pixbuf-loader \
     wine \
-    meson \
-    cmake \
-    openssl-devel \
-    zlib-devel \
-    elfutils-libelf-devel \
-    libudev-devel \
-    libuuid-devel \
-    libtirpc-devel \
-    libblkid-devel \
-    libtool \
-    autoconf \
-    automake \
-    ncompress \
-    rpm-build \
-    python3-devel \
-    python3-setuptools \
-    python3-cffi \
-    libaio-devel \
-    libattr-devel"
+    libgda \
+    libgda-sqlite"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
@@ -422,7 +404,6 @@ log_section "Validating critical packages"
 readonly -a CRITICAL_PACKAGES=(
   "zsh"
   "neovim"
-  "docker"
   "brave-browser"
   "wine"
   "blackbox-terminal"
