@@ -201,80 +201,98 @@ remove_git_directories() {
 }
 
 custom_blur-my-shell() {
-  log_info "Custom blur-my-shell installer >>>>"
-  # This is a hacky system-level installer for blur-my-shell since \
-  # included installer don't install to system 
+  # System-level installer for blur-my-shell (upstream Makefile only targets ~/.local)
   local NAME="blur-my-shell"
   local UUID="$NAME@phantomcortex"
-  
-  # grab
-  git clone https://github.com/phantomcortex/$NAME.git $TMP_DIR/$NAME
-  cd $TMP_DIR/$NAME
-  log_info "cloned $UUID"
-  
-  # build
-  mkdir -p build/ 
-  cd src
-  gnome-extensions pack -f \
-	--extra-source=../metadata.json \
-	--extra-source=../LICENSE \
-	--extra-source=../resources/icons \
-	--extra-source=../resources/ui \
-	--extra-source=./components \
-	--extra-source=./conveniences \
-	--extra-source=./effects \
-	--extra-source=./preferences \
-	--extra-source=./dbus \
-	--podir=../po \
-	--schema=../schemas/org.gnome.shell.extensions.$NAME.gschema.xml \
-    -o ../build 
-  cd ..
-  log_info "zipped $UUID"
+  local REPO_DIR="$TMP_DIR/$NAME"
+  local BUILD_DIR="$REPO_DIR/build"
+  local TARGET_DIR="$EXTENSIONS_DIR/$UUID"
+  local ZIP_FILE="$BUILD_DIR/$UUID.shell-extension.zip"
 
-  log_info "See build: $(ls build)"
-  log_info "cd build"
-  cd build
-  if [ -e $UUID.shell-extension.zip ]; then
-  	log_info "$UUID.shell-extension.zip does exist."
-	find . -name *.zip -exec unzip -o {} /usr/share/gnome-shell/extensions/$UUID \;
-    log_info "unzipped $UUID"
-	glib-compile-schemas /usr/share/gnome-shell/extensions/$UUID/
-	log_info "DEBUG:"
-	
-	ls /usr/share/gnome-shell/extensions/$UUID
-  else
-  	echo "$UUID.shell-extension.zip does NOT exist."
-	log_info "find:"
-	find . -iname '*.zip' &&
-	log_info "fuzzy unzip"
-	find . -name '*.zip' -exec unzip -o {} /usr/share/gnome-shell/extensions/$UUID \; && glib-compile-schemas /usr/share/gnome-shell/extensions/$UUID/
+  log_info "Installing custom extension: $UUID"
 
+  # Clone
+  if [[ -d "$REPO_DIR" ]]; then
+    rm -rf "$REPO_DIR"
   fi
-  
-  cd $TMP_DIR
+  if ! git clone --quiet --depth 1 "https://github.com/phantomcortex/$NAME.git" "$REPO_DIR"; then
+    log_error "Failed to clone $NAME"
+    return 1
+  fi
 
-  log_success "blur-my-shell should be installed"
+  # Build via gnome-extensions pack
+  # --extra-source paths resolve relative to cwd, so we use absolute paths
+  # to avoid fragile cd-based directory navigation
+  mkdir -p "$BUILD_DIR"
+  if ! gnome-extensions pack -f \
+    --extra-source="$REPO_DIR/metadata.json" \
+    --extra-source="$REPO_DIR/LICENSE" \
+    --extra-source="$REPO_DIR/resources/icons" \
+    --extra-source="$REPO_DIR/resources/ui" \
+    --extra-source="$REPO_DIR/src/components" \
+    --extra-source="$REPO_DIR/src/conveniences" \
+    --extra-source="$REPO_DIR/src/effects" \
+    --extra-source="$REPO_DIR/src/preferences" \
+    --extra-source="$REPO_DIR/src/dbus" \
+    --podir="$REPO_DIR/po" \
+    --schema="$REPO_DIR/schemas/org.gnome.shell.extensions.$NAME.gschema.xml" \
+    -o "$BUILD_DIR" \
+    "$REPO_DIR/src"; then
+    log_error "gnome-extensions pack failed for $NAME"
+    return 1
+  fi
 
+  # Verify zip was produced
+  if [[ ! -f "$ZIP_FILE" ]]; then
+    log_error "Expected zip not found at $ZIP_FILE"
+    log_error "Build directory contents: $(ls -1 "$BUILD_DIR" 2>/dev/null || echo '(empty)')"
+    return 1
+  fi
+
+  # Extract to system extensions directory
+  rm -rf "$TARGET_DIR"
+  mkdir -p "$TARGET_DIR"
+  if ! unzip -o "$ZIP_FILE" -d "$TARGET_DIR"; then
+    log_error "Failed to unzip $ZIP_FILE to $TARGET_DIR"
+    return 1
+  fi
+
+  # Compile schemas
+  if [[ -d "$TARGET_DIR/schemas" ]]; then
+    glib-compile-schemas "$TARGET_DIR/schemas" 2>>"$LOG_FILE"
+  fi
+  glib-compile-schemas "$TARGET_DIR/" 2>>"$LOG_FILE" || true
+
+  log_success "Successfully installed $UUID"
 }
 
 custom_dash-to-dock() {
-  log_info "Custom dash-to-dock installer >>>>"
-  # 
   local NAME="dash-to-dock"
   local UUID="$NAME@phantomcortex"
-  
-  # grab
-  cd $TMP_DIR
-  git clone https://github.com/phantomcortex/$NAME.git $TMP_DIR/$NAME
-  log_info "cloned $UUID"
+  local REPO_DIR="$TMP_DIR/$NAME"
+  local TARGET_DIR="$EXTENSIONS_DIR/$UUID"
 
-  cd $TMP_DIR/$NAME
+  log_info "Installing custom extension: $UUID"
 
-  make install DESTDIR="/" PREFIX="/usr"
-  glib-compile-schemas /usr/share/gnome-shell/extensions/$UUID/
-  
-  log_success "$NAME should be installed"
+  if [[ -d "$REPO_DIR" ]]; then
+    rm -rf "$REPO_DIR"
+  fi
+  if ! git clone --quiet --depth 1 "https://github.com/phantomcortex/$NAME.git" "$REPO_DIR"; then
+    log_error "Failed to clone $NAME"
+    return 1
+  fi
 
+  if ! make -C "$REPO_DIR" install DESTDIR="/" PREFIX="/usr"; then
+    log_error "make install failed for $NAME"
+    return 1
+  fi
+
+  if [[ -d "$TARGET_DIR/schemas" ]]; then
+    glib-compile-schemas "$TARGET_DIR/schemas" 2>>"$LOG_FILE"
+  fi
+  glib-compile-schemas "$TARGET_DIR/" 2>>"$LOG_FILE" || true
+
+  log_success "Successfully installed $UUID"
 }
 
 main() {
