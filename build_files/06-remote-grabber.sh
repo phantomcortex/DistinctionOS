@@ -38,7 +38,7 @@ declare -A EXTENSIONS_ZIP=(
 readonly SCHEMA_EXTENSIONS=("pip-on-top@rafostar.github.com" "dash-to-dock@phantomcortex" "burn-my-windows@schneegans.github.com" "blur-my-shell@phantomcortex")
 
 # Extensions to be removed (if present)
-readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca")
+readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca" "blur-my-shell@aunetx")
 
 # =============================================================================
 # Installation Functions
@@ -73,7 +73,6 @@ install_git_extension() {
         
         if (cd "$temp_clone_dir" && make install DESTDIR="/" PREFIX="/usr" 2>>"$LOG_FILE"); then
             log_success "Successfully installed via Makefile: $extension_id"
-            rm -rf "$temp_clone_dir"
             return 0
         else
             if [[ -e /root/.local/share/gnome-shell/extensions/$extension_id ]]; then
@@ -88,7 +87,10 @@ install_git_extension() {
                 log_warning "temp_clone_dir:"
                 ls $temp_clone_dir
                 log_warning "root extensions:"
-                ls /root/.local/share/gnome-shell/extensions/
+                tree /root/.local/share/gnome-shell 2>/dev/null
+                log_warning "CMD: 'find / -iname blur-my-shell@phantomcortex "
+                find / -iname "blur-my-shell@phantomcortex" 2>/dev/null 
+                find / -iname "blur-my-shell*"
                 
             fi
             
