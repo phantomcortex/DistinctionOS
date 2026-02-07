@@ -87,6 +87,7 @@ install_git_extension() {
                 log_error "temp_clone_dir: $(ls $temp_clone_dir)"
                 log_error "root extensions: $(ls /root/.local/share/gnome-shell/extensions/)"
                 return 1
+            fi
             
         fi
 
