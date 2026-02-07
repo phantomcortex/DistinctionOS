@@ -71,13 +71,23 @@ install_git_extension() {
         # Remove existing installation if present
         [[ -d "$target_dir" ]] && rm -rf "$target_dir"
         
-        if (cd "$temp_clone_dir" && make install DESTDIR="" PREFIX="/usr" 2>>"$LOG_FILE"); then
+        if (cd "$temp_clone_dir" && make install DESTDIR="/" PREFIX="/usr" 2>>"$LOG_FILE"); then
             log_success "Successfully installed via Makefile: $extension_id"
             rm -rf "$temp_clone_dir"
             return 0
         else
-            log_error "Makefile installation failed for: $extension_id"
-            return 1
+            if [[ -e /root/.local/share/gnome-shell/extensions/$extension_id ]]; then
+                mv /root/.local/share/gnome-shell/extensions/$extension_id $EXTENSIONS_DIR
+                log_success "Successfully installed: $extension_id with some correction."
+                return 0
+            else
+                log_error "Makefile installation failed for: $extension_id"
+                log_error "DEBUG>>"
+                log_error "EXTENSIONS_DIR: $(ls /usr/share/gnome-shell/)"
+                log_error "temp_clone_dir: $(ls $temp_clone_dir)"
+                log_error "root extensions: $(ls /root/.local/share/gnome-shell/extensions/)"
+                return 1
+            
         fi
 
         return 0
