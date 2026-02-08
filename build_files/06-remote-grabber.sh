@@ -277,11 +277,10 @@ custom_blur-my-shell() {
     else
       log_success "GCS passed."
     fi
-else
+  else
     echo "Output does not match."
-fi
-    glib-compile-schemas "$TARGET_DIR/schemas/"
   fi
+  glib-compile-schemas "$TARGET_DIR/schemas/"
   glib-compile-schemas "$TARGET_DIR/" 2>>"$LOG_FILE" || true
 
   log_success "Successfully installed $UUID"
