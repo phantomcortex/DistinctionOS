@@ -190,11 +190,23 @@ remove_git_directories() {
     local git_dirs_removed=0
 
     for git_dir in "$EXTENSIONS_DIR"/*/.git; do
-        [[ -d "$git_dir" ]] || continue
+        [[ -e "$git_dir" ]] || continue
         rm -rf "$git_dir"
         git_dirs_removed=$((git_dirs_removed + 1))
     done
 
+    for git_dir in "$EXTENSIONS_DIR"/*/.github; do
+        [[ -e "$git_dir" ]] || continue
+        rm -rf "$git_dir"
+        git_dirs_removed=$((git_dirs_removed + 1))
+    done
+
+    for git_dir in "$EXTENSIONS_DIR"/*/.gitignore; do
+        [[ -e "$git_dir" ]] || continue
+        rm -rf "$git_dir"
+        git_dirs_removed=$((git_dirs_removed + 1))
+    done
+    
     log_success "Removed $git_dirs_removed .git directories"
     return 0
 }
@@ -286,8 +298,16 @@ custom_dash-to-dock() {
     return 1
   fi
 
-  if [[ -d "$TARGET_DIR/schemas" ]]; then
+  if [[ -f "$TARGET_DIR/schemas/*.xml" ]]; then
+    log_info "schema found at $TARGET_DIR/schemas/"
     glib-compile-schemas "$TARGET_DIR/schemas" 2>>"$LOG_FILE"
+  elif [[-e "/usr/share/glib-2.0/schemas/org.gnome.shell.extensions.dash-to-dock.gschema.xml" ]]; then
+    log_info "schema found at /usr/share/glib-2.0/schemas/org.gnome.shell.extensions.dash-to-dock.gschema.xml"
+    glib-compile-schemas "/usr/share/glib-2.0/schemas/" 2>>"$LOGFILE"
+  else
+    log_warning "failed to detect 'dash-to-dock' schema."
+    log_warning "blind run: 'glib-compile-schemas /usr/share/glib-2.0/schemas/' "
+    glib-compile-schemas "/usr/share/glib-2.0/schemas/" 2>>"$LOGFILE"
   fi
   glib-compile-schemas "$TARGET_DIR/" 2>>"$LOG_FILE" || true
 
