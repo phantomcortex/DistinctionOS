@@ -212,6 +212,7 @@ remove_git_directories() {
 }
 
 custom_blur-my-shell() {
+  ###########################################
   # System-level installer for blur-my-shell (upstream Makefile only targets ~/.local)
   local NAME="blur-my-shell"
   local UUID="$NAME@phantomcortex"
@@ -270,14 +271,25 @@ custom_blur-my-shell() {
 
   # Compile schemas
   if [[ -d "$TARGET_DIR/schemas" ]]; then
-    glib-compile-schemas "$TARGET_DIR/schemas" 2>>"$LOG_FILE"
+    if [[ "$(glib-compile-schemas "$TARGET_DIR/schemas/")" == "No schema files found: doing nothing." ]]; then
+      log_warning "GCS failed. \nFind schema and compile"
+      find $TARGET_DIR -iname '*.xml' -exec glib-comile-schemas {} /;
+    else
+      log_success "GCS passed."
+    fi
+else
+    echo "Output does not match."
+fi
+    glib-compile-schemas "$TARGET_DIR/schemas/"
   fi
   glib-compile-schemas "$TARGET_DIR/" 2>>"$LOG_FILE" || true
 
   log_success "Successfully installed $UUID"
+  ###########################################
 }
 
 custom_dash-to-dock() {
+  ###########################################
   local NAME="dash-to-dock"
   local UUID="$NAME@phantomcortex"
   local REPO_DIR="$TMP_DIR/$NAME"
@@ -300,18 +312,24 @@ custom_dash-to-dock() {
 
   if [[ -f "$TARGET_DIR/schemas/*.xml" ]]; then
     log_info "schema found at $TARGET_DIR/schemas/"
-    glib-compile-schemas "$TARGET_DIR/schemas" 2>>"$LOG_FILE"
-  elif [[-e "/usr/share/glib-2.0/schemas/org.gnome.shell.extensions.dash-to-dock.gschema.xml" ]]; then
+    glib-compile-schemas "$TARGET_DIR/schemas" 
+  elif [[ -e "/usr/share/glib-2.0/schemas/org.gnome.shell.extensions.dash-to-dock.gschema.xml" ]]; then
     log_info "schema found at /usr/share/glib-2.0/schemas/org.gnome.shell.extensions.dash-to-dock.gschema.xml"
-    glib-compile-schemas "/usr/share/glib-2.0/schemas/" 2>>"$LOGFILE"
+    if [[ "$(glib-compile-schemas "/usr/share/glib-2.0/schemas/")" == "No schema files found: doing nothing." ]]; then
+      log_warning "GCS failed. \nFind schema and compile"
+      find /usr/share/glib-2.0/schemas/ -iname '$NAME' -exec glib-comile-schemas {} /;
+    else
+      log_success "GCS passed."
+    fi
   else
     log_warning "failed to detect 'dash-to-dock' schema."
     log_warning "blind run: 'glib-compile-schemas /usr/share/glib-2.0/schemas/' "
-    glib-compile-schemas "/usr/share/glib-2.0/schemas/" 2>>"$LOGFILE"
+    glib-compile-schemas "/usr/share/glib-2.0/schemas/" 
   fi
   glib-compile-schemas "$TARGET_DIR/" 2>>"$LOG_FILE" || true
 
   log_success "Successfully installed $UUID"
+  ###########################################
 }
 
 main() {
