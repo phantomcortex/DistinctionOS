@@ -146,23 +146,22 @@ install_all_extensions() {
     log_info "Installing Git-based extensions..."
     for extension_id in "${!EXTENSIONS_GIT[@]}"; do
         if install_git_extension "$extension_id" "${EXTENSIONS_GIT[$extension_id]}"; then
-            ((successful_installations++))
+            successful_installations=$((successful_installations + 1))
         else
-            ((failed_installations++))
+            failed_installations=$((failed_installations + 1))
         fi
     done
-    
+
     # Install ZIP-based extensions
     log_info "Installing ZIP-based extensions..."
     for extension_id in "${!EXTENSIONS_ZIP[@]}"; do
         if install_zip_extension "$extension_id" "${EXTENSIONS_ZIP[$extension_id]}"; then
-            ((successful_installations++))
+            successful_installations=$((successful_installations + 1))
         else
-            ((failed_installations++))
+            failed_installations=$((failed_installations + 1))
         fi
     done
-
-# Compile schemas for extensions that require it
+    # Compile schemas for extensions that require it
     log_info "Processing extension schemas..."
     for extension_id in "${SCHEMA_EXTENSIONS[@]}"; do
         compile_extension_schemas "$extension_id"
@@ -189,15 +188,15 @@ cleanup_temporary_files() {
 remove_git_directories() {
     log_info "Removing git metadata from extensions..."
     local git_dirs_removed=0
-    
+
     for git_dir in "$EXTENSIONS_DIR"/*/.git; do
-        if [[ -d "$git_dir" ]]; then
-            rm -rf "$git_dir"
-            ((git_dirs_removed++))
-        fi
+        [[ -d "$git_dir" ]] || continue
+        rm -rf "$git_dir"
+        git_dirs_removed=$((git_dirs_removed + 1))
     done
-    
+
     log_success "Removed $git_dirs_removed .git directories"
+    return 0
 }
 
 custom_blur-my-shell() {
@@ -301,21 +300,25 @@ main() {
     log_info "Starting $SCRIPT_NAME"
     setup_environment
 
-    if install_all_extensions; then
-        log_success "Extension installation completed successfully!"
-        log_info "blur-my-shell section:"
-        custom_blur-my-shell
-        log_info "dash-to-dock section:"
-        custom_dash-to-dock
-        log_info ".git removal section:"
-        remove_git_directories
+    local had_errors=0
 
+    # Standard extensions (git + zip)
+    install_all_extensions || had_errors=1
 
-        exit 0
-    else
-        log_error "Extension installation encountered errors"
+    # Custom-built extensions (always attempted regardless of standard extension failures)
+    custom_blur-my-shell || had_errors=1
+    custom_dash-to-dock  || had_errors=1
+
+    # Cleanup .git metadata from all cloned extensions
+    remove_git_directories
+
+    if [[ $had_errors -ne 0 ]]; then
+        log_error "One or more extensions failed to install — review log above"
         exit 1
     fi
+
+    log_success "All extensions installed successfully!"
+    exit 0
 }
 
 # bazzite's dnf wrapper is such a pest
