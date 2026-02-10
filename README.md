@@ -32,7 +32,7 @@ ujust distinction-install
 ## ✨ What's Included
 
 ### 🎮 Gaming Enhancements
-- **xpadneo** - Enhanced Xbox controller support with full Bluetooth functionality
+- **kernel-cachyos-lto** - Custom Kernel for the best gaming experience possible.
 
 ### 🎨 Creative Tools
 - **Cider** - Premium Apple Music client ([requires license](https://cidercollective.itch.io/cider))
@@ -53,10 +53,6 @@ ujust distinction-install
 - Video thumbnail generation
 - HEIC image format support
 
-### 🎨 Theming
-- Kora icon theme (custom build)
-- Coordinated GTK styling
-- Now shipping with hyprland! (Themeing not included)
 ---
 
 ## 🔑 Key Features
