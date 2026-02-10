@@ -34,10 +34,11 @@ GITHUB_REPO = "phantomcortex/distinctionos"
 # Major / pinned packages shown prominently at the top of every release.
 # Display Name -> RPM package name used as the lookup key in rechunk metadata.
 PINNED_PACKAGES: List[Tuple[str, str]] = [
-    ("Kernel",    "kernel"),
+    ("Kernel",    "kernel-cachyos-lto"),
     ("GNOME",     "gnome-control-center-filesystem"),
     ("Mesa",      "mesa-filesystem"),
     ("Gamescope", "gamescope"),
+    ("Ptyxis", "ptyxis"),
 ]
 
 # Package names that appear in the pinned table are excluded from the
