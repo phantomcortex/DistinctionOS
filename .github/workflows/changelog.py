@@ -103,6 +103,30 @@ def extract_packages(info: Dict) -> Dict[str, str]:
     return {pkg: re.sub(FEDORA_PATTERN, "", ver) for pkg, ver in packages.items()}
 
 
+def extract_fedora_version(info: Dict) -> str:
+    """Extract the Fedora version number from the image manifest.
+
+    Tries the rechunk package list first (fedora-release), then falls back
+    to parsing the .fcNN suffix from any package version string.
+    """
+    labels = info.get("Labels", {}) or {}
+    data = labels.get("dev.hhd.rechunk.info")
+    if data:
+        packages = json.loads(data).get("packages", {})
+        # fedora-release version is just the Fedora number (e.g. "43")
+        fr = packages.get("fedora-release")
+        if fr:
+            m = re.match(r"(\d+)", fr)
+            if m:
+                return m.group(1)
+        # Fallback: scan any package for the .fcNN suffix
+        for ver in packages.values():
+            m = re.search(r"\.fc(\d+)", ver)
+            if m:
+                return m.group(1)
+    return ""
+
+
 def get_version(packages: Dict[str, str], rpm_name: str) -> Optional[str]:
     """Look up a single package version, returning None if absent."""
     return packages.get(rpm_name)
@@ -277,7 +301,12 @@ def generate_changelog(
         (changelog_md, title, tag)
     """
     tag = curr_tag
-    title = f"{curr_tag}: DistinctionOS"
+    # Extract Fedora version and date portion from tag for title
+    # Tag format is "latest.YYYYMMDD" or "YYYYMMDD"
+    fedora_ver = extract_fedora_version(curr_manifest)
+    date_part = curr_tag.split(".")[-1] if "." in curr_tag else curr_tag
+    fedora_label = f"F{fedora_ver}.{date_part}" if fedora_ver else date_part
+    title = f"DistinctionOS: latest {fedora_label}"
 
     sections: List[str] = []
 
