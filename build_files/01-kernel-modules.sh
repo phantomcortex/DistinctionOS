@@ -23,7 +23,7 @@ KERNEL_VERSION="$(find "/usr/lib/modules" -maxdepth 1 -type d ! -path "/usr/lib/
 log_success "Detected kernel: $KERNEL_VERSION"
 
 # Set kernel build directory for compilation
-export KERNELDIR="/lib/modules/${KERNEL}/build"
+export KERNELDIR="/lib/modules/${KERNEL_VERSION}/build"
 log_info "Kernel build directory: $KERNELDIR"
 
 # ============================================================================
@@ -33,6 +33,8 @@ log_info "Kernel build directory: $KERNELDIR"
 
 log_section "Regenerating initramfs with new modules"
 
+ 
+export DRACUT_NO_XATTR=1
 log_info "Running dracut to rebuild initramfs"
 if /usr/bin/dracut \
   --no-hostonly \
@@ -63,7 +65,6 @@ echo "  7. remote-grabber.sh - GNOME extension management"
 # ============================================================================
 # Future Improvements (TODO)
 # ============================================================================
-# - Integrate CachyOS-LTO kernel as default
-# - Add support for additional controller drivers if needed
+# - N/A 
 
 exit 0
