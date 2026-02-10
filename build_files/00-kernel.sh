@@ -5,6 +5,9 @@ set -euo pipefail
 # Custom Kernel Installer
 # ============================================================================
 
+# Source utility functions
+source /ctx/95-utility-functions.sh
+
   if "dnf -y remove kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra kernel-devel-matched kernel-modules-akmods" &>/dev/null; then
     log_success "Bazzite Kernel removed!"    
     return 0
