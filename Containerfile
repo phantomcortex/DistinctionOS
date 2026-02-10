@@ -3,24 +3,10 @@ FROM scratch AS ctx
 COPY build_files /
 
 # Base Image
-FROM ghcr.io/ublue-os/bazzite-gnome:testing as DistinctionOS
+FROM ghcr.io/ublue-os/bazzite-gnome:stable as DistinctionOS
 #FROM quay.io/fedora/fedora-bootc:42
 
 
-## Other possible base images include:
-# FROM ghcr.io/ublue-os/bazzite:latest
-# FROM ghcr.io/ublue-os/bluefin-nvidia:stable
-# 
-# ... and so on, here are more base images
-# Universal Blue Images: https://github.com/orgs/ublue-os/packages
-# Fedora base image: quay.io/fedora/fedora-bootc:41
-# CentOS base images: quay.io/centos-bootc/centos-bootc:stream10
-
-### MODIFICATIONS
-## make modifications desired in your image and install packages by modifying the build.sh script
-## the following RUN directive does all the things required to run "build.sh" as recommended.
-
-# Setup Copr repos
 
 # Cleanup & Finalize
 COPY system_files/ /
@@ -30,14 +16,14 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     echo -e "\033[31mKERNEL INSTALLER >>>>\033[0m" && \
     /ctx/00-kernel.sh && \
+    echo -e "\033[31mKERENEL SCRIPT >>>>\033[0m" && \
+    /ctx/01-kernel-modules.sh && \
     echo -e "\033[31mBUILD SCRIPT >>>>\033[0m" && \
-    /ctx/01-build.sh && \
+    /ctx/02-build.sh && \
     echo -e "\033[31mOPT FIXER >>>>\033[0m" && \
     /ctx/03-fix-opt.sh && \
     echo -e "\033[31mSYSTEM CONFIG >>>>\033[0m" && \
     /ctx/04-config.sh && \
-    echo -e "\033[31mKERENEL SCRIPT >>>>\033[0m" && \
-    /ctx/05-kernel-modules.sh && \
     echo -e "\033[31mREMOTE GRABBER >>>>\033[0m" && \
     /ctx/06-remote-grabber.sh && \
     echo -e "\033[31mOSTREE COMMIT\033[0m" && \

@@ -8,18 +8,16 @@ set -euo pipefail
 # Source utility functions
 source /ctx/95-utility-functions.sh
 
-  if "dnf -y remove kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra kernel-devel-matched kernel-modules-akmods" &>/dev/null; then
-    log_success "Bazzite Kernel removed!"    
-    return 0
-  else 
-    return 1
-  fi
+for pkg in kernel kernel-core kernel-modules kernel-modules-core; do 
+  rpm -erase $pkg --nodeps
+done 
 
-  if "dnf -y install kernel-cachyos" &>/dev/null; then
-    log_success "kernel-cachyos Installed!"
-    setsebool -P domain_kernel_load_modules on && log_info "Set SELinux options" || log_warning "error:SELinux"
-    dnf5 versionlock add kernel-cachyos && log_info "versionlock kernel-cachyos" || log_warning "error:versionlock"
-    return 0
-  else
-    return 1
-  fi
+pushd /usr/lib/kernel/install.d 
+prinf '%s\n' '$!/bin/sh' 'exit 0' > 05-rpmostree.install 
+prinf '%s\n' '$!/bin/sh' 'exit 0' > 50-dracut.install 
+chmod +x 05-rpmostree.install 50-dracut.install 
+
+dnf5 -y copr enable bieszczaders/kernel-cachyos-lto
+dnf5 -y install kernel-cachyos-lto kernel-cachyos-lto-devel-matched
+dnf5 -y copr disable bieszczaders/kernel-cachyos-lto 
+dnf5 versionlock add kernel-cachyos-lto 
