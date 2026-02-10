@@ -5,8 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '05 6 */5 * *'  # 12:05am Mountain time every 5 days 
-    # Reference: 'minute hour day(s) Month day-of-the-week'
+    - cron: '05 6 */5 * *'  # 12:05am Mountain time every 5 days Ref: 'minute hour day(s) Month day-of-the-week'
   push:
     branches:
       - main
@@ -22,15 +21,17 @@ on:
         description: 'Clear rechunk history (forces full redownload for users)'
         type: boolean
         default: false
+      handwritten:
+        description: 'Optional handwritten changelog message for this release'
+        type: string
+        default: ''
 env:
   IMAGE_DESC: "My Customized Bazzite Image"
   IMAGE_KEYWORDS: "bootc,ublue,universal-blue"
-  IMAGE_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4"  
+  IMAGE_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4"
   IMAGE_NAME: "${{ github.event.repository.name }}"  # output image name, usually same as repo name
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"  # do not edit
   DEFAULT_TAG: "latest"
-
-# TODO: optimize build (if possible)
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
@@ -46,11 +47,16 @@ jobs:
       packages: write
       id-token: write
 
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+
     steps:
       # These stage versions are pinned by https://github.com/renovatebot/renovate
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
-        
+        with:
+          fetch-depth: 0  # Full history for changelog commit range
+
       - name: Prepare environment
         run: |
           # Lowercase the image uri
@@ -84,6 +90,7 @@ jobs:
             org.opencontainers.image.url=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
             org.opencontainers.image.vendor=${{ github.repository_owner }}
             org.opencontainers.image.version=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}}
+            org.opencontainers.image.revision=${{ github.sha }}
             io.artifacthub.package.deprecated=false
             io.artifacthub.package.keywords=${{ env.IMAGE_KEYWORDS }}
             io.artifacthub.package.license=Apache-2.0
@@ -92,7 +99,7 @@ jobs:
             containers.bootc=1
           sep-tags: " "
           sep-annotations: " "
- 
+
       - name: Maximize build space
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
@@ -102,7 +109,7 @@ jobs:
           large-packages: true
           docker-images: false
           swap-storage: true
-          
+
       - name: Build image (rootful)
         id: build_image
         run: |
@@ -112,7 +119,7 @@ jobs:
             --tag "localhost/${IMAGE_NAME}:${{ env.DEFAULT_TAG }}" \
             --file Containerfile \
             .
-          
+
       - name: Remove source images
         run: |
           images=$(sudo podman images -n --sort repository --format '{{.ID}} {{.Repository}}' | grep -v localhost | awk '{print $1}')
@@ -124,8 +131,7 @@ jobs:
           else
             echo "No images to remove."
           fi
-          
-          
+
       - name: Run Rechunker
         id: rechunk
         uses: hhd-dev/rechunk@v1.2.4
@@ -146,7 +152,7 @@ jobs:
           else
             echo "No image to remove"
           fi
-          
+
       - name: Rechunk output
         continue-on-error: true
         if: github.event_name != 'pull_request'
@@ -168,8 +174,8 @@ jobs:
           STEPS_RECHUNK_CONCLUSION: ${{ steps.rechunk.conclusion }}
           STEPS_RECHUNK_OUTPUTS_CHANGELOG: ${{ steps.rechunk.outputs.changelog }}
           STEPS_RECHUNK_OUTPUTS_MANIFEST: ${{ steps.rechunk.outputs.manifest }}
-          
-      - name: Load in podman and tag       
+
+      - name: Load in podman and tag
         if: github.event_name != 'pull_request'
         run: |
           IMAGE=$(podman pull ${STEPS_RECHUNK_OUTPUTS_REF})
@@ -182,7 +188,7 @@ jobs:
           STEPS_RECHUNK_OUTPUTS_LOCATION: ${{ steps.rechunk.outputs.location }}
           STEPS_METADATA_OUTPUTS_TAGS: ${{ steps.metadata.outputs.tags }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
-          
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         if: github.event_name != 'pull_request'
@@ -191,19 +197,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Lowercase Registry 
+      - name: Lowercase Registry
         id: registry_case
         uses: ASzc/change-string-case-action@v6
         with:
           string: ${{ env.IMAGE_REGISTRY }}
-              
+
       - name: Inspect layer sizes
         run: |
           echo "=== Layer size analysis ==="
           podman inspect localhost/${IMAGE_NAME}:${DEFAULT_TAG} | jq '.[0].RootFS.Layers[] | length' | \
           awk '{sum+=$1; print "Layer size: " $1/1024/1024 " MB"} END {print "Total: " sum/1024/1024 " MB"}'
-          #This should be temporary, builds are failing to upload, There are a few likely culprits
-          
+
       - name: Push To GHCR
         uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
         if: github.event_name != 'pull_request'
@@ -242,10 +247,56 @@ jobs:
           STEPS_PUSH_OUTPUTS_REGISTRY_PATHS: ${{ steps.push.outputs.registry-paths }}
           STEPS_REGISTRY_CASE_OUTPUTS_LOWERCASE: ${{ steps.registry_case.outputs.lowercase }}
           STEPS_PUSH_OUTPUTS_DIGEST: ${{ steps.push.outputs.digest }}
-          
-      - name: Create changelog annotation
-        id: changelog
-        continue-on-error: true
+
+  generate_release:
+    name: Generate Release
+    needs: build_push
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+        with:
+          fetch-depth: 500  # Deep history for commit range in changelog
+
+      - name: Install skopeo
         run: |
-          CHANGELOG=$(.github/workflows/changelog.py distinctionos -)
-          echo "$CHANGELOG" >> $GITHUB_STEP_SUMMARY
+          sudo apt-get update -q
+          sudo apt-get install -y -q skopeo
+
+      - name: Generate changelog
+        id: changelog
+        env:
+          IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+          IMAGE_NAME: ${{ github.event.repository.name }}
+          HANDWRITTEN: ${{ github.event.inputs.handwritten || '' }}
+        run: |
+          REGISTRY="${IMAGE_REGISTRY,,}"
+          IMAGE="${IMAGE_NAME,,}"
+          python3 .github/workflows/changelog.py \
+            "${IMAGE}" \
+            ./output.env \
+            ./changelog.md \
+            --registry "docker://${REGISTRY}/" \
+            --workdir . \
+            --handwritten "${HANDWRITTEN}"
+
+          # Source the env file for tag and title
+          source ./output.env
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "title=${TITLE}" >> $GITHUB_OUTPUT
+
+          # Show in job summary
+          echo "## Release: ${TITLE}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cat ./changelog.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Create Release
+        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2
+        with:
+          name: ${{ steps.changelog.outputs.title }}
+          tag_name: ${{ steps.changelog.outputs.tag }}
+          body_path: ./changelog.md
+          make_latest: true
