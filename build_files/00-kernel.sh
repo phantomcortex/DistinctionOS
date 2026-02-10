@@ -9,7 +9,7 @@ set -euo pipefail
 source /ctx/95-utility-functions.sh
 
 for pkg in kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra kernel-devel-matched kernel-modules-akmods; do 
-  rpm -erase $pkg --nodeps
+  rpm --erase $pkg --nodeps
 done 
 
 pushd /usr/lib/kernel/install.d 
