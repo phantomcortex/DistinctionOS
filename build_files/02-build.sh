@@ -171,7 +171,6 @@ readonly -a REMOVE_PACKAGES=(
   "sunshine"                                # Not needed
   "gnome-shell-extension-compiz-windows-effect"  # Not needed
   "openssh-askpass"                         # Not needed
-  "zfs-fuse"                                # Conflicts with ZFS kernel module
 )
 
 removed_count=0

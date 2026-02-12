@@ -60,7 +60,7 @@ log_success "Initramfs permissions secured"
 # ============================================================================
 
 log_info "Next step:"
-echo "  7. remote-grabber.sh - GNOME extension management"
+echo "  2. build.sh - package installer"
 
 # ============================================================================
 # Future Improvements (TODO)
