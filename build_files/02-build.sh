@@ -542,7 +542,7 @@ done
 #
 log_info "wine-staging section"
 dnf config-manager addrepo --from-repofile=https://dl.winehq.org/wine-builds/fedora/43/winehq.repo
-if dnf -y --enablerepo winehq install wine-staging &>/dev/null: then
+if dnf -y --enablerepo winehq install wine-staging &>/dev/null; then
   log_success "installed wine-staging"
 else
   log_warning "failed to install wine-staging"
