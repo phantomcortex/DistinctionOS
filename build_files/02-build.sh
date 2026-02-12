@@ -285,7 +285,7 @@ declare -A RPM_PACKAGES=(
     libgda \
     libgda-sqlite"
 
-  ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
+  ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates,rpmfusion-free-updates-testing,rpmfusion-nonfree-updates-testing"]="\
     audacity-freeworld \
     libavcodec-freeworld \
     gstreamer1-plugins-bad-freeworld \
