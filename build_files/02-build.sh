@@ -327,23 +327,6 @@ for copr_repo in "${!COPR_PACKAGES[@]}"; do
   install_copr_resilient "$copr_repo" "${pkg_array[@]}"
 done
 
-# ============================================================================
-# Wine Version Locking
-# ============================================================================
-
-log_section "Applying Wine version lock"
-
-if rpm -q wine &>/dev/null; then
-  if dnf5 versionlock add wine &>/dev/null; then
-    log_success "Wine version locked"
-    log_info "Current version locks:"
-    dnf5 versionlock list || true
-  else
-    log_warning "Wine version lock failed (non-critical)"
-  fi
-else
-  log_warning "Wine not installed, cannot apply version lock"
-fi
 
 # ============================================================================
 # Special Package Installations
@@ -542,10 +525,14 @@ done
 #
 log_info "wine-staging section"
 dnf config-manager addrepo --from-repofile=https://dl.winehq.org/wine-builds/fedora/43/winehq.repo
-if dnf -y --enablerepo winehq install wine-staging &>/dev/null; then
+if dnf -y install wine-staging &>/dev/null; then
   log_success "installed wine-staging"
 else
-  log_warning "failed to install wine-staging"
+  log_warning "failed to install wine-staging. Now installing wine from fedora."
+  rm /etc/yum.repos.d/winehq.repo
+  if dnf -y install wine &>/dev/null; then
+    log_success "Fedora-wine installed"
+  fi
 fi 
 
 # ============================================================================
