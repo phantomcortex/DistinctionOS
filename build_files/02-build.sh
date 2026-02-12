@@ -273,7 +273,6 @@ declare -A RPM_PACKAGES=(
     flatpak-builder \
     gnome-tweaks \
     freerdp \
-    dkms \
     nss-mdns.i686 \
     pcsc-lite-libs.i686 \
     nmap-ncat \
@@ -283,7 +282,6 @@ declare -A RPM_PACKAGES=(
     perl-Image-ExifTool \
     libheif-tools \
     heif-pixbuf-loader \
-    wine \
     libgda \
     libgda-sqlite"
 
@@ -407,6 +405,7 @@ readonly -a CRITICAL_PACKAGES=(
   "wine"
   "blackbox-terminal"
   "totem-video-thumbnailer"
+  "Cider"
 )
 
 validation_failures=0
@@ -506,6 +505,48 @@ rm /tmp/Inter.zip && fc-cache -f
 
 curl -L "https://github.com/google/material-design-icons/raw/master/variablefont/MaterialSymbolsRounded%5BFILL%2CGRAD%2Copsz%2Cwght%5D.ttf" -o /usr/share/fonts/MaterialSymbolsRounded.ttf
 fc-cache -f
+
+# ============================================================================
+# versionlock
+# ============================================================================
+# while this isn't entirely neccessary, it's good peace of mind 
+
+readonly -a VERSIONLOCK_PACKAGES=(
+  "zsh"
+  "neovim"
+  "blackbox-terminal"
+  "Cider"
+  "eza"
+  "dysk"
+  "lact"
+  "file-roller"
+  "bat"
+  "dcraw"
+  "sassc"
+)
+log_info "versionlock section"
+versionlock_failures=0
+for pkg in "${VERSIONLOCK_PACKAGES[@]}"; do
+  if dnf versionlock add "$pkg" &>/dev/null; then
+    log_success "  ✓ $pkg"
+  else
+    log_warning "  ✗ $pkg (unable to add versionlock)"
+    ((versionlock_failures++))
+  fi
+done
+
+# ============================================================================
+# wine-staging
+# ============================================================================
+
+#
+log_info "wine-staging section"
+dnf config-manager addrepo --from-repofile=https://dl.winehq.org/wine-builds/fedora/43/winehq.repo
+if dnf -y --enablerepo winehq install wine-staging &>/dev/null: then
+  log_success "installed wine-staging"
+else
+  log_warning "failed to install wine-staging"
+fi 
 
 # ============================================================================
 # Cleanup
