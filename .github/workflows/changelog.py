@@ -32,18 +32,18 @@ SIG_PATTERN = re.compile(r"^sha256-.*\.sig$")
 GITHUB_REPO = "phantomcortex/distinctionos"
 
 # Major / pinned packages shown prominently at the top of every release.
-# Display Name -> RPM package name used as the lookup key in rechunk metadata.
-PINNED_PACKAGES: List[Tuple[str, str]] = [
-    ("Kernel",    "kernel"),
-    ("GNOME",     "gnome-control-center-filesystem"),
-    ("Mesa",      "mesa-filesystem"),
-    ("Gamescope", "gamescope"),
-    ("Ptyxis", "ptyxis"),
+# Display Name -> list of candidate RPM names, tried in order (first match wins).
+# This handles distros that rename packages (e.g. CachyOS: kernel-cachyos).
+PINNED_PACKAGES: List[Tuple[str, List[str]]] = [
+    ("Kernel",    ["kernel-cachyos", "kernel"]),
+    ("GNOME",     ["gnome-control-center-filesystem"]),
+    ("Mesa",      ["mesa-filesystem"]),
+    ("Gamescope", ["gamescope"]),
 ]
 
-# Package names that appear in the pinned table are excluded from the
-# full diff table to avoid duplication.
-PINNED_PKG_NAMES = {pkg for _, pkg in PINNED_PACKAGES}
+# All candidate RPM names across pinned packages — excluded from the full
+# diff table to avoid duplication.
+PINNED_PKG_NAMES = {pkg for _, candidates in PINNED_PACKAGES for pkg in candidates}
 
 
 # ---------------------------------------------------------------------------
@@ -70,23 +70,31 @@ def run_skopeo_inspect(registry: str, image: str, tag: str) -> Dict:
                 raise
 
 
-def get_all_tags(registry: str, image: str) -> List[str]:
-    """Retrieve all non-signature, non-digest tags sorted lexicographically."""
-    manifest = run_skopeo_inspect(registry, image, "latest")
+def get_all_tags(registry: str, image: str, prefix: str = "latest") -> List[str]:
+    """Retrieve dated tags that match *prefix* (e.g. ``latest.YYYYMMDD``).
+
+    Only tags starting with ``<prefix>.`` are considered so that ``testing``
+    and ``latest`` images are never mixed in the same diff.  Signature
+    manifests, bare digests, and ``.0`` suffixes are also excluded.
+    """
+    manifest = run_skopeo_inspect(registry, image, prefix)
     tags = manifest.get("RepoTags", []) or []
     filtered = [
         t for t in tags
-        if not t.endswith(".0")
+        if t.startswith(f"{prefix}.")
+        and not t.endswith(".0")
         and not SIG_PATTERN.match(t)
         and not t.startswith("sha256-")
     ]
     return sorted(filtered)
 
 
-def select_two_latest(tags: List[str]) -> Tuple[str, str]:
+def select_two_latest(tags: List[str], prefix: str = "latest") -> Tuple[str, str]:
     """Return (previous_tag, current_tag) from the sorted tag list."""
     if len(tags) < 2:
-        raise ValueError(f"Not enough tags to diff, found: {tags}")
+        raise ValueError(
+            f"Not enough '{prefix}.*' tags to diff, found: {tags}"
+        )
     return tags[-2], tags[-1]
 
 
@@ -128,9 +136,13 @@ def extract_fedora_version(info: Dict) -> str:
     return ""
 
 
-def get_version(packages: Dict[str, str], rpm_name: str) -> Optional[str]:
-    """Look up a single package version, returning None if absent."""
-    return packages.get(rpm_name)
+def get_version(packages: Dict[str, str], candidates: List[str]) -> Optional[str]:
+    """Look up a package version, trying each candidate name in order."""
+    for name in candidates:
+        ver = packages.get(name)
+        if ver is not None:
+            return ver
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -148,9 +160,9 @@ def build_pinned_table(
         "| Name | Version |",
         "| --- | --- |",
     ]
-    for display_name, rpm_name in PINNED_PACKAGES:
-        prev_ver = get_version(prev_pkgs, rpm_name)
-        curr_ver = get_version(curr_pkgs, rpm_name)
+    for display_name, candidates in PINNED_PACKAGES:
+        prev_ver = get_version(prev_pkgs, candidates)
+        curr_ver = get_version(curr_pkgs, candidates)
         if curr_ver is None:
             lines.append(f"| **{display_name}** | *not found* |")
         elif prev_ver and prev_ver != curr_ver:

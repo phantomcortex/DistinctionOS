@@ -519,23 +519,6 @@ for pkg in "${VERSIONLOCK_PACKAGES[@]}"; do
 done
 
 # ============================================================================
-# wine-staging
-# ============================================================================
-
-#
-log_info "wine-staging section"
-dnf config-manager addrepo --from-repofile=https://dl.winehq.org/wine-builds/fedora/43/winehq.repo
-if dnf -y install wine-staging &>/dev/null; then
-  log_success "installed wine-staging"
-else
-  log_warning "failed to install wine-staging. Now installing wine from fedora."
-  rm /etc/yum.repos.d/winehq.repo
-  if dnf -y install wine &>/dev/null; then
-    log_success "Fedora-wine installed"
-  fi
-fi 
-
-# ============================================================================
 # Cleanup
 # ============================================================================
 
