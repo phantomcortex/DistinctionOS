@@ -36,9 +36,13 @@ GITHUB_REPO = "phantomcortex/distinctionos"
 # This handles distros that rename packages (e.g. CachyOS: kernel-cachyos).
 PINNED_PACKAGES: List[Tuple[str, List[str]]] = [
     ("Kernel",    ["kernel-cachyos", "kernel"]),
+    ("Firmware",  ["atheros-firmware"]),
     ("GNOME",     ["gnome-control-center-filesystem"]),
+    ("Ptyxis",    ["ptyxis"]),
     ("Mesa",      ["mesa-filesystem"]),
     ("Gamescope", ["gamescope"]),
+    ("Cider",     ["Cider"]),
+    ("Lact",      ["lact"]),
 ]
 
 # All candidate RPM names across pinned packages — excluded from the full
