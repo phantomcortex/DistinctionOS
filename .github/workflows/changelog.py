@@ -38,6 +38,7 @@ PINNED_PACKAGES: List[Tuple[str, List[str]]] = [
     ("Kernel",    ["kernel-cachyos", "kernel-cachyos-lto", "kernel"]),
     ("Firmware",  ["atheros-firmware"]),
     ("GNOME",     ["gnome-control-center-filesystem"]),
+    ("Bazaar",    ["bazaar"]),
     ("Ptyxis",    ["ptyxis"]),
     ("Mesa",      ["mesa-filesystem"]),
     ("Gamescope", ["gamescope"]),
