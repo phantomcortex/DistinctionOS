@@ -428,6 +428,8 @@ fi
 # Hyprland Installation
 # ============================================================================
 
+dnf5 -y install obs-studio obs-studio-plugin-vkcapture obs-studio-plugin-webkitgtk obs-studio-plugin-x264 --skip-broken
+
 <<'END_COMMENT'
 #Hyprland may be temporary
 log_header "Hyprland"
