@@ -283,14 +283,19 @@ declare -A RPM_PACKAGES=(
     libheif-tools \
     heif-pixbuf-loader \
     libgda \
-    libgda-sqlite"
+    libgda-sqlite \
+    obs-studio \
+    obs-studio-vaapi \
+    obs-studio-webkitgtk"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates,rpmfusion-free-updates-testing,rpmfusion-nonfree-updates-testing"]="\
     audacity-freeworld \
     libavcodec-freeworld \
     gstreamer1-plugins-bad-freeworld \
     gstreamer1-plugins-ugly \
-    libheif-freeworld"
+    libheif-freeworld \
+    mesa-va-drivers-freeworld \
+    mesa-vdpau-drivers-freeworld"
 
   # Fedora Multimedia (optimized multimedia packages)
   ["fedora-multimedia"]="mpv"
@@ -428,7 +433,6 @@ fi
 # Hyprland Installation
 # ============================================================================
 
-dnf5 -y install obs-studio obs-studio-plugin-vkcapture obs-studio-plugin-webkitgtk --skip-unavailable
 
 <<'END_COMMENT'
 #Hyprland may be temporary
