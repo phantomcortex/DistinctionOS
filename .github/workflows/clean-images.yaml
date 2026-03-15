@@ -8,6 +8,19 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
 
 jobs:
+  delete-old-releases:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Delete Old Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release list --repo ${{ github.repository }} --limit 100 --json tagName,createdAt \
+            | jq -r 'sort_by(.createdAt) | reverse | .[7:] | .[] | select(.createdAt < (now - 14*86400 | todate)) | .tagName' \
+            | xargs -r -I {} gh release delete {} --repo ${{ github.repository }} --yes --cleanup-tag
+
   delete-older-than-14:
     runs-on: ubuntu-latest
     permissions:
