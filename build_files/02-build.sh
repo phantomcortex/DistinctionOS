@@ -283,19 +283,14 @@ declare -A RPM_PACKAGES=(
     libheif-tools \
     heif-pixbuf-loader \
     libgda \
-    libgda-sqlite \
-    obs-studio \
-    obs-studio-vaapi \
-    obs-studio-webkitgtk"
+    libgda-sqlite"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates,rpmfusion-free-updates-testing,rpmfusion-nonfree-updates-testing"]="\
     audacity-freeworld \
     libavcodec-freeworld \
     gstreamer1-plugins-bad-freeworld \
     gstreamer1-plugins-ugly \
-    libheif-freeworld \
-    mesa-va-drivers-freeworld \
-    mesa-vdpau-drivers-freeworld"
+    libheif-freeworld"
 
   # Fedora Multimedia (optimized multimedia packages)
   ["fedora-multimedia"]="mpv"
@@ -429,71 +424,10 @@ if ! rpm -q wine &>/dev/null; then
   fi
 fi
 
-# ============================================================================
-# Hyprland Installation
-# ============================================================================
-
-
-<<'END_COMMENT'
-#Hyprland may be temporary
-log_header "Hyprland"
-
-if dnf5 -y install --allowerasing --skip-broken \
-    rust \
-    cargo \
-    gcc-c++ \
-    libX11-devel \
-    libXcursor-devel \
-    libXrandr-devel \
-    libXi-devel \
-    mesa-libGL-devel \
-    fontconfig-devel \
-    freetype-devel \
-    expat-devel \
-    polkit \
-    cairo-gobject-devel \
-    rust-gdk4-sys+default-devel \
-    gtk4-layer-shell-devel \
-    qt5-qtgraphicaleffects \
-    qt6-qt5compat \
-    python3-pyqt6 \
-    python3.11 \
-    python3.11-libs \
-    libcurl \
-    libcurl-devel \
-    golang \
-    hyprland \
-    hyprpicker \
-    swww \
-    xdg-desktop-portal-hyprland \
-    xdg-desktop-portal-wlr \
-    cliphist \
-    easyeffects \
-    pavucontrol \
-    tesseract \
-    wlogout \
-    qt6ct \
-    nwg-bar \
-    nwg-dock \
-    nwg-dock-hyprland \
-    nwg-drawer \
-    nwg-launchers \
-    nwg-panel \
-    nwg-wrapper \
-    quickshell-git \
-    pavucontrol; then
-      log_success "Hyprland Installed!"
-    else
-      log_warning "Something may have gone wrong"
-    fi
-END_COMMENT
 curl -L "https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip" -o /tmp/Inter.zip
 mkdir -p /usr/share/fonts/Inter/
 unzip -j /tmp/Inter.zip "InterVariable.ttf" "InterVariable-Italic.ttf" -d /usr/share/fonts/Inter/
 rm /tmp/Inter.zip && fc-cache -f
-
-curl -L "https://github.com/google/material-design-icons/raw/master/variablefont/MaterialSymbolsRounded%5BFILL%2CGRAD%2Copsz%2Cwght%5D.ttf" -o /usr/share/fonts/MaterialSymbolsRounded.ttf
-fc-cache -f
 
 # ============================================================================
 # versionlock
