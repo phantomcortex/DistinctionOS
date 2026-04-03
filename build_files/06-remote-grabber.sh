@@ -35,7 +35,7 @@ declare -A EXTENSIONS_ZIP=(
 readonly SCHEMA_EXTENSIONS=("pip-on-top@rafostar.github.com" "burn-my-windows@schneegans.github.com")
 
 # Extensions to be removed (if present)
-readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca" "blur-my-shell@aunetx")
+readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca" )
 
 # =============================================================================
 # Installation Functions
@@ -211,81 +211,7 @@ remove_git_directories() {
     return 0
 }
 
-custom_blur-my-shell() {
-  ###########################################
-  # System-level installer for blur-my-shell (upstream Makefile only targets ~/.local)
-  local NAME="blur-my-shell"
-  local UUID="$NAME@phantomcortex"
-  local REPO_DIR="$TMP_DIR/$NAME"
-  local BUILD_DIR="$REPO_DIR/build"
-  local TARGET_DIR="$EXTENSIONS_DIR/$UUID"
-  local ZIP_FILE="$BUILD_DIR/$UUID.shell-extension.zip"
 
-  log_info "Installing custom extension: $UUID"
-
-  # Clone
-  if [[ -d "$REPO_DIR" ]]; then
-    rm -rf "$REPO_DIR"
-  fi
-  if ! git clone --quiet --depth 1 "https://github.com/phantomcortex/$NAME.git" "$REPO_DIR"; then
-    log_error "Failed to clone $NAME"
-    return 1
-  fi
-
-  # Build via gnome-extensions pack
-  # --extra-source paths resolve relative to cwd, so we use absolute paths
-  # to avoid fragile cd-based directory navigation
-  mkdir -p "$BUILD_DIR"
-  if ! gnome-extensions pack -f \
-    --extra-source="$REPO_DIR/metadata.json" \
-    --extra-source="$REPO_DIR/LICENSE" \
-    --extra-source="$REPO_DIR/resources/icons" \
-    --extra-source="$REPO_DIR/resources/ui" \
-    --extra-source="$REPO_DIR/src/components" \
-    --extra-source="$REPO_DIR/src/conveniences" \
-    --extra-source="$REPO_DIR/src/effects" \
-    --extra-source="$REPO_DIR/src/preferences" \
-    --extra-source="$REPO_DIR/src/dbus" \
-    --podir="$REPO_DIR/po" \
-    --schema="$REPO_DIR/schemas/org.gnome.shell.extensions.$NAME.gschema.xml" \
-    -o "$BUILD_DIR" \
-    "$REPO_DIR/src"; then
-    log_error "gnome-extensions pack failed for $NAME"
-    return 1
-  fi
-
-  # Verify zip was produced
-  if [[ ! -f "$ZIP_FILE" ]]; then
-    log_error "Expected zip not found at $ZIP_FILE"
-    log_error "Build directory contents: $(ls -1 "$BUILD_DIR" 2>/dev/null || echo '(empty)')"
-    return 1
-  fi
-
-  # Extract to system extensions directory
-  rm -rf "$TARGET_DIR"
-  mkdir -p "$TARGET_DIR"
-  if ! unzip -o "$ZIP_FILE" -d "$TARGET_DIR"; then
-    log_error "Failed to unzip $ZIP_FILE to $TARGET_DIR"
-    return 1
-  fi
-
-  # Compile schemas
-  if [[ -d "$TARGET_DIR/schemas" ]]; then
-    if [[ "$(glib-compile-schemas "$TARGET_DIR/schemas/")" == "No schema files found: doing nothing." ]]; then
-      log_warning "GCS failed. \nFind schema and compile"
-      find $TARGET_DIR -iname '*.xml' -exec glib-comile-schemas {} /;
-    else
-      log_success "GCS passed."
-    fi
-  else
-    echo "Output does not match."
-  fi
-  glib-compile-schemas "$TARGET_DIR/schemas/"
-  glib-compile-schemas "$TARGET_DIR/" 2>>"$LOG_FILE" || true
-
-  log_success "Successfully installed $UUID"
-  ###########################################
-}
 
 custom_dash-to-dock() {
   ###########################################
@@ -343,7 +269,6 @@ main() {
     install_all_extensions || had_errors=1
 
     # Custom-built extensions (always attempted regardless of standard extension failures)
-    custom_blur-my-shell || had_errors=1
     custom_dash-to-dock  || had_errors=1
 
     # Cleanup .git metadata from all cloned extensions
