@@ -250,10 +250,8 @@ declare -A RPM_PACKAGES=(
     zsh-autosuggestions \
     neovim \
     file-roller \
-    bat \
     evince \
     loupe \
-    zoxide \
     sassc \
     blackbox-terminal \
     gstreamer1-plugins-good-extras \
@@ -268,8 +266,6 @@ declare -A RPM_PACKAGES=(
     totem-video-thumbnailer \
     mediainfo \
     pandoc \
-    docker \
-    docker-compose \
     flatpak-builder \
     gnome-tweaks \
     freerdp \
@@ -296,7 +292,7 @@ declare -A RPM_PACKAGES=(
   ["fedora-multimedia"]="mpv"
 
   # Third-party repositories
-  ["brave-browser"]="brave-browser"
+  #["brave-browser"]="brave-browser"
   ["cidercollective"]="Cider"
 )
 
@@ -383,10 +379,6 @@ log_section "Validating critical packages"
 
 readonly -a CRITICAL_PACKAGES=(
   "zsh"
-  "neovim"
-  "brave-browser"
-  "wine"
-  "blackbox-terminal"
   "totem-video-thumbnailer"
   "Cider"
 )
@@ -436,14 +428,9 @@ rm /tmp/Inter.zip && fc-cache -f
 
 readonly -a VERSIONLOCK_PACKAGES=(
   "zsh"
-  "neovim"
-  "blackbox-terminal"
   "Cider"
-  "eza"
-  "dysk"
   "lact"
   "file-roller"
-  "bat"
   "dcraw"
   "sassc"
 )
