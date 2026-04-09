@@ -340,9 +340,8 @@ install_single_package_resilient \
   "http://crossover.codeweavers.com/redirect/crossover.rpm" \
   "crossover"
 
-install_single_package_resilient \ 
-  "https://raw.githubusercontent.com/phantomcortex/DistinctionOS/main/repo_files/rpm/gnome-rounded-blur-1.0.0-1-x86_64.rpm" \
-  "gnome-rounded-blur"
+if dny -y install "https://raw.githubusercontent.com/phantomcortex/DistinctionOS/main/repo_files/rpm/gnome-rounded-blur-1.0.0-1-x86_64.rpm"; then
+    log_success "gnome-rounded-blur installed successfully"
 # ──────────────────────────────────────────────────────────────────────────
 # Kora Icon Theme (Custom Build)
 # ──────────────────────────────────────────────────────────────────────────
