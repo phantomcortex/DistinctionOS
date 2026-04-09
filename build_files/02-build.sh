@@ -333,13 +333,16 @@ log_section "Installing special packages"
 # CrossOver (Commercial Wine Implementation)
 # ──────────────────────────────────────────────────────────────────────────
 
+# `install_single_package_resilient` function requires a source and a package_name \
+# failure to provide package_name results a unbound variable error 
 log_info "Installing CrossOver from CodeWeavers"
 install_single_package_resilient \
   "http://crossover.codeweavers.com/redirect/crossover.rpm" \
   "crossover"
 
 install_single_package_resilient \ 
-  "https://raw.githubusercontent.com/phantomcortex/DistinctionOS/main/repo_files/rpm/gnome-rounded-blur-1.0.0-1-x86_64.rpm"
+  "https://raw.githubusercontent.com/phantomcortex/DistinctionOS/main/repo_files/rpm/gnome-rounded-blur-1.0.0-1-x86_64.rpm" \
+  "gnome-rounded-blur"
 # ──────────────────────────────────────────────────────────────────────────
 # Kora Icon Theme (Custom Build)
 # ──────────────────────────────────────────────────────────────────────────
