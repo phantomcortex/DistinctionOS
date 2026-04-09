@@ -342,6 +342,7 @@ install_single_package_resilient \
 
 if dny -y install "https://raw.githubusercontent.com/phantomcortex/DistinctionOS/main/repo_files/rpm/gnome-rounded-blur-1.0.0-1-x86_64.rpm"; then
     log_success "gnome-rounded-blur installed successfully"
+fi
 # ──────────────────────────────────────────────────────────────────────────
 # Kora Icon Theme (Custom Build)
 # ──────────────────────────────────────────────────────────────────────────
