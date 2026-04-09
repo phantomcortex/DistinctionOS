@@ -315,7 +315,6 @@ declare -A COPR_PACKAGES=(
   ["atim/heroic-games-launcher"]="heroic-games-launcher-bin"  # Epic/GOG launcher
   ["sergiomb/clonezilla"]="clonezilla"                     # Disk cloning utility
   ["alternateved/eza"]="eza"                               # Modern ls replacement
-  ["monkeygold/nautilus-open-any-terminal"]="nautilus-open-any-terminal"
 )
 
 for copr_repo in "${!COPR_PACKAGES[@]}"; do
@@ -339,6 +338,8 @@ install_single_package_resilient \
   "http://crossover.codeweavers.com/redirect/crossover.rpm" \
   "crossover"
 
+install_single_package_resilient \ 
+  "https://raw.githubusercontent.com/phantomcortex/DistinctionOS/main/repo_files/rpm/gnome-rounded-blur-1.0.0-1-x86_64.rpm"
 # ──────────────────────────────────────────────────────────────────────────
 # Kora Icon Theme (Custom Build)
 # ──────────────────────────────────────────────────────────────────────────
