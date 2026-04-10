@@ -215,7 +215,7 @@ custom_blur-my-shell() {
   ###########################################
   # System-level installer for blur-my-shell (upstream Makefile only targets ~/.local)
   local NAME="blur-my-shell"
-  local UUID="$NAME@phantomcortex"
+  local UUID="$NAME@aunetx"
   local REPO_DIR="$TMP_DIR/$NAME"
   local BUILD_DIR="$REPO_DIR/build"
   local TARGET_DIR="$EXTENSIONS_DIR/$UUID"
