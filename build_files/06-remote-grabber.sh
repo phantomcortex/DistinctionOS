@@ -35,7 +35,7 @@ declare -A EXTENSIONS_ZIP=(
 readonly SCHEMA_EXTENSIONS=("pip-on-top@rafostar.github.com" "burn-my-windows@schneegans.github.com")
 
 # Extensions to be removed (if present)
-readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca" "blur-my-shell@aunetx")
+readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca")
 
 # =============================================================================
 # Installation Functions
@@ -343,7 +343,7 @@ main() {
     install_all_extensions || had_errors=1
 
     # Custom-built extensions (always attempted regardless of standard extension failures)
-    custom_blur-my-shell || had_errors=1
+    # custom_blur-my-shell || had_errors=1
     custom_dash-to-dock  || had_errors=1
 
     # Cleanup .git metadata from all cloned extensions

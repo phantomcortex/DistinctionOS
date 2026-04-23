@@ -253,7 +253,6 @@ declare -A RPM_PACKAGES=(
     evince \
     loupe \
     sassc \
-    blackbox-terminal \
     gstreamer1-plugins-good-extras \
     decibels \
     dconf \
@@ -279,7 +278,41 @@ declare -A RPM_PACKAGES=(
     libheif-tools \
     heif-pixbuf-loader \
     libgda \
-    libgda-sqlite"
+    libgda-sqlite \
+    libjxl-utils \
+    foremost \
+    dar \
+    filelight \
+    clamav \
+    diffpdf \
+    ghex \
+    id3v2 \
+    kdiff3 \
+    lhasa \
+    lzma \
+    meld \
+    okteta \
+    pandoc-cli \
+    testdisk \
+    qpdf \
+    rdfind \
+    rhash \
+    unar \
+    xorriso \
+    zpaq \
+    latexmk \
+    ocrmypdf \
+    texlive-pdfjam \
+    python3-scour \
+    tesseract \
+    tesseract-langpack-eng \
+    texlive-base \
+    texlive-collection-fontsextra \
+    texlive-collection-latexextra \
+    texlive-collection-publishers \
+    texlive-collection-mathscience \
+    texlive-collection-xetex \
+    baobab"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates,rpmfusion-free-updates-testing,rpmfusion-nonfree-updates-testing"]="\
     audacity-freeworld \
@@ -315,7 +348,7 @@ declare -A COPR_PACKAGES=(
   ["atim/heroic-games-launcher"]="heroic-games-launcher-bin"  # Epic/GOG launcher
   ["sergiomb/clonezilla"]="clonezilla"                     # Disk cloning utility
   ["alternateved/eza"]="eza"                               # Modern ls replacement
-  ["monkeygold/nautilus-open-any-terminal"]="nautilus-open-any-terminal"
+  #["monkeygold/nautilus-open-any-terminal"]="nautilus-open-any-terminal"
 )
 
 for copr_repo in "${!COPR_PACKAGES[@]}"; do
