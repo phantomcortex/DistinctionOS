@@ -306,12 +306,6 @@ declare -A RPM_PACKAGES=(
     python3-scour \
     tesseract \
     tesseract-langpack-eng \
-    texlive-base \
-    texlive-collection-fontsextra \
-    texlive-collection-latexextra \
-    texlive-collection-publishers \
-    texlive-collection-mathscience \
-    texlive-collection-xetex \
     baobab"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates,rpmfusion-free-updates-testing,rpmfusion-nonfree-updates-testing"]="\
