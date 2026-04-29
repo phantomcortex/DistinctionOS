@@ -8,7 +8,7 @@ set -euo pipefail
 # Source utility functions
 source /ctx/95-utility-functions.sh
 
-for pkg in kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra kernel-devel-matched kernel-modules-akmods; do 
+for pkg in kernel kernel-core kernel-modules kernel-devel-matched; do 
   rpm --erase $pkg --nodeps
 done 
 
