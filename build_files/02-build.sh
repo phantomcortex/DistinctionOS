@@ -281,7 +281,6 @@ declare -A RPM_PACKAGES=(
     libgda-sqlite \
     libjxl-utils \
     foremost \
-    dar \
     filelight \
     clamav \
     diffpdf \
@@ -299,13 +298,6 @@ declare -A RPM_PACKAGES=(
     rhash \
     unar \
     xorriso \
-    zpaq \
-    latexmk \
-    ocrmypdf \
-    texlive-pdfjam \
-    python3-scour \
-    tesseract \
-    tesseract-langpack-eng \
     baobab"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates,rpmfusion-free-updates-testing,rpmfusion-nonfree-updates-testing"]="\
@@ -319,7 +311,7 @@ declare -A RPM_PACKAGES=(
   ["fedora-multimedia"]="mpv"
 
   # Third-party repositories
-  #["brave-browser"]="brave-browser"
+  ["brave-browser"]="brave-browser"
   ["cidercollective"]="Cider"
 )
 
