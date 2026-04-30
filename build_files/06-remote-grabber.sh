@@ -23,19 +23,22 @@ declare -A EXTENSIONS_GIT=(
     ["pip-on-top@rafostar.github.com"]="https://github.com/Rafostar/gnome-shell-extension-pip-on-top.git"
     ["clipboard-indicator@tudmotu.com"]="https://github.com/Tudmotu/gnome-shell-extension-clipboard-indicator.git"
     ["date-menu-formatter@marcinjakubowski.github.com"]="https://github.com/marcinjakubowski/date-menu-formatter.git"
-    ["quick-settings-avatar@d-go"]="https://github.com/d-go/quick-settings-avatar.git")
+    ["quick-settings-avatar@d-go"]="https://github.com/d-go/quick-settings-avatar.git"
+    ["azwallpaper@azwallpaper.gitlab.com"]="https://gitlab.com/AndrewZaech/azwallpaper.git"
+    )
 
 declare -A EXTENSIONS_ZIP=(
     ["burn-my-windows@schneegans.github.com"]="https://github.com/Schneegans/Burn-My-Windows/releases/download/v47/burn-my-windows@schneegans.github.com.zip"
     ["gnome-ui-tune@itstime.tech"]="https://github.com/axxapy/gnome-ui-tune/releases/download/v1.11.0/gnome-ui-tune@itstime.tech.shell-extension.zip"
     ["tophat@fflewddur.github.io"]="https://github.com/fflewddur/tophat/releases/download/v23/tophat@fflewddur.github.io.v23.shell-extension.zip"
+    ["copyous@boerdereinar.dev"]="https://github.com/boerdereinar/copyous/releases/download/v2.0.1/copyous@boerdereinar.dev.zip"
 )
 
 # Extensions requiring schema compilation
 readonly SCHEMA_EXTENSIONS=("pip-on-top@rafostar.github.com" "burn-my-windows@schneegans.github.com")
 
 # Extensions to be removed (if present)
-readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca")
+readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca" )
 
 # =============================================================================
 # Installation Functions
@@ -177,6 +180,65 @@ install_all_extensions() {
         log_success "All extensions installed successfully!"
         return 0
     fi
+}
+
+patch_extension_compatibility() {
+    local shell_version
+    shell_version=$(rpm -q --queryformat '%{VERSION}' gnome-shell 2>/dev/null | grep -oP '^\d+')
+
+    if [[ -z "$shell_version" ]]; then
+        log_warning "Could not determine GNOME Shell version — skipping compatibility patching"
+        return 0
+    fi
+
+    log_info "Patching extensions for GNOME Shell $shell_version (and next 2 releases)..."
+
+    local patched=0
+    local already_ok=0
+    local versions_to_add=("$shell_version" "$((shell_version + 1))" "$((shell_version + 2))")
+
+    for metadata_file in "$EXTENSIONS_DIR"/*/metadata.json; do
+        [[ -f "$metadata_file" ]] || continue
+        local ext_id
+        ext_id=$(basename "$(dirname "$metadata_file")")
+
+        python3 - "$metadata_file" "${versions_to_add[@]}" <<'PYEOF'
+import sys, json
+
+path = sys.argv[1]
+to_add = sys.argv[2:]
+
+with open(path) as f:
+    meta = json.load(f)
+
+current = set(meta.get('shell-version', []))
+missing = [v for v in to_add if v not in current]
+
+if not missing:
+    sys.exit(2)  # already compatible, nothing to do
+
+meta['shell-version'] = sorted(
+    current | set(to_add),
+    key=lambda v: [int(x) for x in v.split('.')]
+)
+
+with open(path, 'w') as f:
+    json.dump(meta, f, indent=4)
+
+sys.exit(0)
+PYEOF
+        local rc=$?
+        if [[ $rc -eq 0 ]]; then
+            log_success "Patched shell-version for: $ext_id"
+            patched=$((patched + 1))
+        elif [[ $rc -eq 2 ]]; then
+            already_ok=$((already_ok + 1))
+        else
+            log_warning "Failed to patch metadata for: $ext_id"
+        fi
+    done
+
+    log_success "Compatibility patching done: $patched patched, $already_ok already supported"
 }
 
 cleanup_temporary_files() {
@@ -331,6 +393,7 @@ custom_dash-to-dock() {
   ###########################################
 }
 
+
 main() {
     trap cleanup_temporary_files EXIT
 
@@ -343,11 +406,15 @@ main() {
     install_all_extensions || had_errors=1
 
     # Custom-built extensions (always attempted regardless of standard extension failures)
-    # custom_blur-my-shell || had_errors=1
+    #custom_blur-my-shell || had_errors=1
     custom_dash-to-dock  || had_errors=1
-
+	
     # Cleanup .git metadata from all cloned extensions
     remove_git_directories
+
+    # Patch metadata.json in every extension to declare compatibility with the
+    # installed GNOME Shell version and the next two releases
+    patch_extension_compatibility
 
     if [[ $had_errors -ne 0 ]]; then
         log_error "One or more extensions failed to install — review log above"
@@ -363,4 +430,3 @@ if [[ -f /usr/bin/dnf ]]; then
   rm /usr/bin/dnf
 fi
 main "$@"
-# << nothing executes beyond this point >>
