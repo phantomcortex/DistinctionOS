@@ -129,6 +129,194 @@ install_copr_resilient() {
 }
 
 # ============================================================================
+# RPM Fusion Fedora 43 Fallback Installation
+# ============================================================================
+# Temporarily adds F43 rpmfusion repos to install packages missing from F44
+
+install_rpmfusion_f43_fallback() {
+  local -a packages=("$@")
+  [[ ${#packages[@]} -eq 0 ]] && return 0
+
+  log_section "RPM Fusion F43 fallback for ${#packages[@]} package(s)"
+
+  local tmp_free_repo="/etc/yum.repos.d/rpmfusion-free-f43-fallback.repo"
+  local tmp_nonfree_repo="/etc/yum.repos.d/rpmfusion-nonfree-f43-fallback.repo"
+
+  tee "$tmp_free_repo" > /dev/null << 'EOF'
+[rpmfusion-free-f43-fallback]
+name=RPM Fusion for Fedora 43 - Free (F44 Fallback)
+baseurl=https://mirrors.rpmfusion.org/free/fedora/43/$basearch/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-2020
+skip_if_unavailable=1
+EOF
+
+  tee "$tmp_nonfree_repo" > /dev/null << 'EOF'
+[rpmfusion-nonfree-f43-fallback]
+name=RPM Fusion for Fedora 43 - NonFree (F44 Fallback)
+baseurl=https://mirrors.rpmfusion.org/nonfree/fedora/43/$basearch/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-2020
+skip_if_unavailable=1
+EOF
+
+  dnf5 makecache &>/dev/null || true
+
+  local success_count=0
+  local fail_count=0
+  local -a still_failed=()
+
+  for pkg in "${packages[@]}"; do
+    if dnf5 -y install \
+        --enablerepo=rpmfusion-free-f43-fallback,rpmfusion-nonfree-f43-fallback \
+        "$pkg" &>/dev/null; then
+      log_success "  ✓ $pkg (via F43 fallback)"
+      SUCCEEDED_PACKAGES+=("$pkg")
+      ((success_count++))
+    else
+      log_warning "  ✗ $pkg (F43 fallback also failed)"
+      still_failed+=("$pkg")
+      ((fail_count++))
+    fi
+  done
+
+  # Rebuild FAILED_PACKAGES removing entries that succeeded via fallback
+  local -a updated_failed=()
+  for failed_pkg in "${FAILED_PACKAGES[@]}"; do
+    local still_in_failed=false
+    for sf in "${still_failed[@]}"; do
+      [[ "$failed_pkg" == "$sf" ]] && still_in_failed=true && break
+    done
+    # Keep if not one of the packages we just retried, or if it's still failing
+    local was_retried=false
+    for retried in "${packages[@]}"; do
+      [[ "$failed_pkg" == "$retried" ]] && was_retried=true && break
+    done
+    if ! $was_retried || $still_in_failed; then
+      updated_failed+=("$failed_pkg")
+    fi
+  done
+  FAILED_PACKAGES=("${updated_failed[@]}")
+
+  rm -f "$tmp_free_repo" "$tmp_nonfree_repo"
+  dnf5 makecache &>/dev/null || true
+
+  log_info "F43 fallback: $success_count succeeded, $fail_count failed"
+}
+
+# ============================================================================
+# RPM Fusion GPG Key Bootstrap
+# ============================================================================
+# Verifies version-specific RPMFusion GPG keys are present; if not, installs
+# the rpmfusion-*-release packages which drop them into /etc/pki/rpm-gpg/.
+
+ensure_rpmfusion_keys() {
+  local fedora_ver
+  fedora_ver=$(rpm -E %fedora)
+
+  local free_key="/etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-${fedora_ver}"
+  local nonfree_key="/etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-${fedora_ver}"
+
+  if [[ -f "$free_key" && -f "$nonfree_key" ]]; then
+    log_success "RPMFusion GPG keys present for Fedora $fedora_ver"
+    return 0
+  fi
+
+  log_warning "RPMFusion GPG keys missing for Fedora $fedora_ver — fetching release packages"
+
+  local free_url="https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${fedora_ver}.noarch.rpm"
+  local nonfree_url="https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${fedora_ver}.noarch.rpm"
+
+  if dnf5 -y install "$free_url" "$nonfree_url" &>/dev/null; then
+    log_success "RPMFusion release packages installed"
+  else
+    log_error "Failed to install RPMFusion release packages — subsequent RPMFusion installs may fail"
+    return 1
+  fi
+
+  # Verify keys landed
+  if [[ -f "$free_key" && -f "$nonfree_key" ]]; then
+    log_success "RPMFusion GPG keys verified for Fedora $fedora_ver"
+  else
+    log_warning "Keys still absent after install — GPG verification may fail"
+  fi
+}
+
+# ============================================================================
+# Freeworld RPM Force-Install
+# ============================================================================
+# Downloads freeworld RPMs from RPMFusion and installs via rpm to sidestep
+# dnf dependency/conflict checks against Bazzite's terra-repo packages.
+#
+#   mesa-vulkan-drivers-freeworld  --force --nodeps  (overrides terra mesa)
+#   mesa-va-drivers-freeworld      --nodeps
+#   libheif-freeworld              --nodeps           (F43 repo: not yet in F44)
+
+install_freeworld_rpms() {
+  log_section "Installing freeworld RPMs via rpm"
+
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+
+  # Shared helper: download one package from the given repo(s) and install it.
+  # Usage: _freeworld_pkg <package> <enablerepo> <rpm-flag...>
+  _freeworld_pkg() {
+    local pkg="$1" repos="$2"; shift 2
+    local rpm_flags=("$@")
+
+    if dnf download --destdir="$tmp_dir" --enablerepo="$repos" "$pkg" &>/dev/null; then
+      local rpm_file
+      rpm_file=$(find "$tmp_dir" -name "${pkg}*.rpm" | sort -V | tail -1)
+      if [[ -n "$rpm_file" ]]; then
+        if rpm "${rpm_flags[@]}" -i "$rpm_file"; then
+          log_success "$pkg installed"
+          SUCCEEDED_PACKAGES+=("$pkg")
+        else
+          log_error "rpm install failed for $pkg"
+          FAILED_PACKAGES+=("$pkg")
+        fi
+        rm -f "$rpm_file"
+      else
+        log_error "Downloaded RPM not found for $pkg"
+        FAILED_PACKAGES+=("$pkg")
+      fi
+    else
+      log_warning "Failed to download $pkg"
+      FAILED_PACKAGES+=("$pkg")
+    fi
+  }
+
+  # ── mesa-vulkan-drivers-freeworld: --force needed to override terra mesa ──
+  _freeworld_pkg "mesa-vulkan-drivers-freeworld" \
+    "rpmfusion-free,rpmfusion-free-updates" \
+    --force --nodeps
+
+  # ── mesa-va-drivers-freeworld: same repos, no --force needed ──
+  _freeworld_pkg "mesa-va-drivers-freeworld" \
+    "rpmfusion-free,rpmfusion-free-updates" \
+    --nodeps
+
+  # ── libheif-freeworld: not yet in F44 — pull from F43 repo temporarily ──
+  local f43_repo="/etc/yum.repos.d/rpmfusion-free-f43-freeworld-tmp.repo"
+  tee "$f43_repo" > /dev/null << 'EOF'
+[rpmfusion-free-f43-freeworld-tmp]
+name=RPM Fusion for Fedora 43 - Free (libheif-freeworld fallback)
+baseurl=https://mirrors.rpmfusion.org/free/fedora/43/$basearch/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-2020
+skip_if_unavailable=1
+EOF
+  dnf5 makecache --repo=rpmfusion-free-f43-freeworld-tmp &>/dev/null || true
+  _freeworld_pkg "libheif-freeworld" "rpmfusion-free-f43-freeworld-tmp" --nodeps
+  rm -f "$f43_repo"
+
+  rm -rf "$tmp_dir"
+}
+
+# ============================================================================
 # Resilient Single Package Installation
 # ============================================================================
 # For special cases like CrossOver, Kora theme, etc.
@@ -217,10 +405,17 @@ EOF
 log_success "Cider repository configured"
 
 # ──────────────────────────────────────────────────────────────────────────
+# RPMFusion GPG Key Bootstrap
+# ──────────────────────────────────────────────────────────────────────────
+
+ensure_rpmfusion_keys
+
+# ──────────────────────────────────────────────────────────────────────────
 # Refresh Repository Metadata
 # ──────────────────────────────────────────────────────────────────────────
 
 log_info "Refreshing repository metadata"
+dnf5 clean all &>/dev/null && log_success "metadata cache cleaned"
 if dnf5 makecache &>/dev/null; then
   log_success "Metadata cache updated"
 else
@@ -301,12 +496,12 @@ declare -A RPM_PACKAGES=(
     xorriso \
     baobab"
 
-  ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates,rpmfusion-free-updates-testing,rpmfusion-nonfree-updates-testing"]="\
+  ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     audacity-freeworld \
     libavcodec-freeworld \
     gstreamer1-plugins-bad-freeworld \
     gstreamer1-plugins-ugly \
-    libheif-freeworld"
+    mesa-va-drivers-freeworld"
 
   # Fedora Multimedia (optimized multimedia packages)
   ["fedora-multimedia"]="mpv"
@@ -343,6 +538,34 @@ for copr_repo in "${!COPR_PACKAGES[@]}"; do
   install_copr_resilient "$copr_repo" "${pkg_array[@]}"
 done
 
+# ──────────────────────────────────────────────────────────────────────────
+# RPM Fusion F43 Fallback
+# ──────────────────────────────────────────────────────────────────────────
+# RPM Fusion F44 repos may not be fully populated yet; retry failures via F43
+
+readonly -a RPMFUSION_PACKAGES=(
+  "audacity-freeworld"
+  "libavcodec-freeworld"
+  "gstreamer1-plugins-bad-freeworld"
+  "gstreamer1-plugins-ugly"
+  "libheif-freeworld"
+)
+
+rpmfusion_failed=()
+for pkg in "${RPMFUSION_PACKAGES[@]}"; do
+  for failed in "${FAILED_PACKAGES[@]}"; do
+    if [[ "$pkg" == "$failed" ]]; then
+      rpmfusion_failed+=("$pkg")
+      break
+    fi
+  done
+done
+
+if [[ ${#rpmfusion_failed[@]} -gt 0 ]]; then
+  install_rpmfusion_f43_fallback "${rpmfusion_failed[@]}"
+else
+  log_info "No RPM Fusion packages require F43 fallback"
+fi
 
 # ============================================================================
 # Special Package Installations
@@ -377,6 +600,12 @@ else
   FAILED_PACKAGES+=("kora-icon-theme")
 fi
 
+# ──────────────────────────────────────────────────────────────────────────
+# Freeworld RPMs (H.265 support, mesa forced over terra, libheif from F43)
+# ──────────────────────────────────────────────────────────────────────────
+
+install_freeworld_rpms
+
 # ============================================================================
 # System Upgrade (Best-Effort)
 # ============================================================================
@@ -401,6 +630,12 @@ readonly -a CRITICAL_PACKAGES=(
   "zsh"
   "totem-video-thumbnailer"
   "Cider"
+  "libavcodec-freeworld"
+  "gstreamer1-plugins-bad-freeworld"
+  "gstreamer1-plugins-ugly"
+  "mesa-va-drivers-freeworld"
+  "mesa-vulkan-drivers-freeworld"
+  "libheif-freeworld"
 )
 
 validation_failures=0
@@ -513,7 +748,6 @@ if [[ ${#FAILED_PACKAGES[@]} -gt 0 ]]; then
   done
   echo ""
   log_info "Failed packages may be due to:"
-  echo "  • Repository downtime (e.g., ZFS repository)"
   echo "  • Package name changes"
   echo "  • Temporary network issues"
   echo "  • Dependency conflicts"
