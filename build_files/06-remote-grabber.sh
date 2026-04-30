@@ -23,12 +23,15 @@ declare -A EXTENSIONS_GIT=(
     ["pip-on-top@rafostar.github.com"]="https://github.com/Rafostar/gnome-shell-extension-pip-on-top.git"
     ["clipboard-indicator@tudmotu.com"]="https://github.com/Tudmotu/gnome-shell-extension-clipboard-indicator.git"
     ["date-menu-formatter@marcinjakubowski.github.com"]="https://github.com/marcinjakubowski/date-menu-formatter.git"
-    ["quick-settings-avatar@d-go"]="https://github.com/d-go/quick-settings-avatar.git")
+    ["quick-settings-avatar@d-go"]="https://github.com/d-go/quick-settings-avatar.git"
+    ["azwallpaper@azwallpaper.gitlab.com"]="https://gitlab.com/AndrewZaech/azwallpaper.git"
+    )
 
 declare -A EXTENSIONS_ZIP=(
     ["burn-my-windows@schneegans.github.com"]="https://github.com/Schneegans/Burn-My-Windows/releases/download/v47/burn-my-windows@schneegans.github.com.zip"
     ["gnome-ui-tune@itstime.tech"]="https://github.com/axxapy/gnome-ui-tune/releases/download/v1.11.0/gnome-ui-tune@itstime.tech.shell-extension.zip"
     ["tophat@fflewddur.github.io"]="https://github.com/fflewddur/tophat/releases/download/v23/tophat@fflewddur.github.io.v23.shell-extension.zip"
+    ["copyous@boerdereinar.dev"]="https://github.com/boerdereinar/copyous/releases/download/v2.0.1/copyous@boerdereinar.dev.zip"
 )
 
 # Extensions requiring schema compilation
