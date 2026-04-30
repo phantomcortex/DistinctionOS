@@ -254,6 +254,7 @@ declare -A RPM_PACKAGES=(
     loupe \
     sassc \
     gstreamer1-plugins-good-extras \
+    gstreamer1-vaapi \
     decibels \
     dconf \
     gtk-murrine-engine \
