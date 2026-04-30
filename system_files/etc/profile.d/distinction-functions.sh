@@ -1,5 +1,9 @@
 #!/bin/sh 
-
+alias ls="eza --icons=always --classify=always --mounts"
+alias lf="eza --icons=always --classify=always --long --almost-all --sort=size --git"
+alias lfe="eza --icons=always --classify=always --long --almost-all --sort=size --git --total-size --show-symlinks"
+alias lt="eza --tree --no-user --long --sort=size --level=1 --git"
+alias ltm="eza --tree --long --sort=size --level=3 --git"
 # mkcd - Create and enter directory
 mkcd() {
     if [ -z "$1" ]; then
