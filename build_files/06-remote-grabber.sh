@@ -1,185 +1,390 @@
 #!/bin/bash
 
 # =============================================================================
-# GNOME Shell Extensions Installation Script
-# Enhanced version with proper error handling and modular design
+# GNOME Shell Extensions — Intelligent Installer
 # =============================================================================
 
-# Source utility functions
 source /ctx/95-utility-functions.sh
+set -euo pipefail
 
-set -euo pipefail 
-
-
-
-# Constants and Configuration
 readonly SCRIPT_NAME="${0##*/}"
 readonly EXTENSIONS_DIR="/usr/share/gnome-shell/extensions"
 readonly TMP_DIR="/tmp/gnome-shell-extensions"
 readonly LOG_FILE="${TMP_DIR}/installation.log"
 
-# Extension definitions - structured data approach
-declare -A EXTENSIONS_GIT=(
-    ["pip-on-top@rafostar.github.com"]="https://github.com/Rafostar/gnome-shell-extension-pip-on-top.git"
-    ["clipboard-indicator@tudmotu.com"]="https://github.com/Tudmotu/gnome-shell-extension-clipboard-indicator.git"
-    ["date-menu-formatter@marcinjakubowski.github.com"]="https://github.com/marcinjakubowski/date-menu-formatter.git"
-    ["quick-settings-avatar@d-go"]="https://github.com/d-go/quick-settings-avatar.git"
-    ["azwallpaper@azwallpaper.gitlab.com"]="https://gitlab.com/AndrewZaech/azwallpaper.git"
-    )
+# =============================================================================
+# Extension Registry
+#
+# Format: "method | uuid | url [| extra_args]"
+#
+# Methods:
+#   git   — clone directly; extension.js must be at the repo root, no build step
+#   zip   — download archive and extract
+#   make  — clone, run "make install DESTDIR=/ PREFIX=/usr";
+#           extra_args replaces the default make variables if supplied
+#   pack  — clone, run gnome-extensions pack, extract the result zip;
+#           extra_args are passed verbatim to gnome-extensions pack
+#           (omit to let the installer auto-detect sources from repo layout)
+#   auto  — clone, detect build system, then proceed:
+#             Makefile      → make (DESTDIR=/ PREFIX=/usr)
+#             meson.build   → meson (--prefix=/usr)
+#             extension.js at root → direct copy
+#             otherwise     → gnome-extensions pack (auto-detected sources)
+# =============================================================================
+EXTENSIONS=(
+    # ── Git (flat repos — extension.js lives at repo root) ──────────────────
+    "git  | pip-on-top@rafostar.github.com                  | https://github.com/Rafostar/gnome-shell-extension-pip-on-top.git"
+    "git  | clipboard-indicator@tudmotu.com                  | https://github.com/Tudmotu/gnome-shell-extension-clipboard-indicator.git"
+    "git  | date-menu-formatter@marcinjakubowski.github.com  | https://github.com/marcinjakubowski/date-menu-formatter.git"
+    "git  | quick-settings-avatar@d-go                      | https://github.com/d-go/quick-settings-avatar.git"
 
-declare -A EXTENSIONS_ZIP=(
-    ["burn-my-windows@schneegans.github.com"]="https://github.com/Schneegans/Burn-My-Windows/releases/download/v47/burn-my-windows@schneegans.github.com.zip"
-    ["gnome-ui-tune@itstime.tech"]="https://github.com/axxapy/gnome-ui-tune/releases/download/v1.11.0/gnome-ui-tune@itstime.tech.shell-extension.zip"
-    ["tophat@fflewddur.github.io"]="https://github.com/fflewddur/tophat/releases/download/v23/tophat@fflewddur.github.io.v23.shell-extension.zip"
-    ["copyous@boerdereinar.dev"]="https://github.com/boerdereinar/copyous/releases/download/v2.0.1/copyous@boerdereinar.dev.zip"
+
+    # ── ZIP (pre-built release archives) ────────────────────────────────────
+    "zip  | burn-my-windows@schneegans.github.com           | https://github.com/Schneegans/Burn-My-Windows/releases/download/v47/burn-my-windows@schneegans.github.com.zip"
+    "zip  | gnome-ui-tune@itstime.tech                      | https://github.com/axxapy/gnome-ui-tune/releases/download/v1.11.0/gnome-ui-tune@itstime.tech.shell-extension.zip"
+    "zip  | tophat@fflewddur.github.io                      | https://github.com/fflewddur/tophat/releases/download/v23/tophat@fflewddur.github.io.v23.shell-extension.zip"
+    "zip  | copyous@boerdereinar.dev                        | https://github.com/boerdereinar/copyous/releases/download/v2.0.1/copyous@boerdereinar.dev.zip"
+
+    # ── Makefile (default: DESTDIR=/ PREFIX=/usr) ───────────────────────────
+    "make | dash-to-dock@phantomcortex                      | https://github.com/phantomcortex/dash-to-dock.git"
+
+    # ── gnome-extensions pack (sources auto-detected from repo layout) ───────
+    # "pack | blur-my-shell@aunetx                          | https://github.com/phantomcortex/blur-my-shell.git"
+    
+    "auto  | azwallpaper@azwallpaper.gitlab.com             | https://gitlab.com/AndrewZaech/azwallpaper.git"
 )
 
-# Extensions requiring schema compilation
-readonly SCHEMA_EXTENSIONS=("pip-on-top@rafostar.github.com" "burn-my-windows@schneegans.github.com")
-
-# Extensions to be removed (if present)
-readonly EXTENSIONS_TO_REMOVE=("hotedge@jonathan.jdoda.ca" )
+readonly EXTENSIONS_TO_REMOVE=(
+    "hotedge@jonathan.jdoda.ca"
+)
 
 # =============================================================================
-# Installation Functions
+# Shared Helpers
+# =============================================================================
+
+trim() {
+    local var="$*"
+    var="${var#"${var%%[![:space:]]*}"}"
+    var="${var%"${var##*[![:space:]]}"}"
+    printf '%s' "$var"
+}
+
+clone_to_tmp() {
+    local url="$1"
+    local dest="$2"
+    [[ -d "$dest" ]] && rm -rf "$dest"
+    git clone --quiet --depth 1 "$url" "$dest"
+}
+
+# Compile schemas if a schemas/ dir with XML files exists
+auto_compile_schemas() {
+    local uuid="$1"
+    local ext_dir="$2"
+    local schema_dir="$ext_dir/schemas"
+
+    compgen -G "$schema_dir/*.gschema.xml" > /dev/null 2>&1 || return 0
+
+    log_info "Compiling schemas for: $uuid"
+    if glib-compile-schemas "$schema_dir" 2>>"$LOG_FILE"; then
+        log_success "Schemas compiled for: $uuid"
+    else
+        log_warning "Schema compilation failed for: $uuid"
+    fi
+}
+
+# Return the directory that contains extension.js (the pack source dir)
+find_ext_source_dir() {
+    local repo_dir="$1"
+    local ext_js
+    ext_js=$(find "$repo_dir" -maxdepth 3 -name "extension.js" | head -1)
+    if [[ -n "$ext_js" ]]; then
+        dirname "$ext_js"
+    else
+        echo "$repo_dir"
+    fi
+}
+
+# Emit gnome-extensions pack flags inferred from the repo layout.
+# Each flag is printed on its own line so the caller can use mapfile.
+auto_detect_pack_args() {
+    local repo_dir="$1"
+    local source_dir="$2"
+
+    # Files/dirs at the repo root that live outside the source dir need --extra-source
+    if [[ "$source_dir" != "$repo_dir" ]]; then
+        [[ -f "$repo_dir/metadata.json" ]] && echo "--extra-source=$repo_dir/metadata.json"
+        [[ -f "$repo_dir/LICENSE" ]]        && echo "--extra-source=$repo_dir/LICENSE"
+        for dir in resources icons data res; do
+            [[ -d "$repo_dir/$dir" ]] && echo "--extra-source=$repo_dir/$dir"
+        done
+    fi
+
+    [[ -d "$repo_dir/po" ]] && echo "--podir=$repo_dir/po"
+
+    local schema_xml
+    schema_xml=$(find "$repo_dir" -name "*.gschema.xml" | head -1)
+    [[ -n "$schema_xml" ]] && echo "--schema=$schema_xml"
+}
+
+# =============================================================================
+# Internal Build Steps (shared between explicit methods and auto-detection)
+# =============================================================================
+
+_do_make_install() {
+    local uuid="$1"
+    local repo_dir="$2"
+    local make_args="${3:-DESTDIR=/ PREFIX=/usr}"
+
+    # shellcheck disable=SC2086
+    if ! make -C "$repo_dir" install $make_args; then
+        log_error "make install failed for $uuid"
+        return 1
+    fi
+
+    auto_compile_schemas "$uuid" "$EXTENSIONS_DIR/$uuid"
+    # Schemas installed to the system dir also need a recompile
+    glib-compile-schemas /usr/share/glib-2.0/schemas/ 2>>"$LOG_FILE" || true
+}
+
+_do_pack_install() {
+    local uuid="$1"
+    local repo_dir="$2"
+    local extra_args="${3:-}"
+    local build_dir="$TMP_DIR/${uuid}-build"
+    local target_dir="$EXTENSIONS_DIR/$uuid"
+
+    mkdir -p "$build_dir"
+
+    local source_dir
+    source_dir=$(find_ext_source_dir "$repo_dir")
+
+    local -a pack_args
+    if [[ -n "$extra_args" ]]; then
+        read -ra pack_args <<< "$extra_args"
+    else
+        mapfile -t pack_args < <(auto_detect_pack_args "$repo_dir" "$source_dir")
+    fi
+
+    if ! gnome-extensions pack -f "${pack_args[@]}" -o "$build_dir" "$source_dir"; then
+        log_error "gnome-extensions pack failed for $uuid"
+        return 1
+    fi
+
+    local zip_file
+    zip_file=$(find "$build_dir" -name "*.zip" | head -1)
+    if [[ -z "$zip_file" ]]; then
+        log_error "No zip produced by gnome-extensions pack for $uuid"
+        return 1
+    fi
+
+    rm -rf "$target_dir"
+    mkdir -p "$target_dir"
+    if ! unzip -o "$zip_file" -d "$target_dir"; then
+        log_error "Failed to extract pack zip for $uuid"
+        return 1
+    fi
+
+    auto_compile_schemas "$uuid" "$target_dir"
+}
+
+# =============================================================================
+# Install Methods
+# =============================================================================
+
+install_git_extension() {
+    local uuid="$1"
+    local url="$2"
+    local target_dir="$EXTENSIONS_DIR/$uuid"
+
+    log_info "Installing [git] $uuid"
+
+    [[ -d "$target_dir" ]] && rm -rf "$target_dir"
+    if git clone --quiet --depth 1 "$url" "$target_dir"; then
+        auto_compile_schemas "$uuid" "$target_dir"
+        log_success "Installed: $uuid"
+    else
+        log_error "Failed to clone: $uuid"
+        return 1
+    fi
+}
+
+install_zip_extension() {
+    local uuid="$1"
+    local url="$2"
+    local zip_path="$TMP_DIR/${uuid}.zip"
+    local target_dir="$EXTENSIONS_DIR/$uuid"
+
+    log_info "Installing [zip] $uuid"
+
+    if ! curl -L --silent --fail "$url" -o "$zip_path"; then
+        log_error "Failed to download: $uuid"
+        return 1
+    fi
+
+    [[ -d "$target_dir" ]] && rm -rf "$target_dir"
+    mkdir -p "$target_dir"
+
+    if unzip -qq -o "$zip_path" -d "$target_dir"; then
+        rm -f "$zip_path"
+        auto_compile_schemas "$uuid" "$target_dir"
+        log_success "Installed: $uuid"
+    else
+        log_error "Failed to extract: $uuid"
+        return 1
+    fi
+}
+
+install_make_extension() {
+    local uuid="$1"
+    local url="$2"
+    local extra_args="${3:-}"
+    local name="${url##*/}"; name="${name%.git}"
+    local repo_dir="$TMP_DIR/$name"
+
+    log_info "Installing [make] $uuid"
+
+    clone_to_tmp "$url" "$repo_dir" || { log_error "Failed to clone: $uuid"; return 1; }
+    _do_make_install "$uuid" "$repo_dir" "$extra_args" || return 1
+    log_success "Installed: $uuid"
+}
+
+install_pack_extension() {
+    local uuid="$1"
+    local url="$2"
+    local extra_args="${3:-}"
+    local name="${url##*/}"; name="${name%.git}"
+    local repo_dir="$TMP_DIR/$name"
+
+    log_info "Installing [pack] $uuid"
+
+    clone_to_tmp "$url" "$repo_dir" || { log_error "Failed to clone: $uuid"; return 1; }
+    _do_pack_install "$uuid" "$repo_dir" "$extra_args" || return 1
+    log_success "Installed: $uuid"
+}
+
+install_auto_extension() {
+    local uuid="$1"
+    local url="$2"
+    local extra_args="${3:-}"
+    local name="${url##*/}"; name="${name%.git}"
+    local repo_dir="$TMP_DIR/$name"
+
+    log_info "Installing [auto] $uuid"
+
+    clone_to_tmp "$url" "$repo_dir" || { log_error "Failed to clone: $uuid"; return 1; }
+
+    local method
+    if   [[ -f "$repo_dir/Makefile"    ]]; then method="make"
+    elif [[ -f "$repo_dir/meson.build" ]]; then method="meson"
+    elif [[ -f "$repo_dir/extension.js" ]]; then method="direct"
+    else                                         method="pack"
+    fi
+
+    log_info "Auto-detected build method for $uuid: $method"
+
+    case "$method" in
+        make)
+            _do_make_install "$uuid" "$repo_dir" "$extra_args" || return 1
+            ;;
+        meson)
+            local build_dir="$TMP_DIR/${uuid}-meson-build"
+            meson setup --prefix=/usr "$build_dir" "$repo_dir" \
+                && meson install -C "$build_dir" \
+                || { log_error "meson install failed for $uuid"; return 1; }
+            auto_compile_schemas "$uuid" "$EXTENSIONS_DIR/$uuid"
+            ;;
+        direct)
+            local target_dir="$EXTENSIONS_DIR/$uuid"
+            rm -rf "$target_dir"
+            cp -r "$repo_dir" "$target_dir"
+            auto_compile_schemas "$uuid" "$target_dir"
+            ;;
+        pack)
+            _do_pack_install "$uuid" "$repo_dir" "$extra_args" || return 1
+            ;;
+    esac
+
+    log_success "Installed: $uuid"
+}
+
+# =============================================================================
+# Dispatcher
+# =============================================================================
+
+install_extension() {
+    local entry="$1"
+    local method uuid url extra_args
+
+    IFS='|' read -r method uuid url extra_args <<< "$entry"
+    method=$(trim "$method")
+    uuid=$(trim "$uuid")
+    url=$(trim "$url")
+    extra_args=$(trim "${extra_args:-}")
+
+    case "$method" in
+        git)  install_git_extension  "$uuid" "$url" ;;
+        zip)  install_zip_extension  "$uuid" "$url" ;;
+        make) install_make_extension "$uuid" "$url" "$extra_args" ;;
+        pack) install_pack_extension "$uuid" "$url" "$extra_args" ;;
+        auto) install_auto_extension "$uuid" "$url" "$extra_args" ;;
+        *)    log_error "Unknown method '$method' for $uuid"; return 1 ;;
+    esac
+}
+
+# =============================================================================
+# Orchestration
 # =============================================================================
 
 setup_environment() {
     mkdir -p "$TMP_DIR" "$EXTENSIONS_DIR"
 }
 
-install_git_extension() {
-    local extension_id="$1"
-    local repository_url="$2"
-    local target_dir="$EXTENSIONS_DIR/$extension_id"
-    
-    log_info "Installing Git-based extension: $extension_id"
-    
-    if [[ -d "$target_dir" ]]; then
-        log_warning "Extension directory exists, removing: $target_dir"
-        rm -rf "$target_dir"
-    fi
-    
-    if git clone --quiet --depth 1 "$repository_url" "$target_dir"; then
-        log_success "Successfully cloned: $extension_id"
-        return 0
-    else
-        log_error "Failed to clone: $extension_id from $repository_url"
-        return 1
-    fi
-}
-
-install_zip_extension() {
-    local extension_id="$1"
-    local download_url="$2"
-    local zip_filename="${extension_id}.zip"
-    local zip_path="$TMP_DIR/$zip_filename"
-    local target_dir="$EXTENSIONS_DIR/$extension_id"
-    
-    log_info "Installing ZIP-based extension: $extension_id"
-    
-    # Download archive
-    if ! curl -L --silent --fail "$download_url" -o "$zip_path"; then
-        log_error "Failed to download: $extension_id from $download_url"
-        return 1
-    fi
-    
-    # Prepare target directory
-    if [[ -d "$target_dir" ]]; then
-        log_warning "Extension directory exists, removing: $target_dir"
-        rm -rf "$target_dir"
-    fi
-    mkdir -p "$target_dir"
-    
-    # Extract archive
-    if unzip -qq -o "$zip_path" -d "$target_dir"; then
-        log_success "Successfully extracted: $extension_id"
-        rm -f "$zip_path"  # Cleanup
-        return 0
-    else
-        log_error "Failed to extract: $extension_id"
-        return 1
-    fi
-}
-
-compile_extension_schemas() {
-    local extension_id="$1"
-    local schema_dir="$EXTENSIONS_DIR/$extension_id/schemas"
-    
-    if [[ -d "$schema_dir" ]]; then
-        log_info "Compiling schemas for: $extension_id"
-        if glib-compile-schemas "$schema_dir" 2>>"$LOG_FILE"; then
-            log_success "Schemas compiled successfully for: $extension_id"
+remove_listed_extensions() {
+    log_info "Removing deprecated extensions..."
+    local ext_dir
+    for uuid in "${EXTENSIONS_TO_REMOVE[@]}"; do
+        ext_dir="$EXTENSIONS_DIR/$uuid"
+        if [[ -d "$ext_dir" ]]; then
+            rm -rf "$ext_dir"
+            log_success "Removed: $uuid"
         else
-            log_warning "Schema compilation failed for: $extension_id"
+            log_info "Not present (skip): $uuid"
         fi
-    fi
-}
-
-remove_extension() {
-    local extension_id="$1"
-    local target_dir="$EXTENSIONS_DIR/$extension_id"
-    
-    if [[ -d "$target_dir" ]]; then
-        log_info "Removing extension: $extension_id"
-        if rm -rf "$target_dir"; then
-            log_success "Successfully removed: $extension_id"
-        else
-            log_error "Failed to remove: $extension_id"
-        fi
-    else
-        log_info "Extension not present (skipping): $extension_id"
-    fi
+    done
 }
 
 install_all_extensions() {
-    local total_extensions=$((${#EXTENSIONS_GIT[@]} + ${#EXTENSIONS_ZIP[@]}))
-    local successful_installations=0
-    local failed_installations=0
-    
-    log_info "Beginning installation of $total_extensions extensions"
-    
-    # Remove unwanted extensions first
-    log_info "Removing deprecated extensions..."
-    for extension_id in "${EXTENSIONS_TO_REMOVE[@]}"; do
-        remove_extension "$extension_id"
-    done
-    
-    # Install Git-based extensions
-    log_info "Installing Git-based extensions..."
-    for extension_id in "${!EXTENSIONS_GIT[@]}"; do
-        if install_git_extension "$extension_id" "${EXTENSIONS_GIT[$extension_id]}"; then
-            successful_installations=$((successful_installations + 1))
+    local total=${#EXTENSIONS[@]}
+    local ok=0 fail=0
+
+    log_info "Installing $total extensions..."
+
+    for entry in "${EXTENSIONS[@]}"; do
+        if install_extension "$entry"; then
+            ok=$((ok + 1))
         else
-            failed_installations=$((failed_installations + 1))
+            fail=$((fail + 1))
         fi
     done
 
-    # Install ZIP-based extensions
-    log_info "Installing ZIP-based extensions..."
-    for extension_id in "${!EXTENSIONS_ZIP[@]}"; do
-        if install_zip_extension "$extension_id" "${EXTENSIONS_ZIP[$extension_id]}"; then
-            successful_installations=$((successful_installations + 1))
-        else
-            failed_installations=$((failed_installations + 1))
-        fi
-    done
-    # Compile schemas for extensions that require it
-    log_info "Processing extension schemas..."
-    for extension_id in "${SCHEMA_EXTENSIONS[@]}"; do
-        compile_extension_schemas "$extension_id"
-    done
-    
-    # Installation summary
-    log_success "Successful installations: $successful_installations"
-    if [[ $failed_installations -gt 0 ]]; then
-        log_error "Failed installations: $failed_installations"
-        log_info "Please review the log file: $LOG_FILE"
+    log_success "Successful: $ok"
+    if [[ $fail -gt 0 ]]; then
+        log_error "Failed: $fail — review $LOG_FILE"
         return 1
-    else
-        log_success "All extensions installed successfully!"
-        return 0
     fi
+}
+
+remove_git_directories() {
+    log_info "Removing git metadata from extensions..."
+    local count=0
+    for artifact in .git .github .gitignore; do
+        for item in "$EXTENSIONS_DIR"/*/"$artifact"; do
+            [[ -e "$item" ]] || continue
+            rm -rf "$item"
+            count=$((count + 1))
+        done
+    done
+    log_success "Removed $count git metadata entries"
 }
 
 patch_extension_compatibility() {
@@ -193,8 +398,7 @@ patch_extension_compatibility() {
 
     log_info "Patching extensions for GNOME Shell $shell_version (and next 2 releases)..."
 
-    local patched=0
-    local already_ok=0
+    local patched=0 already_ok=0
     local versions_to_add=("$shell_version" "$((shell_version + 1))" "$((shell_version + 2))")
 
     for metadata_file in "$EXTENSIONS_DIR"/*/metadata.json; do
@@ -215,7 +419,7 @@ current = set(meta.get('shell-version', []))
 missing = [v for v in to_add if v not in current]
 
 if not missing:
-    sys.exit(2)  # already compatible, nothing to do
+    sys.exit(2)
 
 meta['shell-version'] = sorted(
     current | set(to_add),
@@ -224,17 +428,11 @@ meta['shell-version'] = sorted(
 
 with open(path, 'w') as f:
     json.dump(meta, f, indent=4)
-
-sys.exit(0)
 PYEOF
         local rc=$?
-        if [[ $rc -eq 0 ]]; then
-            log_success "Patched shell-version for: $ext_id"
-            patched=$((patched + 1))
-        elif [[ $rc -eq 2 ]]; then
-            already_ok=$((already_ok + 1))
-        else
-            log_warning "Failed to patch metadata for: $ext_id"
+        if   [[ $rc -eq 0 ]]; then patched=$((patched + 1))
+        elif [[ $rc -eq 2 ]]; then already_ok=$((already_ok + 1))
+        else log_warning "Failed to patch metadata for: $ext_id"
         fi
     done
 
@@ -247,173 +445,20 @@ cleanup_temporary_files() {
     log_success "Cleanup completed"
 }
 
-remove_git_directories() {
-    log_info "Removing git metadata from extensions..."
-    local git_dirs_removed=0
-
-    for git_dir in "$EXTENSIONS_DIR"/*/.git; do
-        [[ -e "$git_dir" ]] || continue
-        rm -rf "$git_dir"
-        git_dirs_removed=$((git_dirs_removed + 1))
-    done
-
-    for git_dir in "$EXTENSIONS_DIR"/*/.github; do
-        [[ -e "$git_dir" ]] || continue
-        rm -rf "$git_dir"
-        git_dirs_removed=$((git_dirs_removed + 1))
-    done
-
-    for git_dir in "$EXTENSIONS_DIR"/*/.gitignore; do
-        [[ -e "$git_dir" ]] || continue
-        rm -rf "$git_dir"
-        git_dirs_removed=$((git_dirs_removed + 1))
-    done
-    
-    log_success "Removed $git_dirs_removed .git directories"
-    return 0
-}
-
-custom_blur-my-shell() {
-  ###########################################
-  # System-level installer for blur-my-shell (upstream Makefile only targets ~/.local)
-  local NAME="blur-my-shell"
-  local UUID="$NAME@aunetx"
-  local REPO_DIR="$TMP_DIR/$NAME"
-  local BUILD_DIR="$REPO_DIR/build"
-  local TARGET_DIR="$EXTENSIONS_DIR/$UUID"
-  local ZIP_FILE="$BUILD_DIR/$UUID.shell-extension.zip"
-
-  log_info "Installing custom extension: $UUID"
-
-  # Clone
-  if [[ -d "$REPO_DIR" ]]; then
-    rm -rf "$REPO_DIR"
-  fi
-  if ! git clone --quiet --depth 1 "https://github.com/phantomcortex/$NAME.git" "$REPO_DIR"; then
-    log_error "Failed to clone $NAME"
-    return 1
-  fi
-
-  # Build via gnome-extensions pack
-  # --extra-source paths resolve relative to cwd, so we use absolute paths
-  # to avoid fragile cd-based directory navigation
-  mkdir -p "$BUILD_DIR"
-  if ! gnome-extensions pack -f \
-    --extra-source="$REPO_DIR/metadata.json" \
-    --extra-source="$REPO_DIR/LICENSE" \
-    --extra-source="$REPO_DIR/resources/icons" \
-    --extra-source="$REPO_DIR/resources/ui" \
-    --extra-source="$REPO_DIR/src/components" \
-    --extra-source="$REPO_DIR/src/conveniences" \
-    --extra-source="$REPO_DIR/src/effects" \
-    --extra-source="$REPO_DIR/src/preferences" \
-    --extra-source="$REPO_DIR/src/dbus" \
-    --podir="$REPO_DIR/po" \
-    --schema="$REPO_DIR/schemas/org.gnome.shell.extensions.$NAME.gschema.xml" \
-    -o "$BUILD_DIR" \
-    "$REPO_DIR/src"; then
-    log_error "gnome-extensions pack failed for $NAME"
-    return 1
-  fi
-
-  # Verify zip was produced
-  if [[ ! -f "$ZIP_FILE" ]]; then
-    log_error "Expected zip not found at $ZIP_FILE"
-    log_error "Build directory contents: $(ls -1 "$BUILD_DIR" 2>/dev/null || echo '(empty)')"
-    return 1
-  fi
-
-  # Extract to system extensions directory
-  rm -rf "$TARGET_DIR"
-  mkdir -p "$TARGET_DIR"
-  if ! unzip -o "$ZIP_FILE" -d "$TARGET_DIR"; then
-    log_error "Failed to unzip $ZIP_FILE to $TARGET_DIR"
-    return 1
-  fi
-
-  # Compile schemas
-  if [[ -d "$TARGET_DIR/schemas" ]]; then
-    if [[ "$(glib-compile-schemas "$TARGET_DIR/schemas/")" == "No schema files found: doing nothing." ]]; then
-      log_warning "GCS failed. \nFind schema and compile"
-      find $TARGET_DIR -iname '*.xml' -exec glib-comile-schemas {} /;
-    else
-      log_success "GCS passed."
-    fi
-  else
-    echo "Output does not match."
-  fi
-  glib-compile-schemas "$TARGET_DIR/schemas/"
-  glib-compile-schemas "$TARGET_DIR/" 2>>"$LOG_FILE" || true
-
-  log_success "Successfully installed $UUID"
-  ###########################################
-}
-
-custom_dash-to-dock() {
-  ###########################################
-  local NAME="dash-to-dock"
-  local UUID="$NAME@phantomcortex"
-  local REPO_DIR="$TMP_DIR/$NAME"
-  local TARGET_DIR="$EXTENSIONS_DIR/$UUID"
-
-  log_info "Installing custom extension: $UUID"
-
-  if [[ -d "$REPO_DIR" ]]; then
-    rm -rf "$REPO_DIR"
-  fi
-  if ! git clone --quiet --depth 1 "https://github.com/phantomcortex/$NAME.git" "$REPO_DIR"; then
-    log_error "Failed to clone $NAME"
-    return 1
-  fi
-
-  if ! make -C "$REPO_DIR" install DESTDIR="/" PREFIX="/usr"; then
-    log_error "make install failed for $NAME"
-    return 1
-  fi
-
-  if [[ -f "$TARGET_DIR/schemas/*.xml" ]]; then
-    log_info "schema found at $TARGET_DIR/schemas/"
-    glib-compile-schemas "$TARGET_DIR/schemas" 
-  elif [[ -e "/usr/share/glib-2.0/schemas/org.gnome.shell.extensions.dash-to-dock.gschema.xml" ]]; then
-    log_info "schema found at /usr/share/glib-2.0/schemas/org.gnome.shell.extensions.dash-to-dock.gschema.xml"
-    if [[ "$(glib-compile-schemas "/usr/share/glib-2.0/schemas/")" == "No schema files found: doing nothing." ]]; then
-      log_warning "GCS failed. \nFind schema and compile"
-      find /usr/share/glib-2.0/schemas/ -iname '$NAME' -exec glib-comile-schemas {} /;
-    else
-      log_success "GCS passed."
-    fi
-  else
-    log_warning "failed to detect 'dash-to-dock' schema."
-    log_warning "blind run: 'glib-compile-schemas /usr/share/glib-2.0/schemas/' "
-    glib-compile-schemas "/usr/share/glib-2.0/schemas/" 
-  fi
-  glib-compile-schemas "$TARGET_DIR/" 2>>"$LOG_FILE" || true
-
-  log_success "Successfully installed $UUID"
-  ###########################################
-}
-
-
 main() {
     trap cleanup_temporary_files EXIT
 
     log_info "Starting $SCRIPT_NAME"
     setup_environment
 
+    # bazzite's dnf wrapper interferes with builds
+    [[ -f /usr/bin/dnf ]] && rm /usr/bin/dnf
+
     local had_errors=0
 
-    # Standard extensions (git + zip)
+    remove_listed_extensions
     install_all_extensions || had_errors=1
-
-    # Custom-built extensions (always attempted regardless of standard extension failures)
-    #custom_blur-my-shell || had_errors=1
-    custom_dash-to-dock  || had_errors=1
-	
-    # Cleanup .git metadata from all cloned extensions
     remove_git_directories
-
-    # Patch metadata.json in every extension to declare compatibility with the
-    # installed GNOME Shell version and the next two releases
     patch_extension_compatibility
 
     if [[ $had_errors -ne 0 ]]; then
@@ -425,8 +470,4 @@ main() {
     exit 0
 }
 
-# bazzite's dnf wrapper is such a pest
-if [[ -f /usr/bin/dnf ]]; then
-  rm /usr/bin/dnf
-fi
 main "$@"
