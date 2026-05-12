@@ -288,17 +288,9 @@ install_freeworld_rpms() {
     fi
   }
 
-  # ── mesa-vulkan-drivers-freeworld: --force needed to override terra mesa ──
-  _freeworld_pkg "mesa-vulkan-drivers-freeworld" \
-    "rpmfusion-free,rpmfusion-free-updates" \
-    --force --nodeps
-
-  # ── mesa-va-drivers-freeworld: same repos, no --force needed ──
-  _freeworld_pkg "mesa-va-drivers-freeworld" \
-    "rpmfusion-free,rpmfusion-free-updates" \
-    --nodeps
-
   # ── libheif-freeworld: not yet in F44 — pull from F43 repo temporarily ──
+  # mesa-vulkan-drivers-freeworld and mesa-va-drivers-freeworld are handled by
+  # 05-mesa-install.sh from the pre-built distinctionos-mesa OCI artifact.
   local f43_repo="/etc/yum.repos.d/rpmfusion-free-f43-freeworld-tmp.repo"
   tee "$f43_repo" > /dev/null << 'EOF'
 [rpmfusion-free-f43-freeworld-tmp]
@@ -404,6 +396,9 @@ EOF
 
 log_success "Cider repository configured"
 
+log_info "CLEAR VERSIONLOCK"
+dnf5 versionlock clear
+
 # ──────────────────────────────────────────────────────────────────────────
 # RPMFusion GPG Key Bootstrap
 # ──────────────────────────────────────────────────────────────────────────
@@ -449,7 +444,6 @@ declare -A RPM_PACKAGES=(
     loupe \
     sassc \
     gstreamer1-plugins-good-extras \
-    gstreamer1-vaapi \
     decibels \
     dconf \
     gtk-murrine-engine \
@@ -492,17 +486,23 @@ declare -A RPM_PACKAGES=(
     qpdf \
     rdfind \
     rhash \
-    unar \
-    xorriso \
-    baobab"
+    xorriso"
 
+  # mesa-va-drivers-freeworld and mesa-vulkan-drivers-freeworld are intentionally
+  # absent here. The full mesa stack is installed by 05-mesa-install.sh from a
+  # pre-built OCI artifact (ghcr.io/phantomcortex/distinctionos-mesa) that builds
+  # all subpackages from one Fedora SRPM with freeworld codec support enabled.
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
-    audacity-freeworld \
-    libavcodec-freeworld \
+  	libavcodec-freeworld \
     gstreamer1-plugins-bad-freeworld \
     gstreamer1-plugins-ugly \
-    mesa-va-drivers-freeworld"
+    libheif-freeworld"
 
+  # mesa-libgbm and mesa-libgbm-devel are handled by 05-mesa-install.sh.
+  ["terra,terra-extras"]=" \
+  	x265 \
+    gstreamer1-vaapi"
+  
   # Fedora Multimedia (optimized multimedia packages)
   ["fedora-multimedia"]="mpv"
 
@@ -544,10 +544,6 @@ done
 # RPM Fusion F44 repos may not be fully populated yet; retry failures via F43
 
 readonly -a RPMFUSION_PACKAGES=(
-  "audacity-freeworld"
-  "libavcodec-freeworld"
-  "gstreamer1-plugins-bad-freeworld"
-  "gstreamer1-plugins-ugly"
   "libheif-freeworld"
 )
 
@@ -601,23 +597,13 @@ else
 fi
 
 # ──────────────────────────────────────────────────────────────────────────
-# Freeworld RPMs (H.265 support, mesa forced over terra, libheif from F43)
+# Freeworld RPMs (libheif-freeworld from F43 — not yet in F44)
+# mesa-vulkan-drivers-freeworld and mesa-va-drivers-freeworld are handled by
+# 05-mesa-install.sh via the pre-built distinctionos-mesa OCI artifact.
 # ──────────────────────────────────────────────────────────────────────────
 
 install_freeworld_rpms
 
-# ============================================================================
-# System Upgrade (Best-Effort)
-# ============================================================================
-
-log_section "Performing system upgrade (best-effort)"
-
-log_info "Upgrading all packages to latest versions"
-if dnf5 -y upgrade &>/dev/null; then
-  log_success "System upgrade complete"
-else
-  log_warning "System upgrade encountered issues (non-critical)"
-fi
 
 # ============================================================================
 # Critical Package Validation
@@ -633,9 +619,8 @@ readonly -a CRITICAL_PACKAGES=(
   "libavcodec-freeworld"
   "gstreamer1-plugins-bad-freeworld"
   "gstreamer1-plugins-ugly"
-  "mesa-va-drivers-freeworld"
-  "mesa-vulkan-drivers-freeworld"
   "libheif-freeworld"
+  # mesa-* validated separately in 05-mesa-install.sh
 )
 
 validation_failures=0

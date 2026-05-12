@@ -445,6 +445,35 @@ cleanup_temporary_files() {
     log_success "Cleanup completed"
 }
 
+install_gnome_rounded_blur{
+#
+
+pushd /tmp
+
+if dnf5 -y install mutter-devel &>/dev/null; then
+  log_success "mutter-devel installed!"
+else
+  log_warning "mutter-devel failed to install via dnf attempt manual install"
+  log "download mutter-devel"
+  dnf download mutter-devel
+
+  log_info "rpm install >>"
+  for rpm_package in /tmp/*.rpm; do
+  	log_info "install: $rpm_package"
+    rpm -ivh --force --nodeps "$rpm_package"
+  done
+  log_info "done"
+fi
+
+popd 
+
+
+log_info "install gnome-rounded-blur"
+dnf5 -y install glib2-devel @c-development meson 
+curl https://raw.githubusercontent.com/aunetx/blur-my-shell/refs/heads/master/scripts/rounded_blur_build.sh | bash -s -- -i
+dnf5 -y remove meson mutter-devel
+}
+
 main() {
     trap cleanup_temporary_files EXIT
 
@@ -460,6 +489,9 @@ main() {
     install_all_extensions || had_errors=1
     remove_git_directories
     patch_extension_compatibility
+    install_gnome_rounded_blur || had_errors=1
+    
+    
 
     if [[ $had_errors -ne 0 ]]; then
         log_error "One or more extensions failed to install — review log above"
