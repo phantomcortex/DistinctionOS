@@ -9,7 +9,7 @@ source /ctx/95-utility-functions.sh
 
 script_start "Mesa Stack Install" "Fedora SRPM + freeworld codecs (pre-built artifact)"
 
-readonly MESA_RPMS_DIR="/tmp/mesa-rpms"
+readonly MESA_RPMS_DIR="/var/tmp/mesa-rpms"
 
 if [[ ! -d "$MESA_RPMS_DIR" ]] || [[ -z "$(ls -A "$MESA_RPMS_DIR" 2>/dev/null)" ]]; then
     log_error "No mesa RPMs found at $MESA_RPMS_DIR"

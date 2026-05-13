@@ -12,7 +12,10 @@ FROM ghcr.io/ublue-os/bazzite-gnome:stable as DistinctionOS
 #FROM quay.io/fedora/fedora-bootc:42
 
 # Copy pre-built mesa RPMs into the image so 05-mesa-install.sh can install them
-COPY --from=mesa-rpms /rpms/ /tmp/mesa-rpms/
+# NOTE: must NOT be under /tmp — the main RUN step mounts /tmp as tmpfs, which
+# would shadow anything COPY'd there.
+COPY --from=mesa-rpms /rpms/ /var/tmp/mesa-rpms/
+
 
 # Cleanup & Finalize
 COPY system_files/ /
