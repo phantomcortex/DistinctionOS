@@ -71,7 +71,16 @@ set -e
 if [ "$_rc" -eq 11 ]; then
     _br=$(find ~/rpmbuild/SRPMS -name "*.buildreqs.nosrc.rpm" | tail -1)
     echo "Installing dynamic build requirements from: $_br"
-    rpm -qp --requires "$_br" | grep -v '^rpmlib' | xargs -r dnf install -y
+    # rpm outputs multi-word deps (e.g. "crate(foo) >= 1.0 with crate(foo) < 2.0~")
+    # as single lines; xargs splits on whitespace and breaks them. Use mapfile to
+    # preserve each line as one array element, then strip boolean "with" clauses
+    # so dnf receives plain "capability >= version" expressions it can resolve.
+    mapfile -t _reqs < <(
+        rpm -qp --requires "$_br" 2>/dev/null \
+        | grep -v '^rpmlib' \
+        | sed 's/^(//; s/ with .*//'
+    )
+    dnf install -y "${_reqs[@]}"
 elif [ "$_rc" -ne 0 ]; then
     echo "Bootstrap pass failed (exit $_rc)" >&2
     exit "$_rc"
