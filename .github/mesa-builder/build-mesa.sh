@@ -60,6 +60,23 @@ echo "--- video-codecs line after patch ---"
 grep -n "video-codecs\|video_codecs" "$SPEC" || echo "(still no match — manual intervention needed)"
 echo "-------------------------------------"
 
+# ── Resolve dynamic (Rust/cargo2rpm) build requirements ───────────────────────
+# %generate_buildrequires runs cargo2rpm to discover Rust crate deps at build
+# time; dnf builddep can't see these. Bootstrap pass triggers the generator,
+# then we install whatever it says is missing before the real build.
+set +e
+rpmbuild -br ~/rpmbuild/SPECS/mesa.spec
+_rc=$?
+set -e
+if [ "$_rc" -eq 11 ]; then
+    _br=$(find ~/rpmbuild/SRPMS -name "*.buildreqs.nosrc.rpm" | tail -1)
+    echo "Installing dynamic build requirements from: $_br"
+    rpm -qp --requires "$_br" | grep -v '^rpmlib' | xargs -r dnf install -y
+elif [ "$_rc" -ne 0 ]; then
+    echo "Bootstrap pass failed (exit $_rc)" >&2
+    exit "$_rc"
+fi
+
 # ── Build all subpackages ─────────────────────────────────────────────────────
 # Limit parallelism to avoid OOM on CI runners (7 GB RAM + 10 GB swap).
 # LLVM linking can peak at 4-6 GB alone; -j3 keeps two units in flight
