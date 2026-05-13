@@ -1,0 +1,6 @@
+FROM fedora:44 AS builder
+COPY build-mesa.sh /usr/local/bin/build-mesa.sh
+RUN chmod +x /usr/local/bin/build-mesa.sh && /usr/local/bin/build-mesa.sh
+
+FROM scratch
+COPY --from=builder /output/rpms/ /rpms/
