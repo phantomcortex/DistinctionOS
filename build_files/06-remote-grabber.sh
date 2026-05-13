@@ -445,6 +445,95 @@ cleanup_temporary_files() {
     log_success "Cleanup completed"
 }
 
+install_gnome_rounded_blur() {
+    local work_dir
+    work_dir=$(mktemp -d)
+    # shellcheck disable=SC2064
+    trap "rm -rf '$work_dir'" RETURN
+
+    # mutter-devel often conflicts with the base image's mutter; try dnf first
+    # then fall back to a forced rpm install.
+    log_info "Installing mutter-devel"
+    if dnf5 install -y mutter-devel &>/dev/null; then
+        log_success "mutter-devel installed via dnf"
+    else
+        log_warning "dnf refused mutter-devel — falling back to force-install via rpm"
+        if ! dnf5 download --destdir="$work_dir" mutter-devel; then
+            log_error "Failed to download mutter-devel"
+            return 1
+        fi
+        local mutter_rpm
+        mutter_rpm=$(find "$work_dir" -name "mutter-devel-*.rpm" | head -1)
+        if [[ -z "$mutter_rpm" ]]; then
+            log_error "No mutter-devel RPM found after download"
+            return 1
+        fi
+        if rpm --force --nodeps -ivh "$mutter_rpm"; then
+            log_success "mutter-devel force-installed via rpm"
+        else
+            log_error "rpm install of mutter-devel failed"
+            return 1
+        fi
+    fi
+
+    log_info "Installing build dependencies for gnome-rounded-blur"
+    dnf5 install -y glib2-devel '@c-development' meson ninja gobject-introspection
+
+    # Clone the library source
+    local repo_dir="$work_dir/gnome-rounded-blur"
+    log_info "Cloning gnome-rounded-blur"
+    git clone --quiet --depth 1 https://github.com/kancko/gnome-rounded-blur "$repo_dir" \
+        || { log_error "Failed to clone gnome-rounded-blur"; return 1; }
+
+    # The repo pins mutter_req and mutter_api_version to a specific mutter release.
+    # Read the installed mutter's major version, compute the delta, and patch
+    # meson.build so the build links against what's actually on this system.
+    local mutter_sys mutter_repo_req mutter_api_repo
+    mutter_sys=$(mutter --version 2>/dev/null | grep -oP '\d+' | head -1)
+    mutter_repo_req=$(grep -oP "mutter_req = ['\"][^'\"]*" "$repo_dir/meson.build" \
+        | grep -oP '\d+' | head -1)
+    mutter_api_repo=$(grep -oP "mutter_api_version = ['\"][^'\"]*" "$repo_dir/meson.build" \
+        | grep -oP '\d+' | head -1)
+
+    if [[ -n "$mutter_sys" && -n "$mutter_repo_req" && -n "$mutter_api_repo" ]]; then
+        local delta new_api
+        delta=$(( mutter_sys - mutter_repo_req ))
+        new_api=$(( mutter_api_repo + delta ))
+        sed -i "s/mutter_req = \"${mutter_repo_req}\"/mutter_req = \"${mutter_sys}\"/" \
+            "$repo_dir/meson.build"
+        sed -i "s/mutter_api_version = \"${mutter_api_repo}\"/mutter_api_version = \"${new_api}\"/" \
+            "$repo_dir/meson.build"
+        log_info "mutter patch: req ${mutter_repo_req}→${mutter_sys}, api ${mutter_api_repo}→${new_api}"
+    else
+        log_warning "Could not read mutter version — meson.build not patched (build may fail)"
+    fi
+
+    # CCACHE_DISABLE=1 prevents ccache from tripping over its own symlinks that
+    # already exist in the base image.
+    log_info "Building gnome-rounded-blur"
+    local build_dir="$repo_dir/build"
+    CCACHE_DISABLE=1 meson setup "$build_dir" "$repo_dir" \
+        || { log_error "meson setup failed"; return 1; }
+    CCACHE_DISABLE=1 meson compile -C "$build_dir" \
+        || { log_error "meson compile failed"; return 1; }
+
+    # meson defaults to --prefix=/usr/local; copy into /usr so the library is
+    # on the standard search path without ld.so.conf changes.
+    log_info "Installing gnome-rounded-blur"
+    local dest_dir="$work_dir/binary"
+    meson install -C "$build_dir" --destdir "$dest_dir" \
+        || { log_error "meson install failed"; return 1; }
+    cp -rf "$dest_dir/usr/local/"* /usr/ \
+        || { log_error "Failed to copy library files to /usr"; return 1; }
+
+    log_success "gnome-rounded-blur installed"
+
+    # meson is build-only; everything else stays until libblur-effect-1.0.so.1
+    # dependencies are fully mapped.
+    log_info "Removing meson (build-only)"
+    dnf5 remove -y meson || true
+}
+
 main() {
     trap cleanup_temporary_files EXIT
 
@@ -460,6 +549,9 @@ main() {
     install_all_extensions || had_errors=1
     remove_git_directories
     patch_extension_compatibility
+    install_gnome_rounded_blur || had_errors=1
+    
+    
 
     if [[ $had_errors -ne 0 ]]; then
         log_error "One or more extensions failed to install — review log above"

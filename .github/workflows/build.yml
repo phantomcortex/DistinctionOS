@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - main
+      - '**'
     paths-ignore:
       - '.github/**'
       - '**/README.md'
@@ -75,9 +76,10 @@ jobs:
           # This generates all the tags for your image, you can add custom tags here too!
           # Default tags are "$DEFAULT_TAG" and "$DEFAULT_TAG.$date".
           tags: |
-            type=raw,value=${{ env.DEFAULT_TAG }}
-            type=raw,value=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}}
-            type=raw,value={{date 'YYYYMMDD'}}
+            type=raw,value=${{ env.DEFAULT_TAG }},enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}},enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value={{date 'YYYYMMDD'}},enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=testing,enable=${{ github.ref != 'refs/heads/main' && github.event_name != 'pull_request' }}
             type=sha,enable=${{ github.event_name == 'pull_request' }}
             type=ref,event=pr
           labels: |
@@ -135,7 +137,7 @@ jobs:
       - name: Run Rechunker
         id: rechunk
         uses: hhd-dev/rechunk@v1.2.4
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
           rechunk: "ghcr.io/hhd-dev/rechunk:v1.2.3"
           ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
@@ -155,7 +157,7 @@ jobs:
 
       - name: Rechunk output
         continue-on-error: true
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
           if [[ "${STEPS_RECHUNK_CONCLUSION}" == "success" ]]; then
             echo "=== Rechunk Changelog ==="
@@ -176,7 +178,7 @@ jobs:
           STEPS_RECHUNK_OUTPUTS_MANIFEST: ${{ steps.rechunk.outputs.manifest }}
 
       - name: Load in podman and tag
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
           IMAGE=$(podman pull ${STEPS_RECHUNK_OUTPUTS_REF})
           sudo rm -rf ${STEPS_RECHUNK_OUTPUTS_LOCATION}
@@ -206,12 +208,12 @@ jobs:
       - name: Inspect layer sizes
         run: |
           echo "=== Layer size analysis ==="
-          podman inspect localhost/${IMAGE_NAME}:${DEFAULT_TAG} | jq '.[0].RootFS.Layers[] | length' | \
+          sudo podman inspect localhost/${IMAGE_NAME}:${DEFAULT_TAG} | jq '.[0].RootFS.Layers[] | length' | \
           awk '{sum+=$1; print "Layer size: " $1/1024/1024 " MB"} END {print "Total: " sum/1024/1024 " MB"}'
 
       - name: Push To GHCR
         uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         id: push
         env:
           REGISTRY_USER: ${{ github.actor }}
@@ -226,6 +228,20 @@ jobs:
             --compression-format=gzip
             --compression-level=6
 
+      - name: Push testing image to GHCR
+        if: github.ref != 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          DEFAULT_TAG: ${{ env.DEFAULT_TAG }}
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_PASSWORD: ${{ github.token }}
+        run: |
+          echo "${REGISTRY_PASSWORD}" | sudo podman login ghcr.io -u "${REGISTRY_USER}" --password-stdin
+          DEST="${IMAGE_REGISTRY}/${IMAGE_NAME}:testing"
+          sudo podman tag "localhost/${IMAGE_NAME}:${DEFAULT_TAG}" "$DEST"
+          sudo podman push "$DEST"
+
       # This section is optional and only needs to be enabled if you plan on distributing
       # your project for others to consume. You will need to create a public and private key
       # using Cosign and save the private key as a repository secret in Github for this workflow
@@ -236,7 +252,7 @@ jobs:
 
       - name: Sign container image
         id: sign_container_image
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
           echo "${STEPS_PUSH_OUTPUTS_REGISTRY_PATHS}"
           IMAGE_FULL="${STEPS_REGISTRY_CASE_OUTPUTS_LOWERCASE}/${IMAGE_NAME}"
@@ -251,7 +267,7 @@ jobs:
   generate_release:
     name: Generate Release
     needs: build_push
-    if: github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
