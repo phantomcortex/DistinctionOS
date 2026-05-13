@@ -445,33 +445,60 @@ cleanup_temporary_files() {
     log_success "Cleanup completed"
 }
 
-install_gnome_rounded_blur{
-#
+install_gnome_rounded_blur() {
+    local work_dir
+    work_dir=$(mktemp -d)
+    # shellcheck disable=SC2064
+    trap "rm -rf '$work_dir'" RETURN
 
-pushd /tmp
+    # mutter-devel often conflicts with the base image's mutter; try dnf first
+    # then fall back to a forced rpm install.
+    log_info "Installing mutter-devel"
+    if dnf install -y mutter-devel &>/dev/null; then
+        log_success "mutter-devel installed via dnf"
+    else
+        log_warning "dnf refused mutter-devel — falling back to force-install via rpm"
+        if ! dnf download --destdir="$work_dir" mutter-devel &>/dev/null; then
+            log_error "Failed to download mutter-devel"
+            return 1
+        fi
+        local mutter_rpm
+        mutter_rpm=$(find "$work_dir" -name "mutter-devel-*.rpm" | head -1)
+        if [[ -z "$mutter_rpm" ]]; then
+            log_error "No mutter-devel RPM found after download"
+            return 1
+        fi
+        if rpm --force --nodeps -ivh "$mutter_rpm"; then
+            log_success "mutter-devel force-installed via rpm"
+        else
+            log_error "rpm install of mutter-devel failed"
+            return 1
+        fi
+    fi
 
-if dnf5 -y install mutter-devel &>/dev/null; then
-  log_success "mutter-devel installed!"
-else
-  log_warning "mutter-devel failed to install via dnf attempt manual install"
-  log "download mutter-devel"
-  dnf download mutter-devel
+    log_info "Installing build dependencies for gnome-rounded-blur"
+    dnf install -y glib2-devel '@c-development' meson
 
-  log_info "rpm install >>"
-  for rpm_package in /tmp/*.rpm; do
-  	log_info "install: $rpm_package"
-    rpm -ivh --force --nodeps "$rpm_package"
-  done
-  log_info "done"
-fi
+    log_info "Downloading rounded_blur_build.sh"
+    local build_script="$work_dir/rounded_blur_build.sh"
+    if ! curl -fsSL "https://raw.githubusercontent.com/aunetx/blur-my-shell/refs/heads/master/scripts/rounded_blur_build.sh" \
+            -o "$build_script"; then
+        log_error "Failed to download rounded_blur_build.sh"
+        return 1
+    fi
 
-popd 
+    log_info "Building and installing gnome-rounded-blur"
+    if bash "$build_script" -i; then
+        log_success "gnome-rounded-blur installed"
+    else
+        log_error "gnome-rounded-blur build/install failed"
+        return 1
+    fi
 
-
-log_info "install gnome-rounded-blur"
-dnf5 -y install glib2-devel @c-development meson 
-curl https://raw.githubusercontent.com/aunetx/blur-my-shell/refs/heads/master/scripts/rounded_blur_build.sh | bash -s -- -i
-dnf5 -y remove meson mutter-devel
+    # meson is build-only; everything else stays until libblur-effect-1.0.so.1
+    # dependencies are fully mapped.
+    log_info "Removing meson (build-only)"
+    dnf remove -y meson || true
 }
 
 main() {

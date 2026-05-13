@@ -30,7 +30,7 @@ else
     exit 1
 fi
 
-mesa_version=$(rpm -q --queryformat '%{VERSION}' mesa-filesystem 2>/dev/null || echo "unknown")
+mesa_version=$(rpm -q --queryformat '%{VERSION}\n' mesa-filesystem 2>/dev/null | tail -1 || echo "unknown")
 log_info "Mesa version: $mesa_version"
 
 # ── Versionlock ───────────────────────────────────────────────────────────────
@@ -45,9 +45,8 @@ readonly -a MESA_PACKAGES=(
     "mesa-libOpenCL"
     "mesa-libgbm"
     "mesa-libgbm-devel"
-    "mesa-dri-drivers"
+    "mesa-dri-drivers"      # VA-API drivers merged here in Fedora 42+
     "mesa-vulkan-drivers"
-    "mesa-va-drivers"
 )
 
 lock_failures=0
