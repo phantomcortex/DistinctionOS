@@ -230,14 +230,17 @@ jobs:
 
       - name: Push testing image to GHCR
         if: github.ref != 'refs/heads/main' && github.event_name != 'pull_request'
-        run: |
-          DEST="${IMAGE_REGISTRY}/${IMAGE_NAME}:testing"
-          sudo podman tag "localhost/${IMAGE_NAME}:${DEFAULT_TAG}" "$DEST"
-          sudo podman push "$DEST"
         env:
           IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
           DEFAULT_TAG: ${{ env.DEFAULT_TAG }}
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_PASSWORD: ${{ github.token }}
+        run: |
+          echo "${REGISTRY_PASSWORD}" | sudo podman login ghcr.io -u "${REGISTRY_USER}" --password-stdin
+          DEST="${IMAGE_REGISTRY}/${IMAGE_NAME}:testing"
+          sudo podman tag "localhost/${IMAGE_NAME}:${DEFAULT_TAG}" "$DEST"
+          sudo podman push "$DEST"
 
       # This section is optional and only needs to be enabled if you plan on distributing
       # your project for others to consume. You will need to create a public and private key
