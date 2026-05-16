@@ -41,7 +41,7 @@ PINNED_PACKAGES: List[Tuple[str, List[str]]] = [
     ("Bazaar",    ["bazaar"]),
     ("Ptyxis",    ["ptyxis"]),
     ("Mesa",      ["mesa-filesystem"]),
-    ("Gamescope", ["gamescope"]),
+    ("Gamescope", ["terra-gamescope"]),
     ("Cider",     ["Cider"]),
     ("Lact",      ["lact"]),
 ]
