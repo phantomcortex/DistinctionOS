@@ -11,6 +11,12 @@ COPY build_files /
 FROM ghcr.io/ublue-os/bazzite-gnome:testing as DistinctionOS
 #FROM quay.io/fedora/fedora-bootc:42
 
+ARG IMAGE_NAME="distinctionos"
+ARG IMAGE_VENDOR="phantomcortex"
+ARG IMAGE_BRANCH="main"
+ARG BASE_IMAGE_NAME="bazzite-gnome"
+ARG VERSION_DATE="00000000"
+
 # Copy pre-built mesa RPMs into the image so 05-mesa-install.sh can install them
 # NOTE: must NOT be under /tmp — the main RUN step mounts /tmp as tmpfs, which
 # would shadow anything COPY'd there.
@@ -31,6 +37,8 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/04-config.sh && \
     echo -e "\033[31mREMOTE GRABBER >>>>\033[0m" && \
     /ctx/06-remote-grabber.sh && \
+    echo -e "\033[31mIMAGE INFO >>>>\033[0m" && \
+    /ctx/image-info && \
     echo -e "\033[31mOSTREE COMMIT\033[0m" && \
     ostree container commit
 

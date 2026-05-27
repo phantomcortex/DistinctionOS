@@ -115,10 +115,19 @@ jobs:
       - name: Build image (rootful)
         id: build_image
         run: |
+          FEDORA_VER=$(skopeo inspect docker://ghcr.io/ublue-os/bazzite-gnome:testing 2>/dev/null \
+            | jq -r '.Labels["org.opencontainers.image.version"] // empty' \
+            | grep -oP '^\d+' || echo "44")
+          VERSION_DATE=$(date -u +%Y%m%d)
           # Builds image in root store as root, to be picked up by Rechunker
           sudo buildah bud \
             --format docker \
             --tag "localhost/${IMAGE_NAME}:${{ env.DEFAULT_TAG }}" \
+            --build-arg IMAGE_NAME="${IMAGE_NAME}" \
+            --build-arg IMAGE_VENDOR="${{ github.repository_owner }}" \
+            --build-arg IMAGE_BRANCH="${{ github.ref_name }}" \
+            --build-arg BASE_IMAGE_NAME="bazzite-gnome" \
+            --build-arg VERSION_DATE="${VERSION_DATE}" \
             --file Containerfile \
             .
 
