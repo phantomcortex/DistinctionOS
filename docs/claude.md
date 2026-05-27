@@ -447,6 +447,32 @@ declare -A RPM_PACKAGES=(
 - [ ] **Standalone ISO**: Fully functional installer ISO (in progress via build-disk.yml)
 - [ ] **Build Caching**: Implement layer caching for faster iteration
 
+### Maybe-Goals (Exploratory / No Timeline)
+
+#### DistinctionOS-LTS: Stable Base + Selective Upgrades
+**Status**: Experimental — currently a scaffold stub (`Containerfile.lts`), not intended for production use yet.
+
+**Philosophy**: The LTS variant is NOT about running older software — it's about choosing the right layer to stabilize at. AlmaLinux 10 provides a 10-year-committed substrate (libc, systemd, SELinux policy, hardware ABI, package manager behavior) that is genuinely hard to break. But user-facing components like the desktop environment, mesa stack, and kernel do NOT benefit from being held at RHEL's pinned versions — and can actually be *less* stable there. GNOME 48+ is demonstrably more stable than GNOME 47 for desktop use (GNOME 45–47 was the `mutter` memory leak era; 48 brought major compositor memory management improvements). RHEL backports security patches and enterprise auth fixes into GNOME 47, but those patches are irrelevant for a personal gaming/dev system.
+
+**Vision**: A carefully balanced image where:
+- The OS base (AlmaLinux 10) provides long-term stability and security support
+- The desktop environment (GNOME, targeting 50) stays current for actual user-facing stability
+- Mesa and kernel are upgraded to Fedora 44-equivalent (same as the GNOME and Deck variants)
+- Wine, gaming tools, and developer packages track upstream where sensible
+
+**Technical approach being explored**:
+- AlmaLinux 10 bootc (`quay.io/almalinuxorg/almalinux-bootc:10`) as base
+- A `distinctionos-gnome-stack` OCI builder artifact (mirrors the existing mesa builder pattern) that compiles GNOME 50 RPMs against RHEL 10 deps with careful conflict resolution
+- Same CachyOS LTO kernel approach as the other variants (via COPR if EL10 packages exist, or compiled separately)
+- EPEL 10 + CRB for supplementary packages
+
+**Key open questions**:
+- Whether a GNOME 50 COPR for EL10 emerges from the community, or if a custom builder is required
+- Which packages can be pulled from the Fedora 44 RPM set directly vs. which need recompilation against RHEL deps
+- Maintenance burden of keeping the gnome-stack builder in sync with upstream releases
+
+**Context for AI assistants**: When this topic comes up, treat LTS as genuinely experimental. Do not assume GNOME 47 is the target — the owner explicitly wants GNOME 50 and has made a considered decision that newer GNOME is more stable for their use case. The mesa builder (`build-mesa.yml` / `Containerfile` in `.github/mesa-builder/`) is the architectural reference for how to build a custom package stack as a separate OCI artifact and import it.
+
 ### Completed Goals ✅
 - [x] Rechunker support for efficient updates
 - [x] ZSH as default shell with automated configuration
@@ -570,14 +596,16 @@ At the end of a session, user will request updated context files:
 
 ## Document Metadata
 
-**Version**: 3.3  
-**Last Updated**: 2026-1-16  
+**Version**: 3.4  
+**Last Updated**: 2026-05-27  
 **Major Changes**: 
 - Add Steam Linker
 - Add xwm-player
 - Add DistinctionOS File Structure to claude.md
 - Mark ZFS as no longer planned
 - Update Objectives
+- Add multi-variant build overhaul context (GNOME, Deck, LTS)
+- Add DistinctionOS-LTS maybe-goal with philosophy and technical approach
 
 **Maintainer**: phantomcortex  
 **Purpose**: Provide comprehensive context to AI assistants working with DistinctionOS
