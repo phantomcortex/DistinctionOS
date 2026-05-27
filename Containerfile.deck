@@ -8,15 +8,14 @@ COPY build_files /
 FROM ghcr.io/phantomcortex/distinctionos-mesa:latest AS mesa-rpms
 
 # Base Image
-# bazzite-deck  — targets actual Steam Deck hardware; gamescope session by default, no desktop shell
-# bazzite       — KDE gaming desktop; runs on any AMD/Intel PC, can switch to gaming mode
-# TODO: confirm target with owner — currently set to bazzite-deck
-FROM ghcr.io/ublue-os/bazzite-deck:stable AS DistinctionOS-Deck
+# bazzite-deck-gnome — Steam Deck hardware support + GNOME shell desktop
+# Provides gamescope gaming mode AND a full GNOME fallback session.
+FROM ghcr.io/ublue-os/bazzite-deck-gnome:stable AS DistinctionOS-Deck
 
 ARG IMAGE_NAME="distinctionos-deck"
 ARG IMAGE_VENDOR="phantomcortex"
 ARG IMAGE_BRANCH="main"
-ARG BASE_IMAGE_NAME="bazzite-deck"
+ARG BASE_IMAGE_NAME="bazzite-deck-gnome"
 ARG VERSION_DATE="00000000"
 
 # Copy pre-built mesa RPMs into the image so 05-mesa-install.sh can install them

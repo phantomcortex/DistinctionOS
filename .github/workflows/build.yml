@@ -54,9 +54,9 @@ jobs:
 
           - variant: deck
             image_name: distinctionos-deck
-            image_desc: "DistinctionOS — Deck / gaming mode"
+            image_desc: "DistinctionOS — Deck (GNOME + gaming mode)"
             containerfile: Containerfile.deck
-            base_image_name: bazzite-deck
+            base_image_name: bazzite-deck-gnome
             rechunk: false
 
     concurrency:
