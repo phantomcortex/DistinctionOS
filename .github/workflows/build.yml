@@ -5,7 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '05 6 */5 * *'  # 12:05am Mountain time every 5 days Ref: 'minute hour day(s) Month day-of-the-week'
+    - cron: '05 6 */5 * *'  # 12:05am Mountain time every 5 days
   push:
     branches:
       - main
@@ -15,7 +15,7 @@ on:
       - '**/README.md'
       - '**/claude.md'
       - 'repo_files/**'
-      - 'system_files/**' # modifcations to system files are usually small and don't warrant a full rebuild
+      - 'system_files/**'
   workflow_dispatch:
     inputs:
       fresh-rechunk:
@@ -26,72 +26,115 @@ on:
         description: 'Optional handwritten changelog message for this release'
         type: string
         default: ''
+
 env:
-  IMAGE_DESC: "My Customized Bazzite Image"
+  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
   IMAGE_KEYWORDS: "bootc,ublue,universal-blue"
   IMAGE_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4"
-  IMAGE_NAME: "${{ github.event.repository.name }}"  # output image name, usually same as repo name
-  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"  # do not edit
-  DEFAULT_TAG: "latest"
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
-  cancel-in-progress: true
 
 jobs:
-  build_push:
-    name: Build and push image
+
+  # ============================================================================
+  # Build matrix — GNOME desktop + Deck variants
+  # ============================================================================
+  build:
+    name: Build — ${{ matrix.variant }}
     runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: gnome
+            image_name: distinctionos
+            image_desc: "DistinctionOS — GNOME gaming desktop"
+            containerfile: Containerfile.gnome
+            base_image_name: bazzite-gnome
+            rechunk: true
+
+          - variant: deck
+            image_name: distinctionos-deck
+            image_desc: "DistinctionOS — Deck / gaming mode"
+            containerfile: Containerfile.deck
+            base_image_name: bazzite-deck
+            rechunk: false
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ matrix.variant }}
+      cancel-in-progress: true
 
     permissions:
       contents: read
       packages: write
       id-token: write
 
-    outputs:
-      digest: ${{ steps.push.outputs.digest }}
-
     steps:
-      # These stage versions are pinned by https://github.com/renovatebot/renovate
+      # ── Checkout ────────────────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
         with:
-          fetch-depth: 0  # Full history for changelog commit range
+          fetch-depth: 0
 
+      # ── Environment ─────────────────────────────────────────────────────────
       - name: Prepare environment
         run: |
-          # Lowercase the image uri
           echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
-          echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
 
       - name: Get current date
         id: date
         run: |
           echo "date=$(date -u +%Y\-%m\-%d\T%H\:%M\:%S\Z)" >> $GITHUB_OUTPUT
+          echo "version_date=$(date -u +%Y%m%d)" >> $GITHUB_OUTPUT
 
+      # ── Tags ────────────────────────────────────────────────────────────────
+      # Tag scheme:
+      #   gnome  + main     ->  latest  latest.YYYYMMDD  YYYYMMDD
+      #   gnome  + non-main ->  testing
+      #   deck   + main     ->  deck-latest  deck-latest.YYYYMMDD  deck-YYYYMMDD
+      #   deck   + non-main ->  deck-testing
+      - name: Compute image tags
+        id: tags
+        run: |
+          IS_MAIN="${{ github.ref == 'refs/heads/main' }}"
+          IS_PR="${{ github.event_name == 'pull_request' }}"
+          DATE="${{ steps.date.outputs.version_date }}"
+          VARIANT="${{ matrix.variant }}"
+
+          if [[ "$IS_PR" == "true" ]]; then
+            TAGS="pr-${{ github.event.number }}"
+          elif [[ "$IS_MAIN" == "true" ]]; then
+            if [[ "$VARIANT" == "gnome" ]]; then
+              TAGS="latest latest.${DATE} ${DATE}"
+            else
+              TAGS="deck-latest deck-latest.${DATE} deck-${DATE}"
+            fi
+          else
+            if [[ "$VARIANT" == "gnome" ]]; then
+              TAGS="testing"
+            else
+              TAGS="deck-testing"
+            fi
+          fi
+
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "first_tag=$(echo ${TAGS} | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      # ── OCI labels ──────────────────────────────────────────────────────────
       - name: Image Metadata
         uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
         id: metadata
         with:
-          # This generates all the tags for your image, you can add custom tags here too!
-          # Default tags are "$DEFAULT_TAG" and "$DEFAULT_TAG.$date".
-          tags: |
-            type=raw,value=${{ env.DEFAULT_TAG }},enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}},enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value={{date 'YYYYMMDD'}},enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=testing,enable=${{ github.ref != 'refs/heads/main' && github.event_name != 'pull_request' }}
-            type=sha,enable=${{ github.event_name == 'pull_request' }}
-            type=ref,event=pr
+          images: "${{ env.IMAGE_REGISTRY }}/${{ matrix.image_name }}"
           labels: |
-            io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/refs/heads/main/README.md
+            io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/refs/heads/main/README.md
             org.opencontainers.image.created=${{ steps.date.outputs.date }}
-            org.opencontainers.image.description=${{ env.IMAGE_DESC }}
-            org.opencontainers.image.documentation=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/refs/heads/main/README.md
-            org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/blob/main/Containerfile
-            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
-            org.opencontainers.image.url=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+            org.opencontainers.image.description=${{ matrix.image_desc }}
+            org.opencontainers.image.documentation=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/refs/heads/main/README.md
+            org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/blob/main/${{ matrix.containerfile }}
+            org.opencontainers.image.title=${{ matrix.image_name }}
+            org.opencontainers.image.url=https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}
             org.opencontainers.image.vendor=${{ github.repository_owner }}
-            org.opencontainers.image.version=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}}
+            org.opencontainers.image.version=${{ steps.tags.outputs.first_tag }}.${{ steps.date.outputs.version_date }}
             org.opencontainers.image.revision=${{ github.sha }}
             io.artifacthub.package.deprecated=false
             io.artifacthub.package.keywords=${{ env.IMAGE_KEYWORDS }}
@@ -102,6 +145,7 @@ jobs:
           sep-tags: " "
           sep-annotations: " "
 
+      # ── Disk space ──────────────────────────────────────────────────────────
       - name: Maximize build space
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
@@ -112,85 +156,68 @@ jobs:
           docker-images: false
           swap-storage: true
 
-      - name: Build image (rootful)
+      # ── Build ────────────────────────────────────────────────────────────────
+      - name: Build image
         id: build_image
         run: |
-          # Builds image in root store as root, to be picked up by Rechunker
+          FEDORA_VER=$(skopeo inspect docker://ghcr.io/ublue-os/${{ matrix.base_image_name }}:stable 2>/dev/null \
+            | jq -r '.Labels["org.opencontainers.image.version"] // empty' \
+            | grep -oP '^\d+' || echo "44")
+          VERSION_DATE="${{ steps.date.outputs.version_date }}"
+
           sudo buildah bud \
             --format docker \
-            --tag "localhost/${IMAGE_NAME}:${{ env.DEFAULT_TAG }}" \
-            --file Containerfile \
+            --tag "localhost/${{ matrix.image_name }}:latest" \
+            --build-arg IMAGE_NAME="${{ matrix.image_name }}" \
+            --build-arg IMAGE_VENDOR="${{ github.repository_owner }}" \
+            --build-arg IMAGE_BRANCH="${{ github.ref_name }}" \
+            --build-arg BASE_IMAGE_NAME="${{ matrix.base_image_name }}" \
+            --build-arg VERSION_DATE="${VERSION_DATE}" \
+            --file ${{ matrix.containerfile }} \
             .
 
+      # ── Cleanup pulled source images (save disk for rechunk) ─────────────
       - name: Remove source images
         run: |
           images=$(sudo podman images -n --sort repository --format '{{.ID}} {{.Repository}}' | grep -v localhost | awk '{print $1}')
           if [ -n "${images}" ]; then
             for image in ${images}; do
-              echo "Removing image: $image"
+              echo "Removing: $image"
               sudo podman rmi --force "$image"
             done
           else
             echo "No images to remove."
           fi
 
+      # ── Rechunk (GNOME on main only) ─────────────────────────────────────
       - name: Run Rechunker
         id: rechunk
         uses: hhd-dev/rechunk@v1.2.4
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: matrix.rechunk && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
           rechunk: "ghcr.io/hhd-dev/rechunk:v1.2.3"
-          ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
-          prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
+          ref: "localhost/${{ matrix.image_name }}:latest"
+          prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ matrix.image_name }}:latest"
           skip_compression: false
           max-layers: 90
-          labels: ${{ steps.metadata.outputs.labels }} # Rechunk strips out all the labels during build, this needs to be reapplied here with newline separator
+          labels: ${{ steps.metadata.outputs.labels }}
+
+      - name: Rechunk output
+        continue-on-error: true
+        if: steps.rechunk.conclusion == 'success'
+        run: |
+          echo "=== Rechunk Changelog ==="
+          [[ -f "${{ steps.rechunk.outputs.changelog }}" ]] && cat "${{ steps.rechunk.outputs.changelog }}"
+          echo ""
+          echo "=== Rechunk Manifest ==="
+          [[ -f "${{ steps.rechunk.outputs.manifest }}" ]] && cat "${{ steps.rechunk.outputs.manifest }}"
 
       - name: Remove Rechunker image
         run: |
           image=$(sudo podman images -n --sort repository --format '{{.ID}} {{.Repository}}' | grep rechunk | awk '{print $1}')
-          if [ -n "${image}" ]; then
-            sudo podman rmi --force "$image"
-          else
-            echo "No image to remove"
-          fi
+          [ -n "${image}" ] && sudo podman rmi --force "$image" || echo "No rechunk image to remove."
 
-      - name: Rechunk output
-        continue-on-error: true
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        run: |
-          if [[ "${STEPS_RECHUNK_CONCLUSION}" == "success" ]]; then
-            echo "=== Rechunk Changelog ==="
-            if [ -f "${STEPS_RECHUNK_OUTPUTS_CHANGELOG}" ]; then
-              cat "${STEPS_RECHUNK_OUTPUTS_CHANGELOG}"
-            fi
-            echo ""
-            echo "=== Rechunk Manifest ==="
-            if [ -f "${STEPS_RECHUNK_OUTPUTS_MANIFEST}" ]; then
-              cat "${STEPS_RECHUNK_OUTPUTS_MANIFEST}"
-            fi
-          else
-            echo "Rechunk conclusion: ${STEPS_RECHUNK_CONCLUSION}"
-          fi
-        env:
-          STEPS_RECHUNK_CONCLUSION: ${{ steps.rechunk.conclusion }}
-          STEPS_RECHUNK_OUTPUTS_CHANGELOG: ${{ steps.rechunk.outputs.changelog }}
-          STEPS_RECHUNK_OUTPUTS_MANIFEST: ${{ steps.rechunk.outputs.manifest }}
-
-      - name: Load in podman and tag
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        run: |
-          IMAGE=$(podman pull ${STEPS_RECHUNK_OUTPUTS_REF})
-          sudo rm -rf ${STEPS_RECHUNK_OUTPUTS_LOCATION}
-          for tag in ${STEPS_METADATA_OUTPUTS_TAGS}; do
-            podman tag $IMAGE ${IMAGE_NAME}:$tag
-          done
-        env:
-          STEPS_RECHUNK_OUTPUTS_REF: ${{ steps.rechunk.outputs.ref }}
-          STEPS_RECHUNK_OUTPUTS_LOCATION: ${{ steps.rechunk.outputs.location }}
-          STEPS_METADATA_OUTPUTS_TAGS: ${{ steps.metadata.outputs.tags }}
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
-
+      # ── Login ────────────────────────────────────────────────────────────────
       - name: Login to GitHub Container Registry
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         if: github.event_name != 'pull_request'
@@ -205,68 +232,90 @@ jobs:
         with:
           string: ${{ env.IMAGE_REGISTRY }}
 
+      # ── Layer sizes ──────────────────────────────────────────────────────────
       - name: Inspect layer sizes
         run: |
-          echo "=== Layer size analysis ==="
-          sudo podman inspect localhost/${IMAGE_NAME}:${DEFAULT_TAG} | jq '.[0].RootFS.Layers[] | length' | \
-          awk '{sum+=$1; print "Layer size: " $1/1024/1024 " MB"} END {print "Total: " sum/1024/1024 " MB"}'
+          echo "=== Layer size analysis — ${{ matrix.image_name }} ==="
+          sudo podman inspect localhost/${{ matrix.image_name }}:latest | \
+            jq '.[0].RootFS.Layers[] | length' | \
+            awk '{sum+=$1; print "Layer: " $1/1024/1024 " MB"} END {print "Total: " sum/1024/1024 " MB"}'
 
-      - name: Push To GHCR
+      # ── Push ─────────────────────────────────────────────────────────────────
+      # Rechunked images (gnome + main): load from rechunk output ref, tag, push.
+      # Non-rechunked (deck, or non-main branches): push directly from buildah store.
+      - name: Load rechunked image
+        if: steps.rechunk.conclusion == 'success'
+        run: |
+          IMAGE=$(podman pull ${{ steps.rechunk.outputs.ref }})
+          sudo rm -rf ${{ steps.rechunk.outputs.location }}
+          DEST="${{ steps.registry_case.outputs.lowercase }}/${{ matrix.image_name }}"
+          for tag in ${{ steps.tags.outputs.tags }}; do
+            podman tag "$IMAGE" "${DEST}:${tag}"
+          done
+
+      - name: Push rechunked image
         uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        id: push
+        if: steps.rechunk.conclusion == 'success'
+        id: push_rechunked
         env:
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_PASSWORD: ${{ github.token }}
         with:
-          registry: ${{ env.IMAGE_REGISTRY }}
-          image: ${{ env.IMAGE_NAME }}
-          tags: ${{ steps.metadata.outputs.tags }}
+          registry: ${{ steps.registry_case.outputs.lowercase }}
+          image: ${{ matrix.image_name }}
+          tags: ${{ steps.tags.outputs.tags }}
           username: ${{ env.REGISTRY_USER }}
           password: ${{ env.REGISTRY_PASSWORD }}
           extra-args: |
             --compression-format=gzip
             --compression-level=6
 
-      - name: Push testing image to GHCR
-        if: github.ref != 'refs/heads/main' && github.event_name != 'pull_request'
+      - name: Push non-rechunked image
+        if: steps.rechunk.conclusion != 'success' && github.event_name != 'pull_request'
         env:
-          IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
-          DEFAULT_TAG: ${{ env.DEFAULT_TAG }}
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_PASSWORD: ${{ github.token }}
         run: |
           echo "${REGISTRY_PASSWORD}" | sudo podman login ghcr.io -u "${REGISTRY_USER}" --password-stdin
-          DEST="${IMAGE_REGISTRY}/${IMAGE_NAME}:testing"
-          sudo podman tag "localhost/${IMAGE_NAME}:${DEFAULT_TAG}" "$DEST"
-          sudo podman push "$DEST"
+          DEST="${{ steps.registry_case.outputs.lowercase }}/${{ matrix.image_name }}"
+          for tag in ${{ steps.tags.outputs.tags }}; do
+            sudo podman tag "localhost/${{ matrix.image_name }}:latest" "${DEST}:${tag}"
+            sudo podman push "${DEST}:${tag}" \
+              --compression-format=gzip \
+              --compression-level=6
+          done
 
-      # This section is optional and only needs to be enabled if you plan on distributing
-      # your project for others to consume. You will need to create a public and private key
-      # using Cosign and save the private key as a repository secret in Github for this workflow
-      # to consume. For more details, review the image signing section of the README.
+      # Unified digest capture for signing — skopeo inspect after push
+      - name: Get image digest
+        id: digest
+        if: github.event_name != 'pull_request'
+        run: |
+          DEST="${{ steps.registry_case.outputs.lowercase }}/${{ matrix.image_name }}"
+          FIRST_TAG="${{ steps.tags.outputs.first_tag }}"
+          DIGEST=$(skopeo inspect --format '{{.Digest}}' "docker://${DEST}:${FIRST_TAG}")
+          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
+
+      # ── Sign ─────────────────────────────────────────────────────────────────
       - name: Install Cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         if: github.event_name != 'pull_request'
 
       - name: Sign container image
-        id: sign_container_image
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
-          echo "${STEPS_PUSH_OUTPUTS_REGISTRY_PATHS}"
-          IMAGE_FULL="${STEPS_REGISTRY_CASE_OUTPUTS_LOWERCASE}/${IMAGE_NAME}"
-          cosign sign -y --key env://COSIGN_PRIVATE_KEY $IMAGE_FULL@"${STEPS_PUSH_OUTPUTS_DIGEST}"
+          IMAGE_FULL="${{ steps.registry_case.outputs.lowercase }}/${{ matrix.image_name }}"
+          cosign sign -y --key env://COSIGN_PRIVATE_KEY \
+            "${IMAGE_FULL}@${{ steps.digest.outputs.digest }}"
         env:
           COSIGN_EXPERIMENTAL: false
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
-          STEPS_PUSH_OUTPUTS_REGISTRY_PATHS: ${{ steps.push.outputs.registry-paths }}
-          STEPS_REGISTRY_CASE_OUTPUTS_LOWERCASE: ${{ steps.registry_case.outputs.lowercase }}
-          STEPS_PUSH_OUTPUTS_DIGEST: ${{ steps.push.outputs.digest }}
 
+  # ============================================================================
+  # Release — GNOME variant only, main branch only
+  # ============================================================================
   generate_release:
     name: Generate Release
-    needs: build_push
+    needs: build
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     permissions:
@@ -275,7 +324,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
         with:
-          fetch-depth: 500  # Deep history for commit range in changelog
+          fetch-depth: 500
 
       - name: Install skopeo
         run: |
@@ -286,7 +335,7 @@ jobs:
         id: changelog
         env:
           IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
-          IMAGE_NAME: ${{ github.event.repository.name }}
+          IMAGE_NAME: distinctionos
           HANDWRITTEN: ${{ github.event.inputs.handwritten || '' }}
         run: |
           REGISTRY="${IMAGE_REGISTRY,,}"
@@ -299,12 +348,10 @@ jobs:
             --workdir . \
             --handwritten "${HANDWRITTEN}"
 
-          # Source the env file for tag and title
           source ./output.env
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "title=${TITLE}" >> $GITHUB_OUTPUT
 
-          # Show in job summary
           echo "## Release: ${TITLE}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           cat ./changelog.md >> $GITHUB_STEP_SUMMARY

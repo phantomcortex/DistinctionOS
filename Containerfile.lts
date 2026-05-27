@@ -1,0 +1,72 @@
+# ============================================================================
+# DistinctionOS LTS — RHEL 10-based long-term support variant
+# ============================================================================
+# Goal: RHEL 10 stability with Fedora 44-equivalent:
+#   - Custom kernel    (CachyOS LTO or mainline via ELRepo)
+#   - Custom mesa      (built from Fedora SRPM, same as distinctionos-mesa artifact)
+#   - Modern desktop   (GNOME 48 or KDE Plasma 6 via COPR / custom repo)
+#   - Wine / gaming    (same as GNOME variant where possible)
+#
+# Base image candidates (uncomment one):
+#   AlmaLinux 10:  quay.io/almalinuxorg/almalinux-bootc:10
+#   Rocky Linux 10: quay.io/rockylinux/rockylinux-bootc:10
+# TODO: confirm distro with owner
+# ============================================================================
+
+FROM scratch AS ctx
+COPY build_files /
+
+# Pre-built custom mesa stack — must be rebuilt against RHEL 10 deps.
+# The existing distinctionos-mesa artifact targets Fedora; a separate
+# build-mesa-lts.yml job will be needed once this variant matures.
+# FROM ghcr.io/phantomcortex/distinctionos-mesa-lts:latest AS mesa-rpms
+
+# ---------------------------------------------------------------------------
+# Base Image  (uncomment one)
+# ---------------------------------------------------------------------------
+FROM quay.io/almalinuxorg/almalinux-bootc:10 AS DistinctionOS-LTS
+# FROM quay.io/rockylinux/rockylinux-bootc:10 AS DistinctionOS-LTS
+
+ARG IMAGE_NAME="distinctionos-lts"
+ARG IMAGE_VENDOR="phantomcortex"
+ARG IMAGE_BRANCH="main"
+ARG BASE_IMAGE_NAME="almalinux-bootc"
+ARG VERSION_DATE="00000000"
+
+# ---------------------------------------------------------------------------
+# TODO items before this variant can build
+# ---------------------------------------------------------------------------
+# 1. Kernel replacement
+#    - ELRepo mainline: https://elrepo.org/linux/kernel/el10/
+#    - Or build CachyOS kernel against RHEL 10 headers
+#    - Script: build_files/00-kernel-lts.sh (does not exist yet)
+#
+# 2. Mesa stack
+#    - Compile distinctionos-mesa against RHEL 10 build deps
+#    - Add build-mesa-lts.yml job
+#    - Uncomment FROM mesa-rpms stage above
+#
+# 3. Desktop environment
+#    - GNOME 48 via COPR (no official RHEL 10 GNOME 48 yet)
+#    - Or KDE Plasma 6 — better availability on EL10 via EPEL / CRB
+#    - Script: build_files/07-desktop-lts.sh (does not exist yet)
+#
+# 4. Package set adaptation
+#    - 02-build.sh installs Fedora-specific COPRs; many won't exist for EL10
+#    - Create build_files/02-build-lts.sh targeting EPEL 10 + CRB
+#
+# 5. image-info adaptation
+#    - CPE namespace and VERSION_CODENAME will differ
+# ---------------------------------------------------------------------------
+
+COPY system_files/ /
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=tmpfs,dst=/tmp \
+    echo -e "\033[31mLTS BUILD — NOT YET IMPLEMENTED\033[0m" && \
+    echo "See TODO list in Containerfile.lts" && \
+    exit 1
+
+### LINTING (enable once build is functional)
+# RUN bootc container lint

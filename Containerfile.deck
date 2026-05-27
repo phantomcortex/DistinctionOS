@@ -1,0 +1,51 @@
+# Allow build scripts to be referenced without being copied into the final image
+FROM scratch AS ctx
+COPY build_files /
+
+# Pre-built custom mesa stack — Fedora SRPM + freeworld codec patches applied.
+# Built by .github/workflows/build-mesa.yml, published weekly to GHCR.
+# All subpackages come from one SRPM so versions are guaranteed in sync.
+FROM ghcr.io/phantomcortex/distinctionos-mesa:latest AS mesa-rpms
+
+# Base Image
+# bazzite-deck  — targets actual Steam Deck hardware; gamescope session by default, no desktop shell
+# bazzite       — KDE gaming desktop; runs on any AMD/Intel PC, can switch to gaming mode
+# TODO: confirm target with owner — currently set to bazzite-deck
+FROM ghcr.io/ublue-os/bazzite-deck:stable AS DistinctionOS-Deck
+
+ARG IMAGE_NAME="distinctionos-deck"
+ARG IMAGE_VENDOR="phantomcortex"
+ARG IMAGE_BRANCH="main"
+ARG BASE_IMAGE_NAME="bazzite-deck"
+ARG VERSION_DATE="00000000"
+
+# Copy pre-built mesa RPMs into the image so 05-mesa-install.sh can install them
+COPY --from=mesa-rpms /rpms/ /var/tmp/mesa-rpms/
+
+# Cleanup & Finalize
+COPY system_files/ /
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=tmpfs,dst=/tmp \
+    echo -e "\033[31mKERNEL INSTALLER >>>>\033[0m" && \
+    /ctx/00-kernel.sh && \
+    echo -e "\033[31mKERNEL MODULES >>>>\033[0m" && \
+    /ctx/01-kernel-modules.sh && \
+    echo -e "\033[31mBUILD SCRIPT >>>>\033[0m" && \
+    /ctx/02-build.sh && \
+    echo -e "\033[31mOPT FIXER >>>>\033[0m" && \
+    /ctx/03-fix-opt.sh && \
+    echo -e "\033[31mSYSTEM CONFIG >>>>\033[0m" && \
+    /ctx/04-config.sh && \
+    echo -e "\033[31mMESA INSTALL >>>>\033[0m" && \
+    /ctx/05-mesa-install.sh && \
+    echo -e "\033[31mREMOTE GRABBER >>>>\033[0m" && \
+    /ctx/06-remote-grabber.sh && \
+    echo -e "\033[31mIMAGE INFO >>>>\033[0m" && \
+    /ctx/image-info && \
+    echo -e "\033[31mOSTREE COMMIT\033[0m" && \
+    ostree container commit
+
+### LINTING
+RUN bootc container lint
