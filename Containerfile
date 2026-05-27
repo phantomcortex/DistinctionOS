@@ -5,10 +5,10 @@ COPY build_files /
 # Pre-built custom mesa stack — Fedora SRPM + freeworld codec patches applied.
 # Built by .github/workflows/build-mesa.yml, published weekly to GHCR.
 # All subpackages come from one SRPM so versions are guaranteed in sync.
-FROM ghcr.io/phantomcortex/distinctionos-mesa:latest AS mesa-rpms
+#FROM ghcr.io/phantomcortex/distinctionos-mesa:latest AS mesa-rpms
 
 # Base Image
-FROM ghcr.io/ublue-os/bazzite-gnome:stable as DistinctionOS
+FROM ghcr.io/ublue-os/bazzite-gnome:testing as DistinctionOS
 #FROM quay.io/fedora/fedora-bootc:42
 
 # Copy pre-built mesa RPMs into the image so 05-mesa-install.sh can install them
@@ -33,8 +33,6 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/03-fix-opt.sh && \
     echo -e "\033[31mSYSTEM CONFIG >>>>\033[0m" && \
     /ctx/04-config.sh && \
-    echo -e "\033[31mMESA INSTALL >>>>\033[0m" && \
-    /ctx/05-mesa-install.sh && \
     echo -e "\033[31mREMOTE GRABBER >>>>\033[0m" && \
     /ctx/06-remote-grabber.sh && \
     echo -e "\033[31mOSTREE COMMIT\033[0m" && \
@@ -44,4 +42,4 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     
 ### LINTING
 ## Verify final image and contents are correct.
-#RUN bootc container lint
+RUN bootc container lint
