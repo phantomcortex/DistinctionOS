@@ -4,18 +4,19 @@
 
 **Build System**: Fully operational with automated CI/CD via GitHub Actions  
 **Base System**: Bazzite (Fedora Atomic Desktop)  
-**Last Updated**: 2025-10-27  
-**Stability**: Maturing - ZFS module enabled by default  
-**Recent Changes**: Complete build script refactoring with enhanced logging and documentation
+**Last Updated**: 2026-05-28  
+**Kernel**: CachyOS LTO (replaces stock Fedora kernel)  
 
 ### Active Features
--  Automated image builds every 5 days
--  Rechunker optimization for efficient updates
--  Image signing with Cosign
--  TPM auto-unlock system with monitoring
--  First-run automation for post-rebase setup
--  ZSH as default shell with automated configuration
--  Just recipe system for user-space tooling
+- Automated image builds every 5 days
+- Rechunker optimization for efficient updates
+- Image signing with Cosign
+- CachyOS LTO kernel for optimized performance
+- Custom Mesa stack with freeworld codec support
+- ZSH system-wide shell configuration
+- Just recipe system for user-space tooling
+- Steam Linker housekeeper
+- XWM Player for Bethesda audio format support
 
 ### Build Configuration
 - **Image Registry**: `ghcr.io`
@@ -27,43 +28,63 @@
 
 ## Repository Structure
 
-### Directory Layout (Post-Cleanup)
+### Directory Layout
 
 ```
 DistinctionOS/
-├── build-files/              # Build-time execution scripts
-│   ├── 01-build.sh              # Package management (RPM, repos, keys)
-│   ├── 02-install-zfs.sh        # ZFS kernel module compilation
+├── build_files/              # Build-time execution scripts (numerically ordered)
+│   ├── 00-kernel.sh             # CachyOS LTO kernel installation
+│   ├── 01-kernel-modules.sh     # Initramfs regeneration
+│   ├── 02-build.sh              # Package management (RPM, repos, keys)
 │   ├── 03-fix-opt.sh            # /opt persistence configuration
 │   ├── 04-config.sh             # System services and misc config
-│   ├── 05-kernel-modules.sh     # xpadneo kernel module compilation
+│   ├── 05-mesa-install.sh       # Custom Mesa stack from OCI artifact
 │   ├── 06-remote-grabber.sh     # GNOME Shell extension management
-│   ├── remote-grabber.sh        # (inactive)
-│   └── 95-kernel-modules.sh     # logging functions & color codes
+│   ├── 95-utility-functions.sh  # Shared logging/utility library (sourced by all)
+│   └── wine-installer.sh        # Custom Wine builds (inactive)
 │
-├── system-files/             # Static files overlaid onto the image
+├── system_files/             # Static files overlaid onto the image at build time
 │   ├── usr/
-│   │   ├── bin/              # Custom executables
-│   │   ├── lib/systemd/      # SystemD units and timers
-│   │   └── share/DistinctionOS/just/  # Just recipes
+│   │   ├── bin/              # Custom executables (xwm-player, xiso, advmv, advcp, etc.)
+│   │   ├── lib/systemd/user/ # User SystemD services
+│   │   ├── share/distinctionos/  # DistinctionOS project files
+│   │   │   ├── just/         # ujust recipe files
+│   │   │   ├── lib/          # Housekeeper shared library
+│   │   │   ├── steam-linker/ # Steam Linker script and config
+│   │   │   └── xwm-player/   # XWM Player config and handlers
+│   │   ├── share/fonts/      # Bundled Nerd Fonts
+│   │   ├── share/icons/      # Cursor themes
+│   │   ├── share/themes/     # GTK theme (adw-gtk3-dark)
+│   │   ├── share/applications/  # .desktop files
+│   │   ├── share/mime/       # MIME type registrations
+│   │   └── share/glib-2.0/schemas/  # GNOME schema overrides
 │   └── etc/
-│       └── sudoers.d/        # Sudo configuration
+│       ├── zsh/              # System-wide ZSH configuration
+│       ├── sudoers.d/        # Sudo configuration
+│       ├── yum.repos.d/      # Pre-installed repository configs
+│       ├── profile.d/        # Shell environment scripts
+│       ├── rpm-ostreed.conf.d/  # rpm-ostree daemon config (TPM)
+│       └── systemd/          # System-level systemd config
 │
-├── repo-files/               # Package manifest lists
+├── repo_files/               # Package manifest lists (fetched at post-install time)
 │   ├── brews                 # Homebrew package list
-│   └── flatpaks              # Flatpak application list
+│   ├── flatpaks              # Flatpak application list
+│   └── rpm/                  # RPM resources
 │
-├── disk-config/              # Bootable disk configuration
+├── disk_config/              # Bootable disk configuration
 │   ├── disk.toml             # QCOW2/RAW configuration
 │   └── iso.toml              # ISO installer configuration
 │
 ├── docs/                     # Project documentation
 │   ├── developer.md          # This file
 │   ├── claude.md             # AI assistant context
-│   └── (future: wine.md, planning.md, etc.)
+│   ├── steam-linker.md       # Steam Linker housekeeper
+│   ├── xwm-player.md         # XWM Player
+│   └── ujust-recipes.md      # ujust recipe reference
 │
 ├── .github/workflows/        # CI/CD automation
 │   ├── build.yml             # Main image build workflow
+│   ├── build-mesa.yml        # Custom Mesa stack build (weekly)
 │   └── build-disk.yml        # Bootable disk creation
 │
 ├── Containerfile             # Image build instructions
@@ -87,42 +108,41 @@ DistinctionOS employs a multi-stage build process that transforms a base Bazzite
 
 ```mermaid
 flowchart TD
-    Start([Containerfile Execution]) --> Copy[Copy system-files overlay]
-    Copy --> B1[1. build.sh]
-    
-    B1 --> B1A[Add RPM repositories]
-    B1A --> B1B[Import GPG keys]
-    B1B --> B1C[Install/remove RPM packages]
-    B1C --> B1D[Validate critical packages]
-    B1D --> B2
-    
-    B2[2. install-zfs.sh] --> B2A[Install ZFS repository]
-    B2A --> B2B[Install ZFS packages]
-    B2B --> B3
-    
+    Start([Containerfile Execution]) --> Copy[Copy system_files overlay]
+    Mesa --> B0[0. kernel.sh]
+
+    B0 --> B0A[Remove stock kernel packages]
+    B0A --> B0B[Install CachyOS LTO kernel via COPR]
+    B0B --> B0C[Version-lock kernel]
+    B0C --> B1
+
+    B1[1. kernel-modules.sh] --> B1A[Detect installed kernel version]
+    B1A --> B1B[Regenerate initramfs with dracut]
+    B1B --> B2
+
+    B2[2. build.sh] --> B2A[Remove unwanted Bazzite packages]
+    B2A --> B2B[Install RPM packages - resilient strategy]
+    B2B --> B2C[Validate critical packages]
+    B2C --> B3
+
     B3[3. fix-opt.sh] --> B3A[Scan /opt directory]
     B3A --> B3B[Generate tmpfiles.d config]
     B3B --> B3C[Ensure /opt persistence]
     B3C --> B4
-    
+
     B4[4. config.sh] --> B4A[Configure default shell]
     B4A --> B4B[Setup Just recipes]
     B4B --> B4C[Customize applications]
     B4C --> B4D[Update system caches]
     B4D --> B4E[Remove unwanted files]
-    B4E --> B5
-    
-    B5[5. kernel-modules.sh] --> B5A[Detect kernel version]
-    B5A --> B5B[Compile xpadneo module]
-    B5B --> B5C[Regenerate initramfs]
-    B5C --> B6
-    
+    B4E --> B6
+
     B6[6. remote-grabber.sh] --> B6A[Download GNOME Shell extensions]
     B6A --> B6B[Compile gschemas]
     B6B --> Finish
-    
+
     Finish([Image Complete]) --> Push[Push to GHCR]
-    
+
     style Start fill:#4a9eff
     style Finish fill:#4caf50
     style Push fill:#ff9800
@@ -168,69 +188,58 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Rebase[User Rebases to DistinctionOS] --> FirstBoot{First Boot?}
-    
-    FirstBoot --> |Yes| Service[distinction-firstrun.service]
-    FirstBoot --> |No| Normal[Normal Boot]
-    
-    Service --> Install[ujust distinction-install]
-    
-    Install --> Flat[Install Flatpaks from remote list]
+    Rebase[User Rebases to DistinctionOS] --> Boot[Normal Boot]
+
+    Boot --> Manual[User runs ujust distinction-install]
+
+    Manual --> Flat[Install Flatpaks from remote list]
     Flat --> Brew[Install Homebrew packages]
     Brew --> Shell[Configure ZSH + Dotfiles]
     Shell --> NvChad[Install NvChad for Neovim]
-    
-    NvChad --> Log[Create log at /var/DistinctionOS/]
-    Log --> Normal
-    
-    Normal --> TPM[TPM Monitor Timer]
-    TPM --> |Every 30 minutes| Check[Check for bootloader/kernel changes]
-    Check --> |Changes detected| Warn[Notify user before reboot]
-    Check --> |No changes| Continue[Continue normally]
-    
+
+    NvChad --> Done[Environment Ready]
+
     style Rebase fill:#4a9eff
-    style Service fill:#ff9800
-    style Install fill:#2196f3
-    style TPM fill:#4caf50
-    style Warn fill:#f44336
+    style Manual fill:#ff9800
+    style Done fill:#4caf50
 ```
 
 ---
 
 ## Script Detailed Reference
 
-### 1. `01-build.sh`
-**Purpose**: Core package management and repository configuration  
+### 0. `00-kernel.sh`
+**Purpose**: Replace the stock Bazzite/Fedora kernel with CachyOS LTO  
 **Execution Stage**: Build-time (first script)  
 **Key Functions**:
-- Add/remove RPM repositories (e.g., Brave, Cider, COPR repos)
-- Import GPG/ASC keys for package verification
-- Remove unwanted packages from base image
-- Validate critical package installation
-- Package versionlock section
-
-**Enhanced Features** (2025-10-27 Refactoring):
-- Color-coded logging with visual indicators (✓, ✗, ⚠, ℹ, ▶)
-- Package validation to catch installation failures
-- Comprehensive error handling with clear messages
-- Organized package installation by repository
-- Theme installation from GitHub releases
+- Removes stock kernel packages (`kernel`, `kernel-core`, `kernel-modules`, `kernel-devel-matched`)
+- Stubs out rpm-ostree and dracut install hooks so they don't conflict
+- Installs `kernel-cachyos-lto` and `kernel-cachyos-lto-devel-matched` from the `bieszczaders/kernel-cachyos-lto` COPR
+- Version-locks the kernel to prevent unintended upgrades
 
 ---
 
-### 2. `02-install-zfs.sh`
-**Purpose**: Install ZFS filesystem driver and prepare for DKMS compilation  
-**Execution Stage**: Build-time (second script)  
-**Status**: Currently active (intermittently disabled during rapid development to speed up builds)  
+### 1. `01-kernel-modules.sh`
+**Purpose**: Regenerate the initramfs for the newly installed CachyOS kernel  
+**Execution Stage**: Build-time (second script, immediately after kernel install)  
 **Key Functions**:
-- Install ZFS repository
-- Install ZFS packages
-- Note: DKMS compilation handled by `05-kernel-modules.sh`
+- Detects the installed kernel version from `/usr/lib/modules/`
+- Runs dracut with `--zstd`, `--reproducible`, and `--add ostree` flags for ostree compatibility
 
-**Enhanced Features** (2025-10-27 Refactoring):
-- Minimal color-coded logging for consistency
-- Clean, concise structure (~35 lines total)
-- Clear indication that DKMS happens later
+---
+
+### 2. `02-build.sh`
+**Purpose**: Core package management and repository configuration  
+**Execution Stage**: Build-time (third script)  
+**Key Functions**:
+- Remove unwanted packages from base image
+- Install RPM packages using resilient best-effort strategy (bulk first, per-package fallback)
+- Track succeeded/failed/skipped packages
+- Validates critical package installation
+
+**Resilience Strategy**:
+- Repository outages (openzfs, CrossOver, Cider have had incidents) no longer fail the build
+- Failed packages are logged but the build continues
 
 ---
 
@@ -309,41 +318,22 @@ declare -A CLEANUP_FILES=(
 
 ---
 
-### 5. `05-kernel-modules.sh`
-**Purpose**: Compile xpadneo kernel module for enhanced Xbox controller support and regenerate initramfs  
-**Execution Stage**: Build-time (fifth script)  
+### 5. `05-mesa-install.sh`
+**Purpose**: Install the pre-built custom Mesa stack from the `mesa-rpms` OCI artifact stage  
+**Execution Stage**: Build-time (sixth script)  
 **Key Functions**:
-- Detect installed Bazzite kernel version
-- Clone xpadneo repository from GitHub
-- Generate custom makefile for ostree compatibility
-- Compile xpadneo kernel module
-- Install module to kernel directories
-- Verify module installation
-- Regenerate initramfs with new modules (includes ZFS if installed)
+- Reads RPMs from `/var/tmp/mesa-rpms/` (populated by `COPY --from=mesa-rpms` in Containerfile)
+- Installs all packages with `rpm --force --nodeps` to override conflicting Bazzite mesa packages
+- Guarantees version coherency — all packages come from a single Fedora SRPM
 
-**Enhanced Features** (2025-10-27 Refactoring):
-- Complete color-coded logging system
-- Kernel detection validation
-- Repository clone verification
-- Installation verification with specific file location reporting
-- Initramfs regeneration with validation
-- Summary of installed modules at completion
-
-**Technical Notes**:
-- Custom makefile required for ostree/immutable systems
-- Makefile heredoc preserved exactly as needed for compatibility
-- Handles both xpadneo and ZFS DKMS compilation
-- Sets secure permissions (0600) on initramfs
-
-**Future TODOs**:
-- Integrate CachyOS-LTO kernel as default
-- Investigate kmod package installation after initramfs regeneration
-- Consider packaged xpadneo variant if available
-- Fix SecureBoot
+**Mesa OCI Build**:
+- Built weekly by `.github/workflows/build-mesa.yml`
+- Fedora SRPM + freeworld codec patches
+- Packages: `mesa-filesystem`, `mesa-libGL`, `mesa-libgbm`, `mesa-dri-drivers`, `mesa-vulkan-drivers`, `mesa-va-drivers`, `mesa-libOpenCL`
 
 ---
 
-### 6. 06-remote-grabber.sh
+### 6. `06-remote-grabber.sh`
 **Purpose**: Manage GNOME Shell extensions in the system image   
 **Key Functions**:
 - Download specified GNOME Shell extensions
@@ -359,29 +349,27 @@ declare -A CLEANUP_FILES=(
 
 ## Code Quality & Logging Standards
 
-### Logging System (Established 2025-10-27)
+### Logging System
 
-All build scripts now follow a standardized color-coded logging system for consistent, readable output during builds.
+All build scripts use the centralized logging system from `95-utility-functions.sh`.
 
 #### Logging Functions
 
 ```bash
-# ANSI color codes (defined in each script)
-readonly COLOR_RESET='\033[0m'
-readonly COLOR_RED='\033[31m'
-readonly COLOR_GREEN='\033[32m'
-readonly COLOR_YELLOW='\033[33m'
-readonly COLOR_BLUE='\033[34m'
-readonly COLOR_MAGENTA='\033[35m'
-readonly COLOR_CYAN='\033[36m'
+# Source at the top of every build script:
+source /ctx/95-utility-functions.sh
 
-# Logging function templates
-log_header()   # Blue box-drawing characters for major sections
-log_section()  # Cyan arrows (▶) for subsections
-log_success()  # Green checkmarks (✓) for successful operations
-log_warning()  # Yellow warnings (⚠) for non-critical issues
-log_error()    # Red X marks (✗) for errors
-log_info()     # Magenta info symbols (ℹ) for informational messages
+# Logging functions provided by utility library:
+log_header()    # Blue box-drawing characters for major sections
+log_section()   # Cyan arrows (▶) for subsections
+log_success()   # Green checkmarks (✓) for successful operations
+log_warning()   # Yellow warnings (⚠) for non-critical issues
+log_error()     # Red X marks (✗) for errors
+log_info()      # Magenta info symbols (ℹ) for informational messages
+
+# Script lifecycle functions:
+script_start "Name" "Description"   # Print startup header
+script_complete "Name" "Next step"  # Print completion footer
 ```
 
 #### Color Coding Standards
@@ -429,26 +417,21 @@ All build scripts should follow this structure:
    # ============================================================================
    ```
 
-2. **Shebang and Error Handling**
+2. **Shebang, Error Handling, and Utility Functions**
    ```bash
    #!/usr/bin/bash
    set -euo pipefail
+   source /ctx/95-utility-functions.sh
    ```
 
-3. **Logging Function Definitions**
-   ```bash
-   # Color codes and logging functions
-   ```
-
-4. **Main Script Logic**
+3. **Main Script Logic**
    - Major sections with clear headers
    - Subsections with visual separators
-   - Comprehensive comments explaining WHY
+   - Comments explaining WHY, not WHAT
 
-5. **Completion Summary**
+4. **Completion Summary**
    ```bash
-   log_header "Script phase complete"
-   log_info "Next steps: ..."
+   script_complete "Script Name" "Next step: ..."
    exit 0
    ```
 
@@ -556,7 +539,7 @@ log_success "Removed $removed_count item(s)"
 
 ### Script Length Guidelines
 
-- **Minimal scripts** (install-zfs.sh, fix-opt.sh): ~35-50 lines
+- **Minimal scripts** (fix-opt.sh, mesa-install.sh): ~35-50 lines
   - Brief logging, essential operations only
   - Clear section headers, minimal validation
   
@@ -577,61 +560,33 @@ log_success "Removed $removed_count item(s)"
 
 ### Adding RPM Packages
 
-**Edit**: `build-files/build.sh`
+**Edit**: `build_files/02-build.sh`
 
-**Method 1: Add to RPM_PACKAGES associative array**
+`02-build.sh` uses a resilient per-repository installation strategy. Packages are grouped by repository and passed to `install_packages_resilient`:
+
 ```bash
-# Add packages to the appropriate repository section
-declare -A RPM_PACKAGES=(
-  ["fedora"]="existing-packages new-package-name"
-  ["rpmfusion-free,rpmfusion-free-updates"]="rpmfusion-package"
-  ["copr:username/repo"]="copr-package"
-)
+# Add to the appropriate repo call
+install_packages_resilient "fedora" \
+    existing-package \
+    new-package-name
+
+# For a COPR repo, enable it first, then pass its name
+dnf5 -y copr enable user/reponame
+install_packages_resilient "copr:user/reponame" \
+    copr-package-name
 ```
 
-**Method 2: Add custom repository**
-```bash
-# Add repository configuration before RPM_PACKAGES declaration
-log_info "Adding custom repository"
-tee /etc/yum.repos.d/custom.repo > /dev/null << 'EOF'
-[custom]
-name=Custom Repository
-baseurl=https://repo.example.com/
-enabled=1
-gpgcheck=1
-gpgkey=https://repo.example.com/key.asc
-EOF
-
-# Import GPG key
-rpm --import https://repo.example.com/key.asc
-
-# Add to RPM_PACKAGES
-declare -A RPM_PACKAGES=(
-  ...
-  ["custom"]="package-from-custom-repo"
-)
-```
-
-**Method 3: Direct installation (for special cases)**
-```bash
-# After the main RPM_PACKAGES loop
-log_section "Installing special packages"
-if dnf5 -y install special-package; then
-  log_success "Special package installed"
-else
-  log_warning "Special package installation failed"
-fi
-```
+For a completely new external repo with a `.repo` file, add the repo file to `system_files/etc/yum.repos.d/` so it's present when the build script runs — no need to add it dynamically in the script.
 
 **Note**: Build scripts use `dnf5` at build-time. Runtime package management uses `rpm-ostree`.
 
 ### Adding Flatpak Applications
 
-**Edit**: `repo-files/flatpaks` (stored in GitHub repository)
+**Edit**: `repo_files/flatpaks` (stored in GitHub repository)
 
 ```bash
 # Add Flatpak identifier to the list
-echo "com.example.Application" >> repo-files/flatpaks
+echo "com.example.Application" >> repo_files/flatpaks
 
 # Users will receive this on next distinction-install run
 ```
@@ -643,18 +598,18 @@ ujust distinction-install-flatpaks
 
 ### Adding Homebrew Packages
 
-**Edit**: `repo-files/brews` (stored in GitHub repository)
+**Edit**: `repo_files/brews` (stored in GitHub repository)
 
 ```bash
 # Add package name to the list
-echo "package-name" >> repo-files/brews
+echo "package-name" >> repo_files/brews
 
 # Users will receive this on next distinction-install run
 ```
 
 ### Adding GNOME Shell Extensions
 
-**Edit**: `build-files/remote-grabber.sh`
+**Edit**: `build_files/06-remote-grabber.sh`
 
 ```bash
 # Add extension UUID or URL to download list
@@ -669,7 +624,7 @@ systemctl enable service-name.service
 ```
 
 **Method 2**: Add custom systemd unit
-1. Create unit file in `system-files/usr/lib/systemd/system/`
+1. Create unit file in `system_files/usr/lib/systemd/system/`
 2. Enable in `config.sh`:
 ```bash
 systemctl enable custom-service.service
@@ -677,7 +632,7 @@ systemctl enable custom-service.service
 
 ### Adding Custom Executables
 
-1. Place executable in `system-files/usr/bin/`
+1. Place executable in `system_files/usr/bin/`
 2. Ensure executable permissions in Containerfile:
 ```dockerfile
 RUN chmod +x /usr/bin/custom-script
@@ -751,48 +706,37 @@ podman run -it localhost/distinctionos:test /bin/bash
 1. **NvChad Root Installation**: May require verification after first run
    - **Workaround**: Run `sudo nvim` manually to complete setup
 
+2. **TPM Auto-Unlock**: System is being redesigned — current state is partial (rpm-ostree config file only). Full ujust recipes and monitor service are planned.
 
 ### Error Handling Improvements Needed
 
 - Just recipes require better error handling for network failures
-- Improved logging for post-rebase first-run automation
-
-**Completed (2025-10-27)**:
-- ✅ Build scripts now validate package installation
-- ✅ Comprehensive color-coded logging implemented across all build scripts
-- ✅ Error handling patterns standardized
-- ✅ Critical package validation added to build.sh
 
 ---
 
 ## Roadmap
 
-### Short-Term Goals (1-3 months)
+### Short-Term Goals
 
-- [ ] Apply refactoring patterns to remaining shell scripts in system-files/
+- [ ] Redesign TPM auto-unlock system (ujust recipes + monitor service)
+- [ ] Expand housekeeper functionality (`.housekeeper` config files)
+- [ ] Update GitHub Actions to generate release pages with package changelogs
 
-### Long-Term Goals (Help Wanted)
+### Long-Term Goals
 
 - [ ] **Standalone ISO**: Fully functional installer ISO (in progress via build-disk.yml)
-- [ ] **CachyOS-LTO Kernel**: Ship optimized kernel by default
 - [ ] **Build Caching**: Implement layer caching for faster iteration
-- [ ] **Build Time Optimization** Build time optimization strategies
 
 ### Completed Goals
 
 - [✅] Rechunker support for efficient updates
-- [✅] ZSH as default shell with automated configuration
-- [✅] Oh-my-zsh and Powerlevel10k automatic installation
-- [✅] TPM auto-unlock with proactive monitoring system
-- [✅] **Build Script Refactoring** (2025-10-27):
-  - Complete overhaul of build.sh with enhanced logging and validation
-  - Refactored install-zfs.sh for clarity
-  - Refactored fix-opt.sh with minimal logging
-  - Complete reorganization of config.sh into six major sections
-  - Refactored kernel-modules.sh with comprehensive error handling
-  - Established standardized color-coded logging system
-  - Implemented code quality guidelines and documentation standards
-- [✅] Consolidated `layered-appimages.sh` functionality (removed separate script)
+- [✅] ZSH system-wide shell configuration
+- [✅] CachyOS LTO kernel as default (`00-kernel.sh`)
+- [✅] Custom Mesa stack with freeworld codecs (`05-mesa-install.sh` + weekly build workflow)
+- [✅] Steam Linker housekeeper
+- [✅] XWM Player for Bethesda audio format support
+- [✅] Build script refactoring — utility library, resilient package installation, color-coded logging
+- [✅] Consolidated all build scripts into numbered sequence (00–06)
 
 ---
 
@@ -817,14 +761,17 @@ Rechunker provides:
 - **Faster updates**: Users download only changed content
 - **Configuration**: `max-layers: 100` for optimal balance
 
-### First-Run Automation
+### Post-Rebase Setup
 
-The `distinction-firstrun.service` ensures a seamless post-rebase experience:
-- Triggers automatically on first boot after rebase
-- Runs `ujust distinction-install` to configure user environment
-- Creates log at `/var/DistinctionOS/DistinctionOS_firstrun.log`
-- Only executes once (checks for log file existence)
-- User can manually re-run with `ujust distinction-install`
+After rebasing to DistinctionOS, run the setup manually:
+
+```bash
+ujust distinction-install
+```
+
+This installs Flatpaks, Homebrew packages, configures ZSH with dotfiles, and sets up NvChad.
+
+See `docs/ujust-recipes.md` for the full recipe list.
 
 ### Security Considerations
 
@@ -834,10 +781,9 @@ The `distinction-firstrun.service` ensures a seamless post-rebase experience:
 - **Author is aware of security implications**
 - Recommended for personal systems only
 
-**TPM Security Levels**:
-- **Maximum Security**: PCR 0,1,4,5,7,8,9 (most sensitive to changes)
-- **Balanced**: PCR 0,4,7,9 (recommended default)
-- **Convenience**: PCR 7 only (least restrictive)
+**TPM Configuration**:
+- `etc/rpm-ostreed.conf.d/distinction.tpm.conf` enables TPM hints for rpm-ostree daemon
+- Full TPM auto-unlock system is planned but not yet fully implemented
 
 ### Contributing Guidelines
 
@@ -859,7 +805,7 @@ When submitting changes:
 
 ---
 
-**Document Version**: 2.0  
-**Last Updated**: 2025-10-27  
-**Major Changes**: Complete build script refactoring with standardized logging, enhanced error handling, and comprehensive documentation  
+**Document Version**: 2.1  
+**Last Updated**: 2026-05-28  
+**Major Changes**: Updated script sequence (00–06), fixed directory names (underscores), removed ZFS, added CachyOS kernel and Mesa OCI sections, removed non-existent firstrun/tpm-monitor references, updated roadmap  
 **Maintainer**: phantomcortex

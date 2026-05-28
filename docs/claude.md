@@ -16,41 +16,59 @@
 
 ```
 DistinctionOS/
-├── build-files/               # Build-time execution scripts (numerically ordered)
-│   ├── 01-build.sh            # Package management (RPM, repos, keys) - FIRST
-│   ├── 02-install-zfs.sh      # ZFS package installation - SECOND (INACTIVE - no longer planned)
-│   ├── 03-fix-opt.sh          # /opt persistence configuration - THIRD
-│   ├── 04-config.sh           # System services and misc config - FOURTH
-│   ├── 05-kernel-modules.sh   # xpadneo DKMS compilation - FIFTH
-│   ├── 06-remote-grabber.sh   # GNOME Shell extension management - SIXTH (FINAL)
+├── build_files/               # Build-time execution scripts (numerically ordered)
+│   ├── 00-kernel.sh           # CachyOS LTO kernel installation - FIRST
+│   ├── 01-kernel-modules.sh   # Initramfs regeneration - SECOND
+│   ├── 02-build.sh            # Package management (RPM, repos, keys) - THIRD
+│   ├── 03-fix-opt.sh          # /opt persistence configuration - FOURTH
+│   ├── 04-config.sh           # System services and misc config - FIFTH
+│   ├── 05-mesa-install.sh     # Custom Mesa stack from OCI artifact - SIXTH
+│   ├── 06-remote-grabber.sh   # GNOME Shell extension management - SEVENTH (FINAL)
 │   ├── 95-utility-functions.sh # Shared utility functions library - SOURCED BY ALL
 │   └── wine-installer.sh      # Custom Wine builds (INACTIVE - not in build sequence)
 │
-├── system-files/              # Static files copied into the image
+├── system_files/              # Static files overlaid onto the image at build time
 │   ├── usr/
-│   │   ├── bin/               # Custom executables (firstrun, tpm-monitor, advmv, advcp)
-│   │   ├── lib/systemd/       # SystemD services and timers
-│   │   └── share/distinctionos/just/  # Just recipes
+│   │   ├── bin/               # Custom executables (xwm-player, xiso, advmv, advcp, chsh, etc.)
+│   │   ├── lib/systemd/user/  # User SystemD services (steam-linker)
+│   │   ├── share/distinctionos/
+│   │   │   ├── just/          # ujust recipe files
+│   │   │   ├── lib/           # Shared housekeeper library
+│   │   │   ├── steam-linker/  # Steam Linker script and config
+│   │   │   └── xwm-player/    # XWM Player config and handlers
+│   │   ├── share/fonts/       # Bundled Nerd Fonts (0xProto, CommitMono, FiraCode, etc.)
+│   │   ├── share/icons/       # Cursor themes (capitaine, DeepinDark, DeepinWhite)
+│   │   ├── share/themes/      # GTK theme (adw-gtk3-dark)
+│   │   ├── share/applications/ # .desktop files
+│   │   ├── share/mime/        # MIME type registrations
+│   │   └── share/glib-2.0/schemas/ # GNOME schema overrides
 │   └── etc/
-│       └── sudoers.d/         # Sudo configuration
+│       ├── zsh/               # System-wide ZSH configuration
+│       ├── sudoers.d/         # Passwordless sudo for wheel group
+│       ├── yum.repos.d/       # Pre-installed repository files
+│       ├── profile.d/         # Shell environment scripts
+│       └── systemd/           # System-level systemd config overrides
 │
-├── repo-files/                # Resources for just recipes (hosted on GitHub)
+├── repo_files/                # Resources for just recipes (hosted on GitHub)
 │   ├── brews                  # Homebrew package list (for post-install)
-│   └── flatpaks               # Flatpak application list (for post-install)
+│   ├── flatpaks               # Flatpak application list (for post-install)
+│   └── rpm/                   # RPM-based resources
 │
-├── disk-config/               # Configuration for bootable disk creation
+├── disk_config/               # Configuration for bootable disk creation
 │   ├── disk.toml              # QCOW2/RAW VM disk configuration
 │   └── iso.toml               # ISO installer configuration
 │
 ├── docs/                      # Project documentation
 │   ├── claude.md              # This file - AI assistant context
 │   ├── developer.md           # Comprehensive developer documentation
-│   └── (planned: wine.md, planning.md)
+│   ├── steam-linker.md        # Steam Linker housekeeper documentation
+│   ├── xwm-player.md          # XWM Player documentation
+│   └── ujust-recipes.md       # ujust recipe reference
 │
 ├── Containerfile              # Custom container build instructions
 ├── Justfile                   # Local development tooling (build, test, lint)
 ├── cosign.pub                 # Image signing public key
-└── .github/workflows/         # GitHub Actions (build.yml & build-disk.yml)
+└── .github/workflows/         # GitHub Actions (build.yml, build-mesa.yml, build-disk.yml)
 ```
 
 ## Housekeeper Architecture
@@ -78,6 +96,7 @@ The Housekeeper Architecture is an ecosystem of simple automation services for h
 | Service | Purpose | Status |
 |---------|---------|--------|
 | Steam Linker | Unified game library symlinks | ✅ Complete |
+| XWM Player | Bethesda audio format playback | ✅ Complete |
 
 ## Steam Linker
 
@@ -100,8 +119,32 @@ ujust steam-link-logs      # View logs
 ### Files
 - Script: `/usr/share/distinctionos/steam-linker/steam-linker.sh`
 - Service: `/usr/lib/systemd/user/distinctionos-steam-linker.service`
-- Recipes: `/usr/share/DistinctionOS/just/steam-linker.just`
+- Recipes: `/usr/share/distinctionos/just/steam-linker.just`
 - Docs: `docs/steam-linker.md`
+
+## XWM Player
+
+Transparent playback of Bethesda game audio formats (`.xwm`, `.fuz`) via FFmpeg conversion and a configurable audio player.
+
+### Features
+- Double-click playback via MIME type registration
+- Flatpak-aware player launching
+- Extensible format handler system
+- Hierarchical configuration (system → local → user)
+
+### Quick Commands
+```bash
+xwm-player music.xwm                      # Play a file
+xwm-player --convert voice.fuz voice.ogg  # Convert without playing
+xwm-player --cleanup                       # Remove temp files
+```
+
+### Files
+- Script: `/usr/bin/xwm-player`
+- Config: `/usr/share/distinctionos/xwm-player/config`
+- Handlers: `/usr/share/distinctionos/xwm-player/handlers/`
+- Desktop: `/usr/share/applications/xwm-player.desktop`
+- Docs: `docs/xwm-player.md`
 
 ## Technical Architecture
 
@@ -112,19 +155,28 @@ ujust steam-link-logs      # View logs
 
 ### Build Script Execution Order
 
-**CRITICAL**: Scripts execute in numerical order (01 → 06), with 95-utility-functions.sh sourced by all scripts.
+**CRITICAL**: Scripts execute in numerical order (00 → 06), with `95-utility-functions.sh` sourced by all scripts.
 
 ```
 Containerfile Execution:
   │
-  ├─→ COPY system-files/ → /
+  ├─→ COPY system_files/ → /         (overlay static files)
+  ├─→ COPY --from=mesa-rpms / …      (pre-built Mesa OCI artifact)
   │
-  ├─→ 01-build.sh
+  ├─→ 00-kernel.sh
+  │    ├─ Remove stock Fedora/Bazzite kernel packages
+  │    ├─ Install CachyOS LTO kernel via COPR
+  │    └─ Version-lock the kernel
+  │
+  ├─→ 01-kernel-modules.sh
+  │    ├─ Detect installed CachyOS kernel version
+  │    └─ Regenerate initramfs (dracut, zstd, ostree-compatible)
+  │
+  ├─→ 02-build.sh
   │    ├─ Source utility-functions.sh
   │    ├─ Remove unwanted Bazzite packages
-  │    ├─ Configure repositories (Cider, COPR, etc.)
-  │    ├─ Install RPM packages by repository
-  │    ├─ Install CrossOver and themes
+  │    ├─ Install RPM packages with resilient best-effort strategy
+  │    ├─ Configure repositories (Brave, COPR, etc.)
   │    └─ Validate critical packages
   │
   ├─→ 03-fix-opt.sh
@@ -136,20 +188,16 @@ Containerfile Execution:
   ├─→ 04-config.sh
   │    ├─ Source utility-functions.sh
   │    ├─ Configure default shell (ZSH)
-  │    ├─ Setup SystemD services (currently disabled)
   │    ├─ Integrate Just recipes
   │    ├─ Hide incompatible Bazzite recipes
-  │    ├─ Customize applications (Cider, Winetricks)
-  │    ├─ Update system caches
+  │    ├─ Customize applications
+  │    ├─ Update system caches (MIME, desktop, glib schemas)
   │    └─ Remove unwanted files (Waydroid, Wine utilities, Bazzite remnants)
   │
-  ├─→ 05-kernel-modules.sh
+  ├─→ 05-mesa-install.sh
   │    ├─ Source utility-functions.sh
-  │    ├─ Detect Bazzite kernel version
-  │    ├─ Clone & compile xpadneo module
-  │    ├─ Verify module installation
-  │    ├─ Run DKMS autoinstall (compiles xpadneo)
-  │    └─ Regenerate initramfs with new modules
+  │    ├─ Install pre-built Mesa RPMs from OCI artifact stage
+  │    └─ Overrides any conflicting mesa packages from Bazzite base
   │
   └─→ 06-remote-grabber.sh
        ├─ Source utility-functions.sh
@@ -200,14 +248,33 @@ Containerfile Execution:
 
 ### Build Scripts (Executed at Build-Time)
 
-#### `01-build.sh` - Package Management & Repository Configuration
-**Purpose**: Core package installation, repository setup, package removal
+#### `00-kernel.sh` - CachyOS LTO Kernel Installation
+**Purpose**: Replace the stock Bazzite kernel with the CachyOS LTO (Link-Time Optimized) kernel
 **Key Features**:
-- Color-coded logging with validation
-- Organized package installation by repository (associative array)
-- HEIF/Glycin workaround for image rendering
-- Critical package validation
-- CrossOver and theme installation from GitHub releases
+- Removes stock kernel packages before installing the replacement
+- Installs via the `bieszczaders/kernel-cachyos-lto` COPR
+- Version-locks the kernel to prevent unintended upgrades
+
+**When to Edit**:
+- Switching kernel variants
+- Updating version lock
+
+#### `01-kernel-modules.sh` - Initramfs Regeneration
+**Purpose**: Detect the installed CachyOS kernel and regenerate the initramfs
+**Key Features**:
+- Detects the kernel version from `/usr/lib/modules/`
+- Runs `dracut` with zstd compression and ostree compatibility flags
+- Runs after the kernel install, before package installation
+
+**When to Edit**: Rarely — only if dracut flags or initramfs composition needs changing.
+
+#### `02-build.sh` - Package Management & Repository Configuration
+**Purpose**: Core package installation with resilient best-effort strategy
+**Key Features**:
+- Attempts bulk installation per-repo, falls back to per-package on failure
+- Tracks succeeded/failed/skipped packages separately
+- Organized package installation by repository
+- Repository outage tolerance (openzfs, CrossOver, Cider have had outages)
 
 **When to Edit**:
 - Adding new RPM packages
@@ -216,25 +283,24 @@ Containerfile Execution:
 - Updating version locks
 
 #### `03-fix-opt.sh` - /opt Directory Persistence
-**Purpose**: Ensure packages in /opt persist across reboots
+**Purpose**: Ensure packages in /opt persist across reboots on an immutable system
 **Key Features**:
 - Dynamically scans /var/opt
 - Generates tmpfiles.d configuration
 - Executed at runtime by systemd-tmpfiles
 
-**Technical Background**: On immutable systems, /opt can be ephemeral. This creates symlinks from /var/opt to /usr/lib/opt, ensuring packages like Brave Browser and CrossOver remain accessible.
+**Technical Background**: On immutable systems, /opt can be ephemeral. This creates symlinks from /var/opt to /usr/lib/opt, ensuring packages like CrossOver remain accessible.
 
-**When to Edit**: Rarely needed - automatically handles all /opt packages.
+**When to Edit**: Rarely needed — automatically handles all /opt packages.
 
 #### `04-config.sh` - System Configuration & Cleanup
 **Purpose**: System service config, application customization, file cleanup
 **Key Features**:
-- Six major organized sections
-- Shell configuration (ZSH default)
+- Shell configuration (ZSH default via useradd)
 - Just recipe integration
 - Application .desktop file modifications
-- System cache updates
-- Cleanup of unwanted files (documented reasons for each)
+- System cache updates (MIME, desktop, glib schemas)
+- Cleanup of unwanted Bazzite/Waydroid files (documented reasons for each)
 
 **When to Edit**:
 - Enabling/disabling SystemD services
@@ -242,20 +308,16 @@ Containerfile Execution:
 - Customizing application behavior
 - Adding files to cleanup lists
 
-#### `05-kernel-modules.sh` - Kernel Module Compilation
-**Purpose**: Compile xpadneo module and run DKMS autoinstall
+#### `05-mesa-install.sh` - Custom Mesa Stack Installation
+**Purpose**: Install a pre-built Fedora SRPM Mesa with freeworld codec patches
 **Key Features**:
-- Kernel version detection
-- Custom makefile generation for ostree compatibility
-- Module compilation and verification
-- DKMS autoinstall (compiles xpadneo)
-- Initramfs regeneration with secure permissions
+- Reads from the `mesa-rpms` OCI artifact stage (built weekly by `build-mesa.yml`)
+- All packages come from one SRPM guaranteeing version coherency
+- Uses `rpm --force --nodeps` to override conflicting Bazzite mesa packages
 
 **When to Edit**:
-- Adding new kernel modules
-- Modifying xpadneo compilation parameters
-
-**Note**: Custom makefile is critical for ostree systems - do not modify heredoc section.
+- Never directly — the Mesa OCI stage is built separately
+- To change Mesa packages, update `build-mesa.yml`
 
 #### `06-remote-grabber.sh` - GNOME Extension Management
 **Purpose**: Install and configure GNOME Shell extensions system-wide
@@ -279,24 +341,16 @@ Containerfile Execution:
 - Command execution wrappers
 - Counter utilities
 - System information helpers
-- Script lifecycle functions
+- Script lifecycle functions (`script_start`, `script_complete`)
 
-**Usage**: `source /ctx/utility-functions.sh` at the start of every build script
+**Usage**: `source /ctx/95-utility-functions.sh` at the start of every build script
 
 **Benefits**:
 - Eliminates ~300 lines of code duplication across scripts
 - Single source of truth for logging behavior
 - Consistent formatting and error handling
-- Enhanced functionality (25+ utility functions)
-- Easier maintenance (change once, affects all scripts)
 
-**When to Edit**:
-- Modifying logging format/behavior globally
-- Adding new shared utility functions
-- Changing color scheme
-- Adding new validation patterns
-
-**CRITICAL**: Changes affect ALL build scripts - test thoroughly!
+**CRITICAL**: Changes affect ALL build scripts — test thoroughly.
 
 #### `wine-installer.sh` - Custom Wine Build Installation (INACTIVE)
 **Purpose**: Install Kron4ek Wine builds with specific features
@@ -310,8 +364,9 @@ Containerfile Execution:
 **Key Features**:
 - Base image selection (Bazzite GNOME)
 - Build context layer for script access
-- system-files overlay copy
-- Sequential script execution (01-06)
+- system_files/ overlay copy
+- Sequential script execution (00-06)
+- Pre-built Mesa OCI artifact stage
 - Color-coded build progress output
 - OSTree container commit
 
@@ -321,12 +376,26 @@ Containerfile Execution:
 - Enabling/disabling scripts (comment out execution line)
 - Adjusting build optimizations
 
-### `system-files/` Directory
-Contains custom files added at build time (akin to BlueBuild's 'overlay'):
-- **usr/bin/**: Custom executables (firstrun, tpm-monitor, advmv, advcp)
-- **usr/lib/systemd/**: SystemD units and timers (distinction-firstrun, tpm-monitor)
-- **usr/share/DistinctionOS/just/**: Just recipes (distinction.just, tpm.just)
-- **etc/sudoers.d/**: Passwordless sudo configuration (user aware of security implications)
+### `system_files/` Directory
+Contains custom files overlaid at build time (akin to BlueBuild's 'overlay'):
+- **usr/bin/**: Custom executables — `xwm-player`, `xiso`, `advmv`, `advcp`, `chsh`, `rpm-ostree-search-hl`, `xdg-terminal-exec`
+- **usr/lib/systemd/user/**: User SystemD services (`distinctionos-steam-linker.service`)
+- **usr/share/distinctionos/**: DistinctionOS project files (just recipes, housekeeper scripts, configs)
+- **usr/share/fonts/**: Bundled Nerd Fonts — 0xProto, CommitMono, FiraCode, DejaVuSansMono, and others
+- **usr/share/icons/**: Cursor themes — capitaine-cursors, DeepinDark-cursors, DeepinWhite-cursors
+- **usr/share/themes/**: GTK theme — adw-gtk3-dark (GTK3 + GTK4 + libadwaita)
+- **usr/share/glib-2.0/schemas/**: GNOME schema overrides for desktop settings
+- **usr/share/applications/**: Custom .desktop files
+- **usr/share/mime/**: MIME type registrations (xwm-player, rom-properties)
+- **usr/lib/bootc/install/**: bootc install config (`20-distinction.toml`)
+- **usr/lib64/**: Blur effect shared library for GNOME Shell effects
+- **etc/zsh/**: System-wide ZSH config (zshrc, zprofile, zlogin, zshenv, zlogout)
+- **etc/sudoers.d/**: Passwordless sudo for wheel group
+- **etc/yum.repos.d/**: Pre-installed repository configs (Brave, COPR repos)
+- **etc/rpm-ostreed.conf.d/**: TPM configuration for rpm-ostree daemon
+- **etc/systemd/logind.conf.d/**: Power button / lid behaviour overrides
+- **etc/dracut.conf.d/**: Dracut configuration for initramfs
+- **etc/sysctl.conf**: Kernel parameter overrides
 
 ## Maintenance Considerations
 
@@ -359,40 +428,18 @@ Contains custom files added at build time (akin to BlueBuild's 'overlay'):
 - **Script Organization**: Numerically ordered execution (01-06)
 
 #### Default Shell Configuration
-- **ZSH as System Default**: Configured for all new users via `/etc/default/useradd`
-- **Root Shell**: ZSH configured for root user
-- **First-Run Automation**: SystemD service (`distinction-firstrun.service`) that:
-  - Triggers on first boot after rebase
-  - Runs `ujust distinction-install` automatically
-  - Creates log at `/var/DistinctionOS/DistinctionOS_firstrun.log`
-  - Only runs once (checks for log file existence)
+- **ZSH System Config**: Full system-wide ZSH configuration via `/etc/zsh/` (zshrc, zprofile, zlogin, zshenv, zlogout)
+- **User Shell**: Post-rebase `ujust distinction-install-custom-shell` changes login shell and installs dotfiles
+- **Root Shell**: Also configured during post-rebase setup
 
-#### TPM Unlock System
-- **Interactive Setup**: `ujust distinction-tpm-unlock-setup` with preset PCR configurations:
-  - Maximum Security (PCR 0,1,4,5,7,8,9)
-  - Balanced (PCR 0,4,7,9)
-  - Convenience (PCR 7)
-  - Custom selection
-- **Proactive Monitoring**: `distinction-tpm-monitor` service that:
-  - Detects kernel, bootloader, firmware changes
-  - Warns BEFORE reboot when updates will break TPM
-  - Monitors rpm-ostree deployments
-  - Runs every 30 minutes via SystemD timer
-- **Recovery Tools**:
-  - `ujust distinction-tpm-reenrol`: Quick re-enrollment
-  - `ujust distinction-tpm-verify`: Status check
-  - `ujust distinction-tpm-reset`: Complete reset with auth
-  - `ujust distinction-tpm-logs`: View monitor logs
+#### TPM Configuration
+- **rpm-ostree TPM config**: `/etc/rpm-ostreed.conf.d/distinction.tpm.conf` provides TPM unlock hints to the rpm-ostree daemon
+- **Status**: TPM auto-unlock system being redesigned — current implementation is partial; full ujust recipes and monitoring service are planned
 
 #### Just Recipe System
-- **Main Recipe**: `distinction.just` with modular imports
-- **Installation Recipes**:
-  - Flatpak installation from GitHub-hosted list
-  - Homebrew package management
-  - Oh-my-zsh with Powerlevel10k theme
-  - NvChad configuration for Neovim
-  - Nautilus scripts integration
-- **TPM Management**: Separate recipe file for TPM operations
+- **Main Recipe**: `distinction.just` — post-install setup (Flatpaks, Homebrews, shell, NvChad, Nautilus scripts)
+- **Steam Linker Recipe**: `steam-linker.just` — full Steam library symlink management
+- **See**: `docs/ujust-recipes.md` for complete recipe reference
 
 #### Security Configuration
 - **Passwordless Sudo**: Configured for wheel group (user aware of security implications)
@@ -400,48 +447,39 @@ Contains custom files added at build time (akin to BlueBuild's 'overlay'):
 
 ### 🚧 Known Issues
 - **NvChad root installation**: May need verification after first run (`sudo nvim` to complete)
-- **TPM re-enrollment**: Requires manual password entry (by design for security)
+- **TPM auto-unlock**: System being redesigned — current state is partial (config file only, no ujust recipes or monitor service)
 
 ## Maintenance Procedures
 
 ### After System Updates
 ```bash
 rpm-ostree upgrade
-# TPM monitor will detect and notify about changes
-ujust distinction-tpm-reenrol  # If notified
 systemctl reboot
-```
-
-### TPM Management
-```bash
-ujust distinction-tpm-check     # Check if re-enrollment needed
-ujust distinction-tpm-verify    # Verify current status
-ujust distinction-tpm-logs      # View recent activity
+# If TPM auto-unlock breaks after reboot, re-enroll manually
+# (full TPM ujust recipes are planned but not yet implemented)
 ```
 
 ### Adding Packages
 
 #### Build-Time Packages (in the image)
-Edit `01-build.sh`:
+Edit `02-build.sh`. Packages are added to the repo-keyed arrays used by `install_packages_resilient`:
 ```bash
-declare -A RPM_PACKAGES=(
-  ["fedora"]="existing-packages new-package"
-  ["copr:user/repo"]="copr-package"
-)
+# Example: add to fedora repo array
+install_packages_resilient "fedora" existing-packages new-package
 ```
 
 #### Runtime Packages (post-install)
-- **Flatpaks**: Add to `repo-files/flatpaks` on GitHub
-- **Homebrews**: Add to `repo-files/brews` on GitHub
+- **Flatpaks**: Add to `repo_files/flatpaks` on GitHub
+- **Homebrews**: Add to `repo_files/brews` on GitHub
 - Run: `ujust distinction-install` or specific recipe
 
 
 ## Future Roadmap
 
 ### Short-Term Goals 
-- [ ] revisit and redesign DistinctionOS tpm auto-unlock (including ujust recipe)
-- [ ] maybe expand 'housekeeper' functionality ('housekeepers' are intended to keep things organized according to a set-design or blueprint. Future plans may include '.housekeeper' config files that maintain expansive directories and files)
-- [ ] update github-actions to more closely match bazzite (when bazzite runs github-actions to update bazzite images, it also creates a release page with updated packages and new new commits included in the new images)
+- [ ] Revisit and redesign TPM auto-unlock (including ujust recipes and monitor service)
+- [ ] Expand 'housekeeper' functionality (future: `.housekeeper` config files that maintain expansive directory structures)
+- [ ] Update GitHub Actions to more closely match Bazzite (release pages with package changelogs per build)
 
 ### Long-Term Goals 
 - [ ] **Standalone ISO**: Fully functional installer ISO (in progress via build-disk.yml)
@@ -449,18 +487,16 @@ declare -A RPM_PACKAGES=(
 
 ### Completed Goals ✅
 - [x] Rechunker support for efficient updates
-- [x] ZSH as default shell with automated configuration
-- [x] Oh-my-zsh and Powerlevel10k automatic installation
-- [x] TPM auto-unlock with proactive monitoring system
-- [x] Steam library symlink automation ✅
-- [x] xwm-player
-- [x] **Build Script Refactoring** (2025-10-27):
-  - [x] Complete overhaul of all build scripts
-  - [x] Utility functions library implementation
-  - [x] Color-coded logging system
-  - [x] Comprehensive error handling
-  - [x] Professional code quality standards
-  - [x] ~300 lines of duplication eliminated
+- [x] ZSH as default shell with system-wide config
+- [x] Oh-my-zsh with Powerlevel10k (via post-install ujust)
+- [x] Steam library symlink automation (Steam Linker housekeeper)
+- [x] XWM Player — Bethesda audio format playback
+- [x] CachyOS LTO kernel as default (`00-kernel.sh`)
+- [x] Custom Mesa stack with freeworld codecs (`05-mesa-install.sh` + `build-mesa.yml`)
+- [x] Build Script Refactoring:
+  - [x] Utility functions library (`95-utility-functions.sh`)
+  - [x] Color-coded logging and error handling across all scripts
+  - [x] Resilient best-effort package installation strategy
 
 ## Notes for AI Assistants
 
@@ -506,7 +542,7 @@ set -euo pipefail
 # Execution: Position in sequence
 # ============================================================================
 
-source /ctx/utility-functions.sh
+source /ctx/95-utility-functions.sh
 
 script_start "Script Name" "Brief description"
 
@@ -521,7 +557,7 @@ exit 0
 ### Important Distinctions
 
 #### Build-Time vs Runtime:
-- **Build-Time**: Scripts in build-files/ execute during image creation
+- **Build-Time**: Scripts in build_files/ execute during image creation
   - Use `dnf5` for package management
   - Use utility functions for logging/validation
   - Changes require rebuild
@@ -534,9 +570,7 @@ exit 0
   - Changes persist in /var or /home
 
 #### Directory Naming:
-- **Filesystem**: Still uses `build_files/` and `system_files/` (underscores)
-- **Documentation**: References `build-files/` and `system-files/` (hyphens) for consistency
-- **Future**: Will be renamed to match documentation
+- All directories use **underscores**: `build_files/`, `system_files/`, `repo_files/`, `disk_config/`
 
 ### Housekeeper Standards
 When creating new housekeepers:
@@ -570,14 +604,18 @@ At the end of a session, user will request updated context files:
 
 ## Document Metadata
 
-**Version**: 3.3  
-**Last Updated**: 2026-1-16  
+**Version**: 3.4  
+**Last Updated**: 2026-05-28  
 **Major Changes**: 
-- Add Steam Linker
-- Add xwm-player
-- Add DistinctionOS File Structure to claude.md
-- Mark ZFS as no longer planned
-- Update Objectives
+- Fix all directory names to use underscores (build_files, system_files, etc.)
+- Update build script sequence: 00-kernel, 01-kernel-modules, 02-build, 03-fix-opt, 04-config, 05-mesa-install, 06-remote-grabber
+- Remove ZFS references (no longer in use)
+- Add 00-kernel.sh (CachyOS LTO kernel) and 05-mesa-install.sh (custom Mesa OCI)
+- Add XWM Player to Housekeeper Architecture and Completed Goals
+- Update system_files/ contents to reflect actual files (fonts, cursors, themes, MIME, etc.)
+- Correct TPM status (partial/planned, not complete)
+- Add docs/xwm-player.md and docs/ujust-recipes.md to structure
+- Remove references to non-existent firstrun and tpm-monitor binaries
 
 **Maintainer**: phantomcortex  
 **Purpose**: Provide comprehensive context to AI assistants working with DistinctionOS
