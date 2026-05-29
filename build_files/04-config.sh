@@ -294,6 +294,8 @@ else
   log_info "No Bazzite remnants found"
 fi
 
+log_info "Removing Bazzite dnf wrapper"
+[[ -f /usr/bin/dnf ]] && rm /usr/bin/dnf
 # ============================================================================
 # Configuration Complete
 # ============================================================================

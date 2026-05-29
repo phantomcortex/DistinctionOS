@@ -531,7 +531,32 @@ install_gnome_rounded_blur() {
     # meson is build-only; everything else stays until libblur-effect-1.0.so.1
     # dependencies are fully mapped.
     log_info "Removing meson (build-only)"
-    dnf5 remove -y meson || true
+    dnf5 remove -y meson \
+    ninja \
+    glib2-devel \
+    glibc-devel \
+    gtk2-devel \
+    gtk3-devel \
+    gtk4-devel \
+    fontconfig-devel \
+    freetype-devel \
+    brotli-devel \
+    libpng-devel \
+    systemd-devel \
+    pipewire-devel \
+    lzo-devel \
+    bzip2-devel \
+    xorg-x11-proto-devel \
+    ligusb-devel \
+    libthai-devel \
+    cairo-gobject-devel \
+    pango-devel \
+    libicu-devel \
+    pixman-devel \
+    pcre2-devel \
+    libselinux-devel \
+    sysprof-capture-devel \
+    perl-devel || true
 }
 
 main() {
@@ -539,9 +564,6 @@ main() {
 
     log_info "Starting $SCRIPT_NAME"
     setup_environment
-
-    # bazzite's dnf wrapper interferes with builds
-    [[ -f /usr/bin/dnf ]] && rm /usr/bin/dnf
 
     local had_errors=0
 

@@ -309,6 +309,71 @@ EOF
 }
 
 # ============================================================================
+# Glycin BC7 Patch RPM Installation
+# ============================================================================
+# Installs phantomcortex/glycin release RPMs, which add BC4/BC5/BC6H/BC7 DDS
+# support to glycin-image-rs (upstream only supports BC1/BC2/BC3).
+# The release version sorts above Fedora's stock 1.fc44 so this upgrades cleanly.
+
+install_glycin_bc7_rpms() {
+  log_section "Installing glycin BC7 patch RPMs"
+
+  local tag="v2.1.1-bc7fix1"
+  local base_url="https://github.com/phantomcortex/glycin/releases/download/${tag}"
+
+  local -a rpms=(
+    "glycin-libs-2.1.1-100.bc7fix.gh1.ac90a48.fc44.x86_64.rpm"
+    "glycin-gtk4-libs-2.1.1-100.bc7fix.gh1.ac90a48.fc44.x86_64.rpm"
+    "glycin-loaders-2.1.1-100.bc7fix.gh1.ac90a48.fc44.x86_64.rpm"
+    "glycin-thumbnailer-2.1.1-100.bc7fix.gh1.ac90a48.fc44.x86_64.rpm"
+    "glycin-devel-2.1.1-100.bc7fix.gh1.ac90a48.fc44.x86_64.rpm"
+    "glycin-gtk4-devel-2.1.1-100.bc7fix.gh1.ac90a48.fc44.x86_64.rpm"
+  )
+
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+
+  local -a downloaded=()
+  local download_failed=0
+
+  for rpm_file in "${rpms[@]}"; do
+    if curl -L --silent --fail "${base_url}/${rpm_file}" -o "${tmp_dir}/${rpm_file}"; then
+      downloaded+=("${tmp_dir}/${rpm_file}")
+    else
+      log_warning "Failed to download: $rpm_file"
+      ((download_failed++))
+      exit 1 
+    fi
+  done
+
+  if [[ ${#downloaded[@]} -gt 0 ]]; then
+    if dnf5 -y install --allowerasing "${downloaded[@]}" &>/dev/null; then
+      log_success "glycin BC7 RPMs installed (${#downloaded[@]} packages)"
+      SUCCEEDED_PACKAGES+=("glycin-bc7")
+    else
+      log_warning "Bulk install failed, attempting individual installs"
+      for rpm_path in "${downloaded[@]}"; do
+        local name
+        name=$(basename "$rpm_path")
+        if dnf5 -y install --allowerasing "$rpm_path" &>/dev/null; then
+          log_success "  ✓ $name"
+          SUCCEEDED_PACKAGES+=("$name")
+        else
+          log_warning "  ✗ $name (failed)"
+          FAILED_PACKAGES+=("$name")
+        fi
+      done
+    fi
+  else
+    log_error "No glycin RPMs downloaded successfully"
+    FAILED_PACKAGES+=("glycin-bc7")
+  fi
+
+  [[ $download_failed -gt 0 ]] && log_warning "$download_failed glycin RPM(s) failed to download"
+  rm -rf "$tmp_dir"
+}
+
+# ============================================================================
 # Resilient Single Package Installation
 # ============================================================================
 # For special cases like CrossOver, Kora theme, etc.
@@ -440,21 +505,18 @@ declare -A RPM_PACKAGES=(
     zsh-autosuggestions \
     neovim \
     file-roller \
-    evince \
     loupe \
     sassc \
     gstreamer1-plugins-good-extras \
     decibels \
     dconf \
     gtk-murrine-engine \
-    glib2-devel \
     perl-File-Copy \
     winetricks \
     lutris \
     sox \
     totem-video-thumbnailer \
     mediainfo \
-    pandoc \
     flatpak-builder \
     gnome-tweaks \
     freerdp \
@@ -474,29 +536,22 @@ declare -A RPM_PACKAGES=(
     filelight \
     clamav \
     diffpdf \
-    ghex \
     id3v2 \
-    kdiff3 \
     lhasa \
     lzma \
     meld \
-    okteta \
     pandoc-cli \
-    testdisk \
-    qpdf \
     rdfind \
-    rhash \
-    xorriso"
+    xorriso \
+    optipng"
 
   # mesa-va-drivers-freeworld and mesa-vulkan-drivers-freeworld are intentionally
   # absent here. The full mesa stack is installed by 05-mesa-install.sh from a
   # pre-built OCI artifact (ghcr.io/phantomcortex/distinctionos-mesa) that builds
   # all subpackages from one Fedora SRPM with freeworld codec support enabled.
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
-  	libavcodec-freeworld \
     gstreamer1-plugins-bad-freeworld \
-    gstreamer1-plugins-ugly \
-    libheif-freeworld"
+    gstreamer1-plugins-ugly"
 
   # mesa-libgbm and mesa-libgbm-devel are handled by 05-mesa-install.sh.
   ["terra,terra-extras"]=" \
@@ -603,6 +658,7 @@ fi
 # ──────────────────────────────────────────────────────────────────────────
 
 install_freeworld_rpms
+install_glycin_bc7_rpms
 
 
 # ============================================================================
@@ -619,7 +675,6 @@ readonly -a CRITICAL_PACKAGES=(
   "libavcodec-freeworld"
   "gstreamer1-plugins-bad-freeworld"
   "gstreamer1-plugins-ugly"
-  "libheif-freeworld"
   # mesa-* validated separately in 05-mesa-install.sh
 )
 
