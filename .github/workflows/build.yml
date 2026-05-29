@@ -15,6 +15,7 @@ on:
       - '**/README.md'
       - '**/claude.md'
       - 'repo_files/**'
+      - 'docs/**'
       - 'system_files/**' # modifcations to system files are usually small and don't warrant a full rebuild
   workflow_dispatch:
     inputs:
