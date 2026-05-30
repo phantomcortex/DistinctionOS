@@ -477,7 +477,7 @@ install_gnome_rounded_blur() {
     fi
 
     log_info "Installing build dependencies for gnome-rounded-blur"
-    dnf5 install -y glib2-devel '@c-development' meson ninja gobject-introspection
+    dnf5 install -y glib2-devel meson ninja gobject-introspection
 
     # Clone the library source
     local repo_dir="$work_dir/gnome-rounded-blur"
@@ -532,31 +532,7 @@ install_gnome_rounded_blur() {
     # dependencies are fully mapped.
     log_info "Removing meson (build-only)"
     dnf5 remove -y meson \
-    ninja \
-    glib2-devel \
-    glibc-devel \
-    gtk2-devel \
-    gtk3-devel \
-    gtk4-devel \
-    fontconfig-devel \
-    freetype-devel \
-    brotli-devel \
-    libpng-devel \
-    systemd-devel \
-    pipewire-devel \
-    lzo-devel \
-    bzip2-devel \
-    xorg-x11-proto-devel \
-    ligusb-devel \
-    libthai-devel \
-    cairo-gobject-devel \
-    pango-devel \
-    libicu-devel \
-    pixman-devel \
-    pcre2-devel \
-    libselinux-devel \
-    sysprof-capture-devel \
-    perl-devel || true
+    ninja || true
 }
 
 main() {

@@ -543,7 +543,25 @@ declare -A RPM_PACKAGES=(
     pandoc-cli \
     rdfind \
     xorriso \
-    optipng"
+    optipng \
+    \
+    @c-development \
+    clang \
+    cmake \
+    git-lfs \
+    gh \
+    python3-devel \
+    rust \
+    cargo \
+    nodejs \
+    npm \
+    android-tools \
+    \
+    p7zip \
+    p7zip-plugins \
+    openmw \
+    openmw-cs \
+    openmw-tools"
 
   # mesa-va-drivers-freeworld and mesa-vulkan-drivers-freeworld are intentionally
   # absent here. The full mesa stack is installed by 05-mesa-install.sh from a
@@ -728,6 +746,24 @@ readonly -a VERSIONLOCK_PACKAGES=(
   "file-roller"
   "dcraw"
   "sassc"
+  "steam"
+  "steam-devices"
+  "gnome-shell"
+  "gnome-session"
+  "vulkan-headers"
+  "mesa-vulkan-drivers"
+  "mesa-filesystem"
+  "mesa-dri-drivers"
+  "mesa-libGL"
+  "mesa-libEGL"
+  "mesa-libgdm"
+  "ffmpeg"
+  "mutter-devel"
+  "wayland-devel"
+  "ScopeBuddy"
+  "terra-gamescope"
+  "gcc"
+  "SDL3"
 )
 log_info "versionlock section"
 versionlock_failures=0
