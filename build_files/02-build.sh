@@ -250,8 +250,6 @@ ensure_rpmfusion_keys() {
 # Downloads freeworld RPMs from RPMFusion and installs via rpm to sidestep
 # dnf dependency/conflict checks against Bazzite's terra-repo packages.
 #
-#   mesa-vulkan-drivers-freeworld  --force --nodeps  (overrides terra mesa)
-#   mesa-va-drivers-freeworld      --nodeps
 #   libheif-freeworld              --nodeps           (F43 repo: not yet in F44)
 
 install_freeworld_rpms() {
@@ -289,8 +287,6 @@ install_freeworld_rpms() {
   }
 
   # ── libheif-freeworld: not yet in F44 — pull from F43 repo temporarily ──
-  # mesa-vulkan-drivers-freeworld and mesa-va-drivers-freeworld are handled by
-  # 05-mesa-install.sh from the pre-built distinctionos-mesa OCI artifact.
   local f43_repo="/etc/yum.repos.d/rpmfusion-free-f43-freeworld-tmp.repo"
   tee "$f43_repo" > /dev/null << 'EOF'
 [rpmfusion-free-f43-freeworld-tmp]
@@ -563,15 +559,10 @@ declare -A RPM_PACKAGES=(
     openmw-cs \
     openmw-tools"
 
-  # mesa-va-drivers-freeworld and mesa-vulkan-drivers-freeworld are intentionally
-  # absent here. The full mesa stack is installed by 05-mesa-install.sh from a
-  # pre-built OCI artifact (ghcr.io/phantomcortex/distinctionos-mesa) that builds
-  # all subpackages from one Fedora SRPM with freeworld codec support enabled.
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     gstreamer1-plugins-bad-freeworld \
     gstreamer1-plugins-ugly"
 
-  # mesa-libgbm and mesa-libgbm-devel are handled by 05-mesa-install.sh.
   ["terra,terra-extras"]=" \
   	x265 \
     gstreamer1-vaapi"
@@ -671,8 +662,6 @@ fi
 
 # ──────────────────────────────────────────────────────────────────────────
 # Freeworld RPMs (libheif-freeworld from F43 — not yet in F44)
-# mesa-vulkan-drivers-freeworld and mesa-va-drivers-freeworld are handled by
-# 05-mesa-install.sh via the pre-built distinctionos-mesa OCI artifact.
 # ──────────────────────────────────────────────────────────────────────────
 
 install_freeworld_rpms
@@ -693,7 +682,6 @@ readonly -a CRITICAL_PACKAGES=(
   "libavcodec-freeworld"
   "gstreamer1-plugins-bad-freeworld"
   "gstreamer1-plugins-ugly"
-  # mesa-* validated separately in 05-mesa-install.sh
 )
 
 validation_failures=0
@@ -751,12 +739,6 @@ readonly -a VERSIONLOCK_PACKAGES=(
   "gnome-shell"
   "gnome-session"
   "vulkan-headers"
-  "mesa-vulkan-drivers"
-  "mesa-filesystem"
-  "mesa-dri-drivers"
-  "mesa-libGL"
-  "mesa-libEGL"
-  "mesa-libgdm"
   "ffmpeg"
   "mutter-devel"
   "wayland-devel"

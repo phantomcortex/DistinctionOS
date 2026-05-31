@@ -1,0 +1,14 @@
+FROM fedora:45 AS builder
+
+RUN mkdir -p /output/rpms && \
+    dnf install -y dnf-plugins-core
+
+# Add packages to download below as needed.
+# These are packages that require rpm --force --nodeps due to file conflicts.
+#
+# Examples:
+#   RUN dnf download --destdir=/output/rpms --resolve mutter-devel
+#   RUN curl -L <release-url>/glycin-libs-custom.rpm -o /output/rpms/glycin-libs-custom.rpm
+
+FROM scratch
+COPY --from=builder /output/rpms/ /rpms/

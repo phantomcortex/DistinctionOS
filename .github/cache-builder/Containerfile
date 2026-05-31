@@ -1,0 +1,13 @@
+FROM fedora:45 AS builder
+
+RUN mkdir -p /output/rpms && \
+    dnf install -y dnf-plugins-core
+
+# Add packages to download below as needed.
+# These are packages that install cleanly but live on custom or at-risk remotes.
+#
+# Example:
+#   RUN dnf download --destdir=/output/rpms --resolve audacity-freeworld
+
+FROM scratch
+COPY --from=builder /output/rpms/ /rpms/
