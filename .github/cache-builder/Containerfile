@@ -7,6 +7,8 @@ RUN dnf install -y \
         jq curl git tar \
         rpm-build \
         rpm-sign \
+        rubygem-fpm \
+        meson ninja-build cmake make gcc gcc-c++ \
     && dnf install -y \
         https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-44.noarch.rpm \
         https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-44.noarch.rpm \

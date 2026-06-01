@@ -44,8 +44,75 @@ while IFS='|' read -r name source arg || [[ -n "$name" ]]; do
             done
             ;;
         github-build)
-            echo "    github-build source is not yet implemented" >&2
-            exit 1
+            repo="${arg%%@*}"
+            ref="${arg#*@}"; [[ "$ref" == "$arg" ]] && ref=""
+
+            work_dir=$(mktemp -d)
+            src_dir="$work_dir/src"
+            install_dir="$work_dir/install"
+
+            if [[ -n "$ref" ]]; then
+                # Shallow-clone the ref first; fall back to full clone if ref
+                # is a commit SHA or annotated tag, not a branch.
+                if ! git clone --depth 1 --branch "$ref" \
+                        "https://github.com/$repo" "$src_dir" 2>/dev/null; then
+                    git clone "https://github.com/$repo" "$src_dir"
+                    (cd "$src_dir" && git checkout "$ref")
+                fi
+            else
+                git clone --depth 1 "https://github.com/$repo" "$src_dir"
+            fi
+
+            pushd "$src_dir" >/dev/null
+            commit_sha=$(git rev-parse HEAD)
+
+            if [[ -f meson.build ]]; then
+                echo "    Build system: meson"
+                meson setup build --prefix=/usr --buildtype=release
+                meson compile -C build -j "$(nproc)"
+                DESTDIR="$install_dir" meson install -C build
+            elif [[ -f CMakeLists.txt ]]; then
+                echo "    Build system: cmake"
+                cmake -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
+                cmake --build build -j "$(nproc)"
+                DESTDIR="$install_dir" cmake --install build
+            elif [[ -f Makefile || -f makefile ]]; then
+                echo "    Build system: make"
+                make -j "$(nproc)"
+                make install DESTDIR="$install_dir" PREFIX=/usr
+            else
+                echo "    No supported build system (meson/cmake/make) found in $repo" >&2
+                exit 1
+            fi
+            popd >/dev/null
+
+            if [[ ! -d "$install_dir" ]] || [[ -z "$(ls -A "$install_dir" 2>/dev/null)" ]]; then
+                echo "    Build of $repo produced no install tree" >&2
+                exit 1
+            fi
+
+            # Date-stamped version for RPM monotonicity; release embeds the
+            # commit SHA for traceability back to source.
+            rpm_ver=$(date -u +%Y%m%d)
+            rpm_rel="1.gh${commit_sha:0:7}"
+
+            fpm -s dir -t rpm \
+                -n "$name" \
+                -v "$rpm_ver" \
+                --iteration "$rpm_rel" \
+                --description "Auto-packaged build of $name from $repo@${commit_sha:0:7}" \
+                --license "Unspecified" \
+                -a x86_64 \
+                --no-auto-depends \
+                --rpm-auto-add-directories \
+                -C "$install_dir" \
+                -p "/output/rpms/" \
+                . >&2
+
+            rm -rf "$work_dir"
+
+            # Track commit SHA as the upstream version (matches check-versions.sh).
+            ver="${commit_sha:0:12}"
             ;;
         *)
             echo "    unknown source type: $source" >&2

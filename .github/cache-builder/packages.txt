@@ -10,8 +10,9 @@
 #                   ARG = optional comma-separated --enablerepo list.
 #   github-release  Pull .rpm assets from a repo's latest GitHub release.
 #                   ARG = OWNER/REPO.
-#   github-build    Clone repo, build with meson, package as RPM.
-#                   ARG = OWNER/REPO[@REF]. (Not yet implemented.)
+#   github-build    Clone repo, build with meson/cmake/make, package as RPM via fpm.
+#                   ARG = OWNER/REPO[@REF]. Ref may be a branch, tag, or commit.
+#                   If your build needs extra deps, add them to the Containerfile.
 #
 # Comments (lines starting with #) and blank lines are ignored.
 # Whitespace around | separators is stripped.

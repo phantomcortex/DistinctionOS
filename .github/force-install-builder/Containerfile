@@ -9,7 +9,8 @@ RUN dnf install -y \
         jq curl git tar \
         rpm-build \
         rpm-sign \
-        meson ninja-build gcc gcc-c++ \
+        rubygem-fpm \
+        meson ninja-build cmake make gcc gcc-c++ \
         glib2-devel \
         gobject-introspection-devel \
     && dnf install -y \
