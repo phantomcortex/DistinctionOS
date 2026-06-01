@@ -21,6 +21,7 @@ RUN dnf install -y \
 # DistinctionOS runs. Required for force-install builds that need to link
 # against the target's library versions.
 RUN cat > /etc/yum.repos.d/terra.repo <<'EOF' \
+ && dnf install -y mutter-devel \
  && dnf clean all
 [terra]
 name=Terra $releasever

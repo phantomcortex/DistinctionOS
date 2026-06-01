@@ -20,5 +20,7 @@
 # Whitespace around | separators is stripped.
 #
 # Examples:
-#   mutter-devel       | dnf            | terra
-#   gnome-rounded-blur | github-build   | yilozt/rounded-window-corners
+#   audacity-freeworld | dnf            | rpmfusion-free,rpmfusion-free-updates
+
+mutter-devel       | dnf            | terra
+gnome-rounded-blur | github-build   | kancko/gnome-rounded-blur
