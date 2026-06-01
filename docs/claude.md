@@ -22,8 +22,10 @@ DistinctionOS/
 │   ├── 02-build.sh            # Package management (RPM, repos, keys) - THIRD
 │   ├── 03-fix-opt.sh          # /opt persistence configuration - FOURTH
 │   ├── 04-config.sh           # System services and misc config - FIFTH
-│   ├── 05-mesa-install.sh     # Custom Mesa stack from OCI artifact - SIXTH
-│   ├── 06-remote-grabber.sh   # GNOME Shell extension management - SEVENTH (FINAL)
+│   ├── 05-cache-install.sh    # Cache RPM install from OCI artifact - SIXTH
+│   ├── 06-force-install.sh    # Force-install RPMs from OCI artifact - SEVENTH
+│   ├── 07-remote-grabber.sh   # GNOME Shell extension management - EIGHTH
+│   ├── 08-validate.sh         # Post-install environment validation - NINTH (FINAL)
 │   ├── 95-utility-functions.sh # Shared utility functions library - SOURCED BY ALL
 │   └── wine-installer.sh      # Custom Wine builds (INACTIVE - not in build sequence)
 │
@@ -194,15 +196,23 @@ Containerfile Execution:
   │    ├─ Update system caches (MIME, desktop, glib schemas)
   │    └─ Remove unwanted files (Waydroid, Wine utilities, Bazzite remnants)
   │
-  ├─→ 05-mesa-install.sh
+  ├─→ 05-cache-install.sh
   │    ├─ Source utility-functions.sh
-  │    ├─ Install pre-built Mesa RPMs from OCI artifact stage
-  │    └─ Overrides any conflicting mesa packages from Bazzite base
+  │    └─ dnf install /var/tmp/cache-rpms/*.rpm  (clean-install OCI artifact)
   │
-  └─→ 06-remote-grabber.sh
+  ├─→ 06-force-install.sh
+  │    ├─ Source utility-functions.sh
+  │    └─ rpm --force --nodeps -i /var/tmp/force-install-rpms/*.rpm
+  │
+  ├─→ 07-remote-grabber.sh
+  │    ├─ Source utility-functions.sh
+  │    ├─ Download GNOME Shell extensions
+  │    └─ Compile gschemas for extensions
+  │
+  └─→ 08-validate.sh
        ├─ Source utility-functions.sh
-       ├─ Download GNOME Shell extensions
-       └─ Compile gschemas for extensions
+       ├─ Verify ldconfig, icon caches, pixbuf loaders, schemas, fonts
+       └─ Hard-fail on broken environment (VALIDATION_SOFT=1 to bypass)
 ```
 
 ### Key Technologies
@@ -319,7 +329,7 @@ Containerfile Execution:
 - Never directly — the Mesa OCI stage is built separately
 - To change Mesa packages, update `build-mesa.yml`
 
-#### `06-remote-grabber.sh` - GNOME Extension Management
+#### `07-remote-grabber.sh` - GNOME Extension Management
 **Purpose**: Install and configure GNOME Shell extensions system-wide
 **Key Features**:
 - Extension download and installation

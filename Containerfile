@@ -45,10 +45,10 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/04-config.sh && \
     echo -e "\033[31mCACHE INSTALL >>>>\033[0m" && \
     /ctx/05-cache-install.sh && \
-    echo -e "\033[31mREMOTE GRABBER >>>>\033[0m" && \
-    /ctx/06-remote-grabber.sh && \
     echo -e "\033[31mFORCE INSTALL >>>>\033[0m" && \
-    /ctx/07-force-install.sh && \
+    /ctx/06-force-install.sh && \
+    echo -e "\033[31mREMOTE GRABBER >>>>\033[0m" && \
+    /ctx/07-remote-grabber.sh && \
     echo -e "\033[31mVALIDATE >>>>\033[0m" && \
     /ctx/08-validate.sh && \
     echo -e "\033[31mIMAGE INFO >>>>\033[0m" && \
