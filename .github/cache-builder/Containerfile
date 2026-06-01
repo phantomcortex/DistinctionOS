@@ -7,12 +7,13 @@ RUN dnf install -y \
         jq curl git tar \
         rpm-build \
         rpm-sign \
-        rubygem-fpm \
+        ruby-devel \
         meson ninja-build cmake make gcc gcc-c++ \
     && dnf install -y \
         https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-44.noarch.rpm \
         https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-44.noarch.rpm \
-    && dnf clean all
+    && dnf clean all \
+    && gem install fpm
 
 # ── version-check stage ────────────────────────────────────────────────────
 # Outputs JSON of current upstream versions for every package in packages.txt.
