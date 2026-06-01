@@ -12,10 +12,11 @@ RUN dnf install -y \
         meson ninja-build cmake make gcc gcc-c++ \
         glib2-devel \
         gobject-introspection-devel \
-        @c-development \
+        @c-development ruby-devel \
     && dnf install -y \
         https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-44.noarch.rpm \
-        https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-44.noarch.rpm
+        https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-44.noarch.rpm \
+    && gem install fpm    
 
 # Terra (Fyra Labs) — ships the matching mesa/mutter/x265/vvenc that
 # DistinctionOS runs. Required for force-install builds that need to link
