@@ -49,6 +49,8 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/06-remote-grabber.sh && \
     echo -e "\033[31mFORCE INSTALL >>>>\033[0m" && \
     /ctx/07-force-install.sh && \
+    echo -e "\033[31mVALIDATE >>>>\033[0m" && \
+    /ctx/08-validate.sh && \
     echo -e "\033[31mIMAGE INFO >>>>\033[0m" && \
     /ctx/image-info && \
     echo -e "\033[31mOSTREE COMMIT\033[0m" && \
