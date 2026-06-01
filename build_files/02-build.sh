@@ -554,18 +554,18 @@ declare -A RPM_PACKAGES=(
     android-tools \
     \
     p7zip \
-    p7zip-plugins \
-    openmw \
-    openmw-cs \
-    openmw-tools"
+    p7zip-plugins"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     gstreamer1-plugins-bad-freeworld \
-    gstreamer1-plugins-ugly"
+    gstreamer1-plugins-ugly \
+    x264 \
+    x265"
 
   ["terra,terra-extras"]=" \
-  	x265 \
-    gstreamer1-vaapi"
+    gstreamer1-vaapi \
+    mesa-libgbm-devel \
+    mesa-libEGL-devel"
   
   # Fedora Multimedia (optimized multimedia packages)
   ["fedora-multimedia"]="mpv"
