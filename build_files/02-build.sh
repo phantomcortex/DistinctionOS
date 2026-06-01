@@ -557,13 +557,14 @@ declare -A RPM_PACKAGES=(
     p7zip-plugins"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
-    gstreamer1-plugins-bad-freeworld \
     gstreamer1-plugins-ugly \
     x264 \
     x265"
 
   ["terra,terra-extras"]=" \
     gstreamer1-vaapi \
+    mesa-libgbm \
+    mesa-libEGL \
     mesa-libgbm-devel \
     mesa-libEGL-devel"
   
@@ -680,7 +681,7 @@ readonly -a CRITICAL_PACKAGES=(
   "totem-video-thumbnailer"
   "Cider"
   "libavcodec-freeworld"
-  "steam"
+  "steam.i686"
   "steam-devices"
   "gnome-shell"
   "gnome-session"
@@ -691,6 +692,9 @@ readonly -a CRITICAL_PACKAGES=(
   "mesa-libGL"
   "mesa-libEGL"
   "mesa-libgdm"
+  "mesa-libgbm-devel"
+  "mesa-libEGL"
+  "mesa-libEGL-devel"
   "ffmpeg"
   "mutter-devel"
   "wayland-devel"
