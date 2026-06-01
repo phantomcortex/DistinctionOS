@@ -13,6 +13,8 @@
 #   github-build    Clone repo, build with meson/cmake/make, package as RPM via fpm.
 #                   ARG = OWNER/REPO[@REF]. Ref may be a branch, tag, or commit.
 #                   If your build needs extra deps, add them to the Containerfile.
+#                   For repo-specific patches, drop a script at hooks/<NAME>.sh —
+#                   it runs in the cloned source dir before the build starts.
 #
 # Comments (lines starting with #) and blank lines are ignored.
 # Whitespace around | separators is stripped.

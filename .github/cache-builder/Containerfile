@@ -29,6 +29,7 @@ CMD ["/usr/local/bin/check-versions.sh"]
 # versions.json. Validation (rpm -K, header sanity) happens in build.sh.
 FROM base AS builder
 COPY packages.txt /input/packages.txt
+COPY hooks/ /input/hooks/
 COPY build.sh /usr/local/bin/build.sh
 RUN chmod +x /usr/local/bin/build.sh && /usr/local/bin/build.sh
 

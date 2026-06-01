@@ -66,6 +66,15 @@ while IFS='|' read -r name source arg || [[ -n "$name" ]]; do
             pushd "$src_dir" >/dev/null
             commit_sha=$(git rev-parse HEAD)
 
+            # Pre-build hook: if hooks/<name>.sh ships in this builder, run
+            # it with $PWD set to the cloned source. Lets packages apply
+            # repo-specific patches without bloating the generic github-build flow.
+            hook_script="/input/hooks/${name}.sh"
+            if [[ -f "$hook_script" ]]; then
+                echo "    Running pre-build hook: hooks/${name}.sh"
+                bash "$hook_script"
+            fi
+
             if [[ -f meson.build ]]; then
                 echo "    Build system: meson"
                 meson setup build --prefix=/usr --buildtype=release

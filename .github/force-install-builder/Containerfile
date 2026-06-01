@@ -41,6 +41,7 @@ CMD ["/usr/local/bin/check-versions.sh"]
 # ── builder stage ──────────────────────────────────────────────────────────
 FROM base AS builder
 COPY packages.txt /input/packages.txt
+COPY hooks/ /input/hooks/
 COPY build.sh /usr/local/bin/build.sh
 RUN chmod +x /usr/local/bin/build.sh && /usr/local/bin/build.sh
 
