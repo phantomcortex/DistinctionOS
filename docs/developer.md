@@ -38,8 +38,10 @@ DistinctionOS/
 │   ├── 02-build.sh              # Package management (RPM, repos, keys)
 │   ├── 03-fix-opt.sh            # /opt persistence configuration
 │   ├── 04-config.sh             # System services and misc config
-│   ├── 05-mesa-install.sh       # Custom Mesa stack from OCI artifact
-│   ├── 06-remote-grabber.sh     # GNOME Shell extension management
+│   ├── 05-cache-install.sh      # Install pre-cached RPMs from cache OCI artifact
+│   ├── 06-force-install.sh      # rpm --force --nodeps install from force-install OCI artifact
+│   ├── 07-remote-grabber.sh     # GNOME Shell extension management
+│   ├── 08-validate.sh           # Post-install environment sanity checks
 │   ├── 95-utility-functions.sh  # Shared logging/utility library (sourced by all)
 │   └── wine-installer.sh        # Custom Wine builds (inactive)
 │
@@ -333,7 +335,7 @@ declare -A CLEANUP_FILES=(
 
 ---
 
-### 6. `06-remote-grabber.sh`
+### 7. `07-remote-grabber.sh`
 **Purpose**: Manage GNOME Shell extensions in the system image   
 **Key Functions**:
 - Download specified GNOME Shell extensions
@@ -609,7 +611,7 @@ echo "package-name" >> repo_files/brews
 
 ### Adding GNOME Shell Extensions
 
-**Edit**: `build_files/06-remote-grabber.sh`
+**Edit**: `build_files/07-remote-grabber.sh`
 
 ```bash
 # Add extension UUID or URL to download list

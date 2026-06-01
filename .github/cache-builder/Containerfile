@@ -1,0 +1,41 @@
+# Base layer: Fedora 44 (matching DistinctionOS's major version) + tooling
+# and repos needed by both the version-check and builder stages.
+FROM fedora:44 AS base
+
+RUN dnf install -y \
+        dnf-plugins-core \
+        jq curl git tar \
+        rpm-build \
+        rpm-sign \
+        rubygem-fpm \
+        meson ninja-build cmake make gcc gcc-c++ \
+    && dnf install -y \
+        https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-44.noarch.rpm \
+        https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-44.noarch.rpm \
+    && dnf clean all
+
+# ── version-check stage ────────────────────────────────────────────────────
+# Outputs JSON of current upstream versions for every package in packages.txt.
+# The workflow runs this and compares against the published artifact's label
+# to decide whether a rebuild is needed.
+FROM base AS version-check
+COPY packages.txt /input/packages.txt
+COPY check-versions.sh /usr/local/bin/check-versions.sh
+RUN chmod +x /usr/local/bin/check-versions.sh
+CMD ["/usr/local/bin/check-versions.sh"]
+
+# ── builder stage ──────────────────────────────────────────────────────────
+# Downloads/builds the RPMs declared in packages.txt and writes a matching
+# versions.json. Validation (rpm -K, header sanity) happens in build.sh.
+FROM base AS builder
+COPY packages.txt /input/packages.txt
+COPY hooks/ /input/hooks/
+COPY build.sh /usr/local/bin/build.sh
+RUN chmod +x /usr/local/bin/build.sh && /usr/local/bin/build.sh
+
+# ── final artifact ─────────────────────────────────────────────────────────
+# Scratch image carrying only the RPMs and the versions manifest. Pulled in
+# by the main Containerfile via COPY --from=cache-rpms.
+FROM scratch AS artifact
+COPY --from=builder /output/rpms/ /rpms/
+COPY --from=builder /output/versions.json /versions.json

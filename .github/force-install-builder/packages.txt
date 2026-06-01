@@ -1,0 +1,26 @@
+# Manifest of packages shipped by the distinctionos-force-install artifact.
+# These are packages installed via `rpm --force --nodeps` because they
+# conflict with files from already-installed packages, or require deps that
+# can't be satisfied cleanly in the target environment.
+#
+# Format: NAME|SOURCE|ARG
+#
+# Source types:
+#   dnf             Download from configured dnf repos via dnf-download.
+#                   ARG = optional comma-separated --enablerepo list.
+#   github-release  Pull .rpm assets from a repo's latest GitHub release.
+#                   ARG = OWNER/REPO.
+#   github-build    Clone repo, build with meson/cmake/make, package as RPM via fpm.
+#                   ARG = OWNER/REPO[@REF]. Ref may be a branch, tag, or commit.
+#                   If your build needs extra deps, add them to the Containerfile.
+#                   For repo-specific patches, drop a script at hooks/<NAME>.sh —
+#                   it runs in the cloned source dir before the build starts.
+#
+# Comments (lines starting with #) and blank lines are ignored.
+# Whitespace around | separators is stripped.
+#
+# Examples:
+#   audacity-freeworld | dnf            | rpmfusion-free,rpmfusion-free-updates
+
+mutter-devel       | dnf            | terra
+gnome-rounded-blur | github-build   | kancko/gnome-rounded-blur

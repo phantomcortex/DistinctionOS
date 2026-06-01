@@ -2,10 +2,17 @@
 FROM scratch AS ctx
 COPY build_files /
 
-# Pre-built custom mesa stack — Fedora SRPM + freeworld codec patches applied.
-# Built by .github/workflows/build-mesa.yml, published weekly to GHCR.
-# All subpackages come from one SRPM so versions are guaranteed in sync.
-#FROM ghcr.io/phantomcortex/distinctionos-mesa:latest AS mesa-rpms
+# Pre-cached RPMs — packages that install cleanly but live on custom or at-risk remotes.
+# Built by .github/workflows/build-cache.yml, pushed to GHCR on demand.
+# Artifacts are tagged both `:latest` (rolling) and `:YYYYMMDD` (pinned).
+# For reproducible builds, replace `:latest` with a specific date tag.
+#FROM ghcr.io/phantomcortex/distinctionos-cache:latest AS cache-rpms
+
+# Force-install RPMs — packages requiring rpm --force --nodeps due to file conflicts.
+# Built by .github/workflows/build-force-install.yml, pushed to GHCR on demand.
+# Artifacts are tagged both `:latest` (rolling) and `:YYYYMMDD` (pinned).
+# For reproducible builds, replace `:latest` with a specific date tag.
+#FROM ghcr.io/phantomcortex/distinctionos-force-install:latest AS force-install-rpms
 
 # Base Image
 FROM ghcr.io/ublue-os/bazzite-gnome:testing as DistinctionOS
@@ -17,10 +24,11 @@ ARG IMAGE_BRANCH="main"
 ARG BASE_IMAGE_NAME="bazzite-gnome"
 ARG VERSION_DATE="00000000"
 
-# Copy pre-built mesa RPMs into the image so 05-mesa-install.sh can install them
-# NOTE: must NOT be under /tmp — the main RUN step mounts /tmp as tmpfs, which
-# would shadow anything COPY'd there.
-#COPY --from=mesa-rpms /rpms/ /var/tmp/mesa-rpms/
+# Pre-cached RPMs (must NOT be under /tmp — tmpfs mount would shadow them)
+#COPY --from=cache-rpms /rpms/ /var/tmp/cache-rpms/
+
+# Force-install RPMs (must NOT be under /tmp — tmpfs mount would shadow them)
+#COPY --from=force-install-rpms /rpms/ /var/tmp/force-install-rpms/
 
 
 # Cleanup & Finalize
@@ -35,8 +43,14 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/03-fix-opt.sh && \
     echo -e "\033[31mSYSTEM CONFIG >>>>\033[0m" && \
     /ctx/04-config.sh && \
+    echo -e "\033[31mCACHE INSTALL >>>>\033[0m" && \
+    /ctx/05-cache-install.sh && \
+    echo -e "\033[31mFORCE INSTALL >>>>\033[0m" && \
+    /ctx/06-force-install.sh && \
     echo -e "\033[31mREMOTE GRABBER >>>>\033[0m" && \
-    /ctx/06-remote-grabber.sh && \
+    /ctx/07-remote-grabber.sh && \
+    echo -e "\033[31mVALIDATE >>>>\033[0m" && \
+    /ctx/08-validate.sh && \
     echo -e "\033[31mIMAGE INFO >>>>\033[0m" && \
     /ctx/image-info && \
     echo -e "\033[31mOSTREE COMMIT\033[0m" && \
