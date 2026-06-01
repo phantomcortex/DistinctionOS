@@ -4,10 +4,14 @@ COPY build_files /
 
 # Pre-cached RPMs — packages that install cleanly but live on custom or at-risk remotes.
 # Built by .github/workflows/build-cache.yml, pushed to GHCR on demand.
+# Artifacts are tagged both `:latest` (rolling) and `:YYYYMMDD` (pinned).
+# For reproducible builds, replace `:latest` with a specific date tag.
 #FROM ghcr.io/phantomcortex/distinctionos-cache:latest AS cache-rpms
 
 # Force-install RPMs — packages requiring rpm --force --nodeps due to file conflicts.
 # Built by .github/workflows/build-force-install.yml, pushed to GHCR on demand.
+# Artifacts are tagged both `:latest` (rolling) and `:YYYYMMDD` (pinned).
+# For reproducible builds, replace `:latest` with a specific date tag.
 #FROM ghcr.io/phantomcortex/distinctionos-force-install:latest AS force-install-rpms
 
 # Base Image
