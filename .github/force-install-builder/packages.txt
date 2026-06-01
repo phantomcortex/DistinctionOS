@@ -22,5 +22,7 @@
 # Examples:
 #   audacity-freeworld | dnf            | rpmfusion-free,rpmfusion-free-updates
 
-mutter-devel       | dnf            | terra
-gnome-rounded-blur | github-build   | kancko/gnome-rounded-blur
+mutter-devel         | dnf            | terra
+libavcodec-freeworld | dnf            | rpmfusion-free,rpmfusion-free-updates
+gnome-rounded-blur   | github-build   | kancko/gnome-rounded-blur
+glycin-fix-bc7       | github-release | phantomcortex/glycin
