@@ -6,13 +6,13 @@ COPY build_files /
 # Built by .github/workflows/build-cache.yml, pushed to GHCR on demand.
 # Artifacts are tagged both `:latest` (rolling) and `:YYYYMMDD` (pinned).
 # For reproducible builds, replace `:latest` with a specific date tag.
-#FROM ghcr.io/phantomcortex/distinctionos-cache:latest AS cache-rpms
+FROM ghcr.io/phantomcortex/distinctionos-cache:latest AS cache-rpms
 
 # Force-install RPMs — packages requiring rpm --force --nodeps due to file conflicts.
 # Built by .github/workflows/build-force-install.yml, pushed to GHCR on demand.
 # Artifacts are tagged both `:latest` (rolling) and `:YYYYMMDD` (pinned).
 # For reproducible builds, replace `:latest` with a specific date tag.
-#FROM ghcr.io/phantomcortex/distinctionos-force-install:latest AS force-install-rpms
+FROM ghcr.io/phantomcortex/distinctionos-force-install:latest AS force-install-rpms
 
 # Base Image
 FROM ghcr.io/ublue-os/bazzite-gnome:testing as DistinctionOS
@@ -25,10 +25,10 @@ ARG BASE_IMAGE_NAME="bazzite-gnome"
 ARG VERSION_DATE="00000000"
 
 # Pre-cached RPMs (must NOT be under /tmp — tmpfs mount would shadow them)
-#COPY --from=cache-rpms /rpms/ /var/tmp/cache-rpms/
+COPY --from=cache-rpms /rpms/ /var/tmp/cache-rpms/
 
 # Force-install RPMs (must NOT be under /tmp — tmpfs mount would shadow them)
-#COPY --from=force-install-rpms /rpms/ /var/tmp/force-install-rpms/
+COPY --from=force-install-rpms /rpms/ /var/tmp/force-install-rpms/
 
 
 # Cleanup & Finalize
