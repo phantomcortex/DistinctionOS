@@ -1,14 +1,49 @@
-FROM fedora:45 AS builder
+# Base layer: Fedora 44 (matching DistinctionOS's major version) + tooling
+# and repos needed by both the version-check and builder stages. Includes
+# terra so we can build/download against the same library versions that
+# Bazzite/DistinctionOS actually ship (mesa 1:26.1.0, mutter 50.1, etc.).
+FROM fedora:44 AS base
 
-RUN mkdir -p /output/rpms && \
-    dnf install -y dnf-plugins-core
+RUN dnf install -y \
+        dnf-plugins-core \
+        jq curl git tar \
+        rpm-build \
+        rpm-sign \
+        meson ninja-build gcc gcc-c++ \
+        glib2-devel \
+        gobject-introspection-devel \
+    && dnf install -y \
+        https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-44.noarch.rpm \
+        https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-44.noarch.rpm
 
-# Add packages to download below as needed.
-# These are packages that require rpm --force --nodeps due to file conflicts.
-#
-# Examples:
-#   RUN dnf download --destdir=/output/rpms --resolve mutter-devel
-#   RUN curl -L <release-url>/glycin-libs-custom.rpm -o /output/rpms/glycin-libs-custom.rpm
+# Terra (Fyra Labs) — ships the matching mesa/mutter/x265/vvenc that
+# DistinctionOS runs. Required for force-install builds that need to link
+# against the target's library versions.
+RUN cat > /etc/yum.repos.d/terra.repo <<'EOF' \
+ && dnf clean all
+[terra]
+name=Terra $releasever
+baseurl=https://repos.fyralabs.com/terra$releasever
+enabled=1
+gpgcheck=1
+gpgkey=https://repos.fyralabs.com/terra$releasever/key.asc
+skip_if_unavailable=1
+EOF
 
-FROM scratch
+# ── version-check stage ────────────────────────────────────────────────────
+FROM base AS version-check
+COPY packages.txt /input/packages.txt
+COPY check-versions.sh /usr/local/bin/check-versions.sh
+RUN chmod +x /usr/local/bin/check-versions.sh
+CMD ["/usr/local/bin/check-versions.sh"]
+
+# ── builder stage ──────────────────────────────────────────────────────────
+FROM base AS builder
+COPY packages.txt /input/packages.txt
+COPY build.sh /usr/local/bin/build.sh
+RUN chmod +x /usr/local/bin/build.sh && /usr/local/bin/build.sh
+
+# ── final artifact ─────────────────────────────────────────────────────────
+FROM scratch AS artifact
 COPY --from=builder /output/rpms/ /rpms/
+COPY --from=builder /output/versions.json /versions.json

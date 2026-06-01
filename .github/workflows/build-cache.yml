@@ -1,19 +1,44 @@
 name: Build Cache RPM Artifact
 
 on:
+  schedule:
+    # Every 5 days at 06:00 UTC. The job inspects the published artifact and
+    # only rebuilds when (a) the manifest's upstream versions changed, or
+    # (b) the published artifact is older than MAX_AGE_DAYS. So this cron
+    # is a *check* cadence — it almost always exits without building.
+    - cron: '0 6 */5 * *'
   workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Rebuild even if versions match and age <= MAX_AGE_DAYS'
+        type: boolean
+        default: false
   workflow_call:
+    inputs:
+      force_rebuild:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
   packages: write
 
+env:
+  IMAGE: ghcr.io/phantomcortex/distinctionos-cache
+  BUILDER_DIR: .github/cache-builder
+  MAX_AGE_DAYS: 15
+
 jobs:
-  build-cache:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-24.04
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Install tooling
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q skopeo jq
 
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -22,15 +47,89 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Inspect published artifact
+        id: current
+        run: |
+          if skopeo inspect "docker://${IMAGE}:latest" > current.json 2>/dev/null; then
+            jq -S -c '.Labels["dev.distinctionos.versions"] // "{}" | fromjson? // {}' current.json > current-versions.json
+            jq -r '.Created' current.json > current-created.txt
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Current artifact:"
+            echo "  Created: $(cat current-created.txt)"
+            echo "  Versions: $(cat current-versions.json)"
+          else
+            echo '{}' > current-versions.json
+            echo '1970-01-01T00:00:00Z' > current-created.txt
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No artifact published at ${IMAGE}:latest yet"
+          fi
+
+      - name: Query upstream versions
+        id: upstream
+        run: |
+          docker build \
+            --target version-check \
+            -t cache-version-check \
+            -f "${BUILDER_DIR}/Containerfile" \
+            "${BUILDER_DIR}"
+          docker run --rm cache-version-check > upstream-versions.json
+          echo "Upstream versions: $(cat upstream-versions.json)"
+
+      - name: Decide whether to rebuild
+        id: decide
+        run: |
+          BUILD=false
+          REASON=""
+
+          if [[ "${{ inputs.force_rebuild }}" == "true" ]]; then
+            BUILD=true; REASON="force_rebuild input is true"
+          elif [[ "${{ steps.current.outputs.found }}" == "false" ]]; then
+            BUILD=true; REASON="no existing artifact"
+          elif ! diff -q current-versions.json upstream-versions.json >/dev/null 2>&1; then
+            BUILD=true; REASON="upstream versions changed"
+            echo "Diff (current → upstream):"
+            diff -u current-versions.json upstream-versions.json || true
+          else
+            NOW=$(date +%s)
+            CREATED=$(date -d "$(cat current-created.txt)" +%s)
+            AGE_DAYS=$(( (NOW - CREATED) / 86400 ))
+            if [[ $AGE_DAYS -gt $MAX_AGE_DAYS ]]; then
+              BUILD=true; REASON="artifact is ${AGE_DAYS}d old (max ${MAX_AGE_DAYS}d)"
+            else
+              REASON="artifact is ${AGE_DAYS}d old, versions match; skipping"
+            fi
+          fi
+
+          echo "build=${BUILD}" >> "$GITHUB_OUTPUT"
+          echo "reason=${REASON}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Decision: build=${BUILD} (${REASON})"
+
+      - name: Prepare label payload
+        if: steps.decide.outputs.build == 'true'
+        id: labels
+        run: |
+          VERSIONS=$(jq -c '.' upstream-versions.json)
+          echo "versions=${VERSIONS}" >> "$GITHUB_OUTPUT"
+
       - name: Set up Docker Buildx
+        if: steps.decide.outputs.build == 'true'
         uses: docker/setup-buildx-action@v4
 
-      - name: Build and push cache artifact image
+      - name: Build and push artifact
+        if: steps.decide.outputs.build == 'true'
         uses: docker/build-push-action@v7
         with:
-          context: .github/cache-builder/
-          file: .github/cache-builder/Containerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/phantomcortex/distinctionos-cache:latest
+          context: ${{ env.BUILDER_DIR }}
+          file: ${{ env.BUILDER_DIR }}/Containerfile
+          target: artifact
+          push: true
+          tags: ${{ env.IMAGE }}:latest
+          labels: |
+            dev.distinctionos.versions=${{ steps.labels.outputs.versions }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Report skip
+        if: steps.decide.outputs.build == 'false'
+        run: echo "::notice::No rebuild needed — ${{ steps.decide.outputs.reason }}"
