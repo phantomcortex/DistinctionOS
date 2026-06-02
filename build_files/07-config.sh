@@ -6,7 +6,7 @@ set -euo pipefail
 # DistinctionOS System Configuration
 # ============================================================================
 # Purpose: System service configuration, application customization, cleanup
-# Execution: Fifth script in build sequence
+# Execution: Seventh script in build sequence (after all package installs)
 # Note: Miscellaneous tasks that don't fit elsewhere in the build process
 # ============================================================================
 

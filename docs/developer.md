@@ -36,11 +36,11 @@ DistinctionOS/
 │   ├── 00-kernel.sh             # CachyOS LTO kernel installation
 │   ├── 01-kernel-modules.sh     # Initramfs regeneration
 │   ├── 02-build.sh              # Package management (RPM, repos, keys)
-│   ├── 03-fix-opt.sh            # /opt persistence configuration
-│   ├── 04-config.sh             # System services and misc config
-│   ├── 05-cache-install.sh      # Install pre-cached RPMs from cache OCI artifact
-│   ├── 06-force-install.sh      # rpm --force --nodeps install from force-install OCI artifact
-│   ├── 07-remote-grabber.sh     # GNOME Shell extension management
+│   ├── 03-cache-install.sh      # Install pre-cached RPMs from cache OCI artifact
+│   ├── 04-force-install.sh      # rpm --force --nodeps install from force-install OCI artifact
+│   ├── 05-remote-grabber.sh     # GNOME Shell extension management
+│   ├── 06-fix-opt.sh            # /opt persistence configuration
+│   ├── 07-config.sh             # System services and misc config
 │   ├── 08-validate.sh           # Post-install environment sanity checks
 │   ├── 95-utility-functions.sh  # Shared logging/utility library (sourced by all)
 │   └── wine-installer.sh        # Custom Wine builds (inactive)
@@ -127,21 +127,30 @@ flowchart TD
     B2B --> B2C[Validate critical packages]
     B2C --> B3
 
-    B3[3. fix-opt.sh] --> B3A[Scan /opt directory]
-    B3A --> B3B[Generate tmpfiles.d config]
-    B3B --> B3C[Ensure /opt persistence]
-    B3C --> B4
+    B3[3. cache-install.sh] --> B3A[dnf install /var/tmp/cache-rpms/*.rpm]
+    B3A --> B4
 
-    B4[4. config.sh] --> B4A[Configure default shell]
-    B4A --> B4B[Setup Just recipes]
-    B4B --> B4C[Customize applications]
-    B4C --> B4D[Update system caches]
-    B4D --> B4E[Remove unwanted files]
-    B4E --> B6
+    B4[4. force-install.sh] --> B4A[rpm --force --nodeps force-install RPMs]
+    B4A --> B5
 
-    B6[6. remote-grabber.sh] --> B6A[Download GNOME Shell extensions]
-    B6A --> B6B[Compile gschemas]
-    B6B --> Finish
+    B5[5. remote-grabber.sh] --> B5A[Download GNOME Shell extensions]
+    B5A --> B5B[Compile gschemas]
+    B5B --> B6
+
+    B6[6. fix-opt.sh] --> B6A[Scan /var/opt directory]
+    B6A --> B6B[Generate tmpfiles.d config]
+    B6B --> B6C[Ensure /opt persistence]
+    B6C --> B7
+
+    B7[7. config.sh] --> B7A[Configure default shell]
+    B7A --> B7B[Setup Just recipes]
+    B7B --> B7C[Customize applications]
+    B7C --> B7D[Update system caches]
+    B7D --> B7E[Remove unwanted files]
+    B7E --> B8
+
+    B8[8. validate.sh] --> B8A[ldconfig / icon / pixbuf / schema / font checks]
+    B8A --> Finish
 
     Finish([Image Complete]) --> Push[Push to GHCR]
 
@@ -245,9 +254,9 @@ flowchart TD
 
 ---
 
-### 3. `03-fix-opt.sh`
+### 6. `06-fix-opt.sh`
 **Purpose**: Ensure `/opt` directory persistence across reboots  
-**Execution Stage**: Build-time (third script)  
+**Execution Stage**: Build-time (sixth script — runs *after* cache/force install so `/opt` packages from the OCI artifacts, e.g. CrossOver, are present in `/var/opt`)  
 **Mechanism**: Creates systemd tmpfiles.d configuration  
 **Key Functions**:
 - Dynamically scans `/var/opt` directory at build time
@@ -272,9 +281,9 @@ L+ /var/opt/crossover - - - - /usr/lib/opt/crossover
 
 ---
 
-### 4. `04-config.sh`
+### 7. `07-config.sh`
 **Purpose**: System service configuration, application customization, and cleanup  
-**Execution Stage**: Build-time (fourth script)  
+**Execution Stage**: Build-time (seventh script — runs after all package installs so app customizations like the Cider icon fix act on cache-installed packages, and cache refreshes capture everything)  
 **Key Functions**:
 - Configure default shell (ZSH for new users and root)
 - Setup SystemD services (currently disabled during testing)
@@ -320,9 +329,10 @@ declare -A CLEANUP_FILES=(
 
 ---
 
-### 5. `05-mesa-install.sh`
+### `05-mesa-install.sh` (⚠️ not in the current build sequence)
+**Note**: This script is **not present** in `build_files/` and the Containerfile has no `mesa-rpms` stage — this section is stale and retained only for historical reference. The numbered `05` slot is now `05-remote-grabber.sh` (below).
 **Purpose**: Install the pre-built custom Mesa stack from the `mesa-rpms` OCI artifact stage  
-**Execution Stage**: Build-time (sixth script)  
+**Execution Stage**: (historical)  
 **Key Functions**:
 - Reads RPMs from `/var/tmp/mesa-rpms/` (populated by `COPY --from=mesa-rpms` in Containerfile)
 - Installs all packages with `rpm --force --nodeps` to override conflicting Bazzite mesa packages
@@ -335,7 +345,7 @@ declare -A CLEANUP_FILES=(
 
 ---
 
-### 7. `07-remote-grabber.sh`
+### 5. `05-remote-grabber.sh`
 **Purpose**: Manage GNOME Shell extensions in the system image   
 **Key Functions**:
 - Download specified GNOME Shell extensions
@@ -611,7 +621,7 @@ echo "package-name" >> repo_files/brews
 
 ### Adding GNOME Shell Extensions
 
-**Edit**: `build_files/07-remote-grabber.sh`
+**Edit**: `build_files/05-remote-grabber.sh`
 
 ```bash
 # Add extension UUID or URL to download list

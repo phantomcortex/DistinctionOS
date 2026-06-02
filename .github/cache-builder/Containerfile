@@ -15,6 +15,19 @@ RUN dnf install -y \
     && dnf clean all \
     && gem install fpm
 
+# Cider Collective repo — hosts the `Cider` package pulled by the `dnf` source
+# type in packages.txt. Disabled by default; enabled explicitly via
+# --enablerepo=cidercollective during download/repoquery.
+RUN rpm --import https://repo.cider.sh/RPM-GPG-KEY && \
+    printf '%s\n' \
+        '[cidercollective]' \
+        'name=Cider Collective Repository' \
+        'baseurl=https://repo.cider.sh/rpm/RPMS' \
+        'enabled=0' \
+        'gpgcheck=1' \
+        'gpgkey=https://repo.cider.sh/RPM-GPG-KEY' \
+        > /etc/yum.repos.d/cidercollective.repo
+
 # ── version-check stage ────────────────────────────────────────────────────
 # Outputs JSON of current upstream versions for every package in packages.txt.
 # The workflow runs this and compares against the published artifact's label
