@@ -7,7 +7,7 @@ set -uo pipefail
 
 source /ctx/95-utility-functions.sh
 
-readonly VALIDATION_SOFT="${VALIDATION_SOFT:-0}"
+readonly VALIDATION_SOFT="${VALIDATION_SOFT:-1}"
 
 script_start "Install-Time Validation" "Sanity checks on the final image environment"
 
