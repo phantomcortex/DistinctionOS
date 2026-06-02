@@ -483,7 +483,8 @@ declare -A RPM_PACKAGES=(
     pandoc-cli \
     rdfind \
     xorriso \
-    optipng"
+    optipng \
+    glib2-devel"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     gstreamer1-plugins-ugly \
