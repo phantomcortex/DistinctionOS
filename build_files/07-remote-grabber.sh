@@ -457,7 +457,7 @@ main() {
     install_all_extensions || had_errors=1
     remove_git_directories
     patch_extension_compatibility
-    install_gnome_rounded_blur || had_errors=1
+    
     
     
     if [[ $had_errors -ne 0 ]]; then
