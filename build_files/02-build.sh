@@ -483,29 +483,11 @@ declare -A RPM_PACKAGES=(
     pandoc-cli \
     rdfind \
     xorriso \
-    optipng \
-    \
-    @c-development \
-    clang \
-    cmake \
-    git-lfs \
-    gh \
-    python3-devel \
-    rust \
-    cargo \
-    nodejs \
-    npm \
-    android-tools \
-    \
-    p7zip \
-    p7zip-plugins \
-    glib2 \
-    glib2-devel"
+    optipng"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     gstreamer1-plugins-ugly \
-    x264 \
-    x265"
+    x264"
 
   ["terra,terra-extras"]=" \
     gstreamer1-vaapi \
@@ -613,6 +595,7 @@ log_section "Validating critical packages"
 
 readonly -a CRITICAL_PACKAGES=(
   "zsh"
+  "podman"
   "steam.i686"
   "steam-devices"
   "gnome-shell"
@@ -623,20 +606,18 @@ readonly -a CRITICAL_PACKAGES=(
   "mesa-dri-drivers"
   "mesa-libGL"
   "mesa-libEGL"
-  "mesa-libgdm"
+  "mesa-libgbm"
   "mesa-libgbm-devel"
   "mesa-libEGL"
   "mesa-libEGL-devel"
   "ffmpeg"
-  "mutter-devel"
+  "mutter"
   "wayland-devel"
   "ScopeBuddy"
   "terra-gamescope"
-  "gcc"
   "SDL3"
   "glib2"
   "glib2-devel"
-  # mesa-* validated separately in 05-mesa-install.sh
 )
 
 validation_failures=0
@@ -696,6 +677,7 @@ rm /tmp/Inter.zip && fc-cache -f
 
 readonly -a VERSIONLOCK_PACKAGES=(
   "zsh"
+  "podman"
   "lact"
   "file-roller"
   "dcraw"
@@ -705,8 +687,17 @@ readonly -a VERSIONLOCK_PACKAGES=(
   "gnome-shell"
   "gnome-session"
   "vulkan-headers"
+  "mesa-vulkan-drivers"
+  "mesa-filesystem"
+  "mesa-dri-drivers"
+  "mesa-libGL"
+  "mesa-libEGL"
+  "mesa-libgbm"
+  "mesa-libgbm-devel"
+  "mesa-libEGL"
+  "mesa-libEGL-devel"
   "ffmpeg"
-  "mutter-devel"
+  "mutter"
   "wayland-devel"
   "ScopeBuddy"
   "terra-gamescope"
