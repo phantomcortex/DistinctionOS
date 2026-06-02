@@ -86,27 +86,27 @@ done
 # squares — Adwaita icons are SVG, and without the loader they can't paint.
 log_section "GDK pixbuf loaders"
 
-if gdk-pixbuf-query-loaders --update-cache &>/dev/null; then
-    loader_count=$(gdk-pixbuf-query-loaders 2>/dev/null | grep -c '^"' || true)
+if gdk-pixbuf-query-loaders-64 --update-cache &>/dev/null; then
+    loader_count=$(gdk-pixbuf-query-loaders-64 2>/dev/null | grep -c '^"' || true)
     if [[ "$loader_count" -gt 0 ]]; then
         log_success "  ✓ $loader_count loaders registered"
     else
         fail "No pixbuf loaders registered"
     fi
 
-    if gdk-pixbuf-query-loaders 2>/dev/null | grep -q "image/svg"; then
+    if gdk-pixbuf-query-loaders-64 2>/dev/null | grep -q "image/svg"; then
         log_success "  ✓ SVG loader registered"
     else
         fail "SVG pixbuf loader not registered — icons will render as blank squares"
     fi
 
-    if gdk-pixbuf-query-loaders 2>/dev/null | grep -q "image/png"; then
+    if gdk-pixbuf-query-loaders-64 2>/dev/null | grep -q "image/png"; then
         log_success "  ✓ PNG loader registered"
     else
         fail "PNG pixbuf loader not registered"
     fi
 else
-    fail "gdk-pixbuf-query-loaders --update-cache failed"
+    fail "gdk-pixbuf-query-loaders-64 --update-cache failed"
 fi
 
 # ── GLib schemas ────────────────────────────────────────────────────────────
