@@ -26,6 +26,12 @@ while IFS='|' read -r name source arg || [[ -n "$name" ]]; do
             ver=$(dnf repoquery --quiet --queryformat='%{evr}' "${enablerepo[@]}" "$name" 2>/dev/null \
                   | sort -V | tail -1 || echo "")
             ;;
+        url)
+            # Follow redirects (HEAD) and use the resolved filename as the
+            # version — CrossOver's redirect resolves to a versioned RPM name.
+            ver=$(curl -sIL -o /dev/null -w '%{url_effective}' "$arg" 2>/dev/null \
+                  | sed 's/?.*$//; s#.*/##' || echo "")
+            ;;
         github-release)
             ver=$(curl -sf "https://api.github.com/repos/$arg/releases/latest" \
                   | jq -r '.tag_name // ""' 2>/dev/null || echo "")

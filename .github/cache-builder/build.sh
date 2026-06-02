@@ -30,6 +30,17 @@ while IFS='|' read -r name source arg || [[ -n "$name" ]]; do
             ver=$(dnf repoquery --quiet --queryformat='%{evr}' "${enablerepo[@]}" "$name" \
                   | sort -V | tail -1)
             ;;
+        url)
+            # Direct .rpm download; follow redirects. ARG = URL.
+            # Resolve the redirect first so the saved filename and tracked
+            # version reflect the real (often versioned) RPM name.
+            effective=$(curl -sIL -o /dev/null -w '%{url_effective}' "$arg" || true)
+            [[ -z "$effective" ]] && effective="$arg"
+            fname=$(basename "${effective%%\?*}")
+            [[ "$fname" == *.rpm ]] || fname="${name}.rpm"
+            curl -fL "$arg" -o "/output/rpms/$fname"
+            ver="$fname"
+            ;;
         github-release)
             release=$(curl -sf "https://api.github.com/repos/$arg/releases/latest")
             ver=$(printf '%s' "$release" | jq -r '.tag_name // ""')

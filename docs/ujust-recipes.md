@@ -193,5 +193,5 @@ When the TPM auto-unlock system is redesigned:
 
 1. Create or edit a `.just` file in `system_files/usr/share/distinctionos/just/`
 2. Use `[group('Category')]` to group related recipes in `ujust` output
-3. If it's a new file, `04-config.sh` imports all `.just` files from that directory automatically — no manual registration needed
+3. If it's a new file, `07-config.sh` imports all `.just` files from that directory automatically — no manual registration needed
 4. Test locally with `just -f system_files/usr/share/distinctionos/just/yourfile.just --list`

@@ -20,11 +20,11 @@ DistinctionOS/
 │   ├── 00-kernel.sh           # CachyOS LTO kernel installation - FIRST
 │   ├── 01-kernel-modules.sh   # Initramfs regeneration - SECOND
 │   ├── 02-build.sh            # Package management (RPM, repos, keys) - THIRD
-│   ├── 03-fix-opt.sh          # /opt persistence configuration - FOURTH
-│   ├── 04-config.sh           # System services and misc config - FIFTH
-│   ├── 05-cache-install.sh    # Cache RPM install from OCI artifact - SIXTH
-│   ├── 06-force-install.sh    # Force-install RPMs from OCI artifact - SEVENTH
-│   ├── 07-remote-grabber.sh   # GNOME Shell extension management - EIGHTH
+│   ├── 03-cache-install.sh    # Cache RPM install from OCI artifact - FOURTH
+│   ├── 04-force-install.sh    # Force-install RPMs from OCI artifact - FIFTH
+│   ├── 05-remote-grabber.sh   # GNOME Shell extension management - SIXTH
+│   ├── 06-fix-opt.sh          # /opt persistence configuration - SEVENTH
+│   ├── 07-config.sh           # System services and misc config - EIGHTH
 │   ├── 08-validate.sh         # Post-install environment validation - NINTH (FINAL)
 │   ├── 95-utility-functions.sh # Shared utility functions library - SOURCED BY ALL
 │   └── wine-installer.sh      # Custom Wine builds (INACTIVE - not in build sequence)
@@ -157,7 +157,7 @@ xwm-player --cleanup                       # Remove temp files
 
 ### Build Script Execution Order
 
-**CRITICAL**: Scripts execute in numerical order (00 → 06), with `95-utility-functions.sh` sourced by all scripts.
+**CRITICAL**: Scripts execute in numerical order (00 → 08), with `95-utility-functions.sh` sourced by all scripts. Package installs (`02`–`05`) run first; `/opt` persistence (`06`) and system config (`07`) run afterward so they see every installed package, then validation (`08`) runs last.
 
 ```
 Containerfile Execution:
@@ -181,33 +181,33 @@ Containerfile Execution:
   │    ├─ Configure repositories (Brave, COPR, etc.)
   │    └─ Validate critical packages
   │
-  ├─→ 03-fix-opt.sh
+  ├─→ 03-cache-install.sh
   │    ├─ Source utility-functions.sh
-  │    ├─ Scan /var/opt directory
+  │    └─ dnf install /var/tmp/cache-rpms/*.rpm  (clean-install OCI artifact)
+  │
+  ├─→ 04-force-install.sh
+  │    ├─ Source utility-functions.sh
+  │    └─ rpm --force --nodeps -i /var/tmp/force-install-rpms/*.rpm
+  │
+  ├─→ 05-remote-grabber.sh
+  │    ├─ Source utility-functions.sh
+  │    ├─ Download GNOME Shell extensions
+  │    └─ Compile gschemas for extensions
+  │
+  ├─→ 06-fix-opt.sh
+  │    ├─ Source utility-functions.sh
+  │    ├─ Scan /var/opt directory (now sees CrossOver et al. from cache install)
   │    ├─ Move directories to /usr/lib/opt
   │    └─ Generate tmpfiles.d config for runtime persistence
   │
-  ├─→ 04-config.sh
+  ├─→ 07-config.sh
   │    ├─ Source utility-functions.sh
   │    ├─ Configure default shell (ZSH)
   │    ├─ Integrate Just recipes
   │    ├─ Hide incompatible Bazzite recipes
-  │    ├─ Customize applications
+  │    ├─ Customize applications (Cider icon fix sees the cache-installed Cider)
   │    ├─ Update system caches (MIME, desktop, glib schemas)
   │    └─ Remove unwanted files (Waydroid, Wine utilities, Bazzite remnants)
-  │
-  ├─→ 05-cache-install.sh
-  │    ├─ Source utility-functions.sh
-  │    └─ dnf install /var/tmp/cache-rpms/*.rpm  (clean-install OCI artifact)
-  │
-  ├─→ 06-force-install.sh
-  │    ├─ Source utility-functions.sh
-  │    └─ rpm --force --nodeps -i /var/tmp/force-install-rpms/*.rpm
-  │
-  ├─→ 07-remote-grabber.sh
-  │    ├─ Source utility-functions.sh
-  │    ├─ Download GNOME Shell extensions
-  │    └─ Compile gschemas for extensions
   │
   └─→ 08-validate.sh
        ├─ Source utility-functions.sh
@@ -292,7 +292,21 @@ Containerfile Execution:
 - Modifying package removal list
 - Updating version locks
 
-#### `03-fix-opt.sh` - /opt Directory Persistence
+#### Disallowed: `dnf --allowerasing`
+**Policy**: `--allowerasing` must **never** be passed to `dnf`/`dnf5` in any
+build script. It lets dnf silently *remove* installed packages to satisfy an
+install or upgrade, which on this image can clobber required packages (kernel,
+mesa, steam, etc.) without the build failing — producing a broken image that
+still builds "successfully".
+
+**Enforcement**: `02-build.sh` defines `dnf()` and `dnf5()` wrapper functions
+that scan their arguments and refuse to run (logging an error and returning
+non-zero) if `--allowerasing` is present, dispatching to the real binary via
+`command` otherwise. If a genuine conflict requires erasing a package, remove
+the conflicting package *explicitly* (e.g. add it to `REMOVE_PACKAGES`) rather
+than reaching for `--allowerasing`.
+
+#### `06-fix-opt.sh` - /opt Directory Persistence
 **Purpose**: Ensure packages in /opt persist across reboots on an immutable system
 **Key Features**:
 - Dynamically scans /var/opt
@@ -301,9 +315,11 @@ Containerfile Execution:
 
 **Technical Background**: On immutable systems, /opt can be ephemeral. This creates symlinks from /var/opt to /usr/lib/opt, ensuring packages like CrossOver remain accessible.
 
+**Ordering**: Runs *after* the cache/force install steps (03–05) so that `/opt` packages installed from the OCI artifacts (e.g. CrossOver) are present in `/var/opt` when this script scans it.
+
 **When to Edit**: Rarely needed — automatically handles all /opt packages.
 
-#### `04-config.sh` - System Configuration & Cleanup
+#### `07-config.sh` - System Configuration & Cleanup
 **Purpose**: System service config, application customization, file cleanup
 **Key Features**:
 - Shell configuration (ZSH default via useradd)
@@ -311,6 +327,8 @@ Containerfile Execution:
 - Application .desktop file modifications
 - System cache updates (MIME, desktop, glib schemas)
 - Cleanup of unwanted Bazzite/Waydroid files (documented reasons for each)
+
+**Ordering**: Runs near the end (after cache/force install and remote-grabber) so application customizations (e.g. the Cider `.desktop` icon fix) act on packages installed from the OCI artifacts, and the system-cache refreshes capture every package's icons/schemas/MIME entries. Also removes the Bazzite `/usr/bin/dnf` wrapper — safe here because no later script (only `08-validate.sh`) needs `dnf`.
 
 **When to Edit**:
 - Enabling/disabling SystemD services
@@ -329,7 +347,7 @@ Containerfile Execution:
 - Never directly — the Mesa OCI stage is built separately
 - To change Mesa packages, update `build-mesa.yml`
 
-#### `07-remote-grabber.sh` - GNOME Extension Management
+#### `05-remote-grabber.sh` - GNOME Extension Management
 **Purpose**: Install and configure GNOME Shell extensions system-wide
 **Key Features**:
 - Extension download and installation
@@ -614,9 +632,22 @@ At the end of a session, user will request updated context files:
 
 ## Document Metadata
 
-**Version**: 3.4  
-**Last Updated**: 2026-05-28  
+**Version**: 3.5  
+**Last Updated**: 2026-06-02  
 **Major Changes**: 
+- Reorder build sequence so package installs run before configuration:
+  00-kernel, 01-kernel-modules, 02-build, 03-cache-install, 04-force-install,
+  05-remote-grabber, 06-fix-opt, 07-config, 08-validate. `fix-opt` and `config`
+  moved to the end so they see packages installed from the cache/force OCI
+  artifacts (fixes CrossOver /opt persistence and the Cider icon fix).
+- Move CrossOver and Cider out of 02-build into the cache OCI artifact
+  (`.github/cache-builder/packages.txt`); add `url` source type to the cache builder.
+- Add the "Disallowed: `dnf --allowerasing`" policy + `dnf`/`dnf5` guard wrappers.
+- Resolve a committed merge conflict in the remote-grabber script (the
+  undefined `install_gnome_rounded_blur` call; gnome-rounded-blur ships via
+  the force-install artifact).
+
+**Earlier Changes (v3.4)**: 
 - Fix all directory names to use underscores (build_files, system_files, etc.)
 - Update build script sequence: 00-kernel, 01-kernel-modules, 02-build, 03-fix-opt, 04-config, 05-mesa-install, 06-remote-grabber
 - Remove ZFS references (no longer in use)

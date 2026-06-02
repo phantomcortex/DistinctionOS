@@ -457,9 +457,11 @@ main() {
     install_all_extensions || had_errors=1
     remove_git_directories
     patch_extension_compatibility
-    
-    
-    
+
+    # gnome-rounded-blur and its build-time mutter-devel dep now ship via
+    # the force-install OCI artifact, installed by 04-force-install.sh
+    # before this script runs.
+
     if [[ $had_errors -ne 0 ]]; then
         log_error "One or more extensions failed to install — review log above"
         exit 1

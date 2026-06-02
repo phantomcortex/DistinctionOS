@@ -14,6 +14,34 @@ set -uo pipefail
 source /ctx/95-utility-functions.sh
 
 # ============================================================================
+# Guard: disallow `--allowerasing`
+# ============================================================================
+# --allowerasing lets dnf silently remove packages to satisfy an install, which
+# can clobber required packages. Wrap dnf/dnf5 so any future use is rejected.
+
+dnf() {
+  local arg
+  for arg in "$@"; do
+    if [[ "$arg" == "--allowerasing" ]]; then
+      log_error "Refusing to run dnf with --allowerasing (disallowed in this build)"
+      return 1
+    fi
+  done
+  command dnf "$@"
+}
+
+dnf5() {
+  local arg
+  for arg in "$@"; do
+    if [[ "$arg" == "--allowerasing" ]]; then
+      log_error "Refusing to run dnf5 with --allowerasing (disallowed in this build)"
+      return 1
+    fi
+  done
+  command dnf5 "$@"
+}
+
+# ============================================================================
 # Package Installation Tracking
 # ============================================================================
 
@@ -305,74 +333,9 @@ EOF
 }
 
 # ============================================================================
-# Glycin BC7 Patch RPM Installation
-# ============================================================================
-# Installs phantomcortex/glycin release RPMs, which add BC4/BC5/BC6H/BC7 DDS
-# support to glycin-image-rs (upstream only supports BC1/BC2/BC3).
-# The release version sorts above Fedora's stock 1.fc44 so this upgrades cleanly.
-
-install_glycin_bc7_rpms() {
-  log_section "Installing glycin BC7 patch RPMs"
-
-  local tag="v2.1.1-bc7fix1"
-  local base_url="https://github.com/phantomcortex/glycin/releases/download/${tag}"
-
-  local -a rpms=(
-    "glycin-libs-2.1.1-100.bc7fix.gh1.ac90a48.fc44.x86_64.rpm"
-    "glycin-gtk4-libs-2.1.1-100.bc7fix.gh1.ac90a48.fc44.x86_64.rpm"
-    "glycin-loaders-2.1.1-100.bc7fix.gh1.ac90a48.fc44.x86_64.rpm"
-    "glycin-thumbnailer-2.1.1-100.bc7fix.gh1.ac90a48.fc44.x86_64.rpm"
-    "glycin-devel-2.1.1-100.bc7fix.gh1.ac90a48.fc44.x86_64.rpm"
-    "glycin-gtk4-devel-2.1.1-100.bc7fix.gh1.ac90a48.fc44.x86_64.rpm"
-  )
-
-  local tmp_dir
-  tmp_dir=$(mktemp -d)
-
-  local -a downloaded=()
-  local download_failed=0
-
-  for rpm_file in "${rpms[@]}"; do
-    if curl -L --silent --fail "${base_url}/${rpm_file}" -o "${tmp_dir}/${rpm_file}"; then
-      downloaded+=("${tmp_dir}/${rpm_file}")
-    else
-      log_warning "Failed to download: $rpm_file"
-      ((download_failed++))
-      exit 1 
-    fi
-  done
-
-  if [[ ${#downloaded[@]} -gt 0 ]]; then
-    if dnf5 -y install --allowerasing "${downloaded[@]}" &>/dev/null; then
-      log_success "glycin BC7 RPMs installed (${#downloaded[@]} packages)"
-      SUCCEEDED_PACKAGES+=("glycin-bc7")
-    else
-      log_warning "Bulk install failed, attempting individual installs"
-      for rpm_path in "${downloaded[@]}"; do
-        local name
-        name=$(basename "$rpm_path")
-        if dnf5 -y install --allowerasing "$rpm_path" &>/dev/null; then
-          log_success "  ✓ $name"
-          SUCCEEDED_PACKAGES+=("$name")
-        else
-          log_warning "  ✗ $name (failed)"
-          FAILED_PACKAGES+=("$name")
-        fi
-      done
-    fi
-  else
-    log_error "No glycin RPMs downloaded successfully"
-    FAILED_PACKAGES+=("glycin-bc7")
-  fi
-
-  [[ $download_failed -gt 0 ]] && log_warning "$download_failed glycin RPM(s) failed to download"
-  rm -rf "$tmp_dir"
-}
-
-# ============================================================================
 # Resilient Single Package Installation
 # ============================================================================
-# For special cases like CrossOver, Kora theme, etc.
+# For special cases like the Kora theme, etc.
 
 install_single_package_resilient() {
   local package_source="$1"
@@ -434,28 +397,9 @@ counter_display "$removed_count" "package" "packages" "removed"
 
 log_section "Configuring additional repositories"
 
-# ──────────────────────────────────────────────────────────────────────────
-# Cider Collective Repository
-# ──────────────────────────────────────────────────────────────────────────
-
-log_info "Adding Cider Collective repository"
-
-if rpm --import https://repo.cider.sh/RPM-GPG-KEY &>/dev/null; then
-  log_success "Cider GPG key imported"
-else
-  log_warning "Failed to import Cider GPG key (repository may be unavailable)"
-fi
-
-tee /etc/yum.repos.d/cider.repo > /dev/null << 'EOF'
-[cidercollective]
-name=Cider Collective Repository
-baseurl=https://repo.cider.sh/rpm/RPMS
-enabled=1
-gpgcheck=1
-gpgkey=https://repo.cider.sh/RPM-GPG-KEY
-EOF
-
-log_success "Cider repository configured"
+# Note: Cider (cidercollective repo) and CrossOver are no longer installed
+# here — they are pre-built into the distinctionos-cache OCI artifact (see
+# .github/cache-builder/packages.txt) and installed by 03-cache-install.sh.
 
 log_info "CLEAR VERSIONLOCK"
 dnf5 versionlock clear
@@ -484,7 +428,7 @@ fi
 
 log_section "Creating required directories"
 
-create_dir_with_log "/var/opt" "Package directory for fix-opt.sh"
+create_dir_with_log "/var/opt" "Package directory for 06-fix-opt.sh"
 
 # ============================================================================
 # Package Installation - Organized by Repository
@@ -575,7 +519,6 @@ declare -A RPM_PACKAGES=(
 
   # Third-party repositories
   ["brave-browser"]="brave-browser"
-  ["cidercollective"]="Cider"
 )
 
 # Install packages from standard repositories
@@ -637,15 +580,6 @@ fi
 log_section "Installing special packages"
 
 # ──────────────────────────────────────────────────────────────────────────
-# CrossOver (Commercial Wine Implementation)
-# ──────────────────────────────────────────────────────────────────────────
-
-log_info "Installing CrossOver from CodeWeavers"
-install_single_package_resilient \
-  "http://crossover.codeweavers.com/redirect/crossover.rpm" \
-  "crossover"
-
-# ──────────────────────────────────────────────────────────────────────────
 # Kora Icon Theme (Custom Build)
 # ──────────────────────────────────────────────────────────────────────────
 
@@ -668,7 +602,6 @@ fi
 # ──────────────────────────────────────────────────────────────────────────
 
 install_freeworld_rpms
-install_glycin_bc7_rpms
 
 
 # ============================================================================
@@ -722,6 +655,18 @@ else
   log_warning "$validation_failures critical package(s) missing"
 fi
 
+# ──────────────────────────────────────────────────────────────────────────
+# Hard Requirement: steam must be installed
+# ──────────────────────────────────────────────────────────────────────────
+# Unlike the soft validation above, a missing 'steam' package fails the build.
+
+if rpm -q steam &>/dev/null; then
+  log_success "Required package 'steam' is present"
+else
+  log_error "Required package 'steam' is not installed — failing build"
+  exit 1
+fi
+
 # ============================================================================
 # Wine Fallback Installation
 # ============================================================================
@@ -751,7 +696,6 @@ rm /tmp/Inter.zip && fc-cache -f
 
 readonly -a VERSIONLOCK_PACKAGES=(
   "zsh"
-  "Cider"
   "lact"
   "file-roller"
   "dcraw"
@@ -843,6 +787,6 @@ if [[ ${#SUCCEEDED_PACKAGES[@]} -gt 0 ]]; then
 fi
 
 echo ""
-log_info "Next: 03-fix-opt.sh will configure /opt persistence"
+log_info "Next: 03-cache-install.sh will install pre-cached RPMs"
 
 exit 0

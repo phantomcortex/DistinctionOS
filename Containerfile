@@ -39,16 +39,16 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     echo -e "\033[31mBUILD SCRIPT >>>>\033[0m" && \
     /ctx/02-build.sh && \
-    echo -e "\033[31mOPT FIXER >>>>\033[0m" && \
-    /ctx/03-fix-opt.sh && \
-    echo -e "\033[31mSYSTEM CONFIG >>>>\033[0m" && \
-    /ctx/04-config.sh && \
     echo -e "\033[31mCACHE INSTALL >>>>\033[0m" && \
-    /ctx/05-cache-install.sh && \
+    /ctx/03-cache-install.sh && \
     echo -e "\033[31mFORCE INSTALL >>>>\033[0m" && \
-    /ctx/06-force-install.sh && \
+    /ctx/04-force-install.sh && \
     echo -e "\033[31mREMOTE GRABBER >>>>\033[0m" && \
-    /ctx/07-remote-grabber.sh && \
+    /ctx/05-remote-grabber.sh && \
+    echo -e "\033[31mOPT FIXER >>>>\033[0m" && \
+    /ctx/06-fix-opt.sh && \
+    echo -e "\033[31mSYSTEM CONFIG >>>>\033[0m" && \
+    /ctx/07-config.sh && \
     echo -e "\033[31mVALIDATE >>>>\033[0m" && \
     /ctx/08-validate.sh && \
     echo -e "\033[31mIMAGE INFO >>>>\033[0m" && \

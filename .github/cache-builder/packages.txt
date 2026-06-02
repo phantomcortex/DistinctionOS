@@ -8,6 +8,8 @@
 # Source types:
 #   dnf             Download from configured dnf repos via dnf-download.
 #                   ARG = optional comma-separated --enablerepo list.
+#                   (Custom repos must be configured in the Containerfile —
+#                   e.g. cidercollective is added there for Cider.)
 #   github-release  Pull .rpm assets from a repo's latest GitHub release.
 #                   ARG = OWNER/REPO.
 #   github-build    Clone repo, build with meson/cmake/make, package as RPM via fpm.
@@ -15,6 +17,8 @@
 #                   If your build needs extra deps, add them to the Containerfile.
 #                   For repo-specific patches, drop a script at hooks/<NAME>.sh —
 #                   it runs in the cloned source dir before the build starts.
+#   url             Download a single .rpm directly from a URL (follows
+#                   redirects). ARG = the URL.
 #
 # Comments (lines starting with #) and blank lines are ignored.
 # Whitespace around | separators is stripped.
@@ -22,5 +26,8 @@
 # Examples:
 #   audacity-freeworld | dnf            | rpmfusion-free,rpmfusion-free-updates
 #   glycin-libs        | github-release | phantomcortex/glycin
+#   crossover          | url            | http://crossover.codeweavers.com/redirect/crossover.rpm
 
 audacity-freeworld | dnf            | rpmfusion-free,rpmfusion-free-updates
+Cider              | dnf            | cidercollective
+crossover          | url            | http://crossover.codeweavers.com/redirect/crossover.rpm
