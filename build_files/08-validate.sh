@@ -21,19 +21,33 @@ fail() {
 }
 
 # ── ldconfig cache integrity ────────────────────────────────────────────────
+# The Containerfile mounts /var/cache as a BuildKit cache, so
+# /var/cache/ldconfig/aux-cache persists across container builds. A stale
+# aux-cache lets ldconfig skip stat()'ing libraries it thinks haven't changed,
+# producing /etc/ld.so.cache entries that don't reflect the current /usr/lib64.
+# Wipe both caches and rebuild from scratch so the queries below are accurate.
 log_section "ldconfig cache integrity"
 
-ldconfig_errors_file=$(mktemp)
-ldconfig 2>&1 | grep -iE 'cannot open|is not an? ELF|file too short|invalid' > "$ldconfig_errors_file" || true
-if [[ -s "$ldconfig_errors_file" ]]; then
-    fail "ldconfig reports broken libraries"
-    head -10 "$ldconfig_errors_file" | while read -r line; do
+rm -f /etc/ld.so.cache /var/cache/ldconfig/aux-cache
+
+ldconfig_output=$(ldconfig 2>&1)
+ldconfig_rc=$?
+if [[ $ldconfig_rc -ne 0 ]]; then
+    fail "ldconfig rebuild exited with status $ldconfig_rc"
+    printf '%s\n' "$ldconfig_output" | head -10 | while read -r line; do
         echo "    $line"
     done
+elif printf '%s\n' "$ldconfig_output" | grep -qiE 'cannot open|is not an? ELF|file too short|invalid'; then
+    fail "ldconfig reports broken libraries"
+    printf '%s\n' "$ldconfig_output" \
+        | grep -iE 'cannot open|is not an? ELF|file too short|invalid' \
+        | head -10 \
+        | while read -r line; do
+            echo "    $line"
+        done
 else
     log_success "ldconfig cache is clean"
 fi
-rm -f "$ldconfig_errors_file"
 
 # Critical libs that MUST be present in the ldconfig cache.
 readonly -a CRITICAL_LIBS=(
@@ -86,7 +100,9 @@ done
 # squares — Adwaita icons are SVG, and without the loader they can't paint.
 log_section "GDK pixbuf loaders"
 
-if gdk-pixbuf-query-loaders --update-cache &>/dev/null; then
+pixbuf_update_output=$(gdk-pixbuf-query-loaders --update-cache 2>&1)
+pixbuf_update_rc=$?
+if [[ $pixbuf_update_rc -eq 0 ]]; then
     loader_count=$(gdk-pixbuf-query-loaders 2>/dev/null | grep -c '^"' || true)
     if [[ "$loader_count" -gt 0 ]]; then
         log_success "  ✓ $loader_count loaders registered"
@@ -106,7 +122,10 @@ if gdk-pixbuf-query-loaders --update-cache &>/dev/null; then
         fail "PNG pixbuf loader not registered"
     fi
 else
-    fail "gdk-pixbuf-query-loaders --update-cache failed"
+    fail "gdk-pixbuf-query-loaders --update-cache failed (exit code $pixbuf_update_rc)"
+    printf '%s\n' "$pixbuf_update_output" | head -5 | while read -r line; do
+        echo "    $line"
+    done
 fi
 
 # ── GLib schemas ────────────────────────────────────────────────────────────
