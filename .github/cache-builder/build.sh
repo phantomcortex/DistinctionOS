@@ -143,6 +143,11 @@ while IFS='|' read -r name source arg || [[ -n "$name" ]]; do
     VERSIONS["$name"]="$ver"
 done < "$MANIFEST"
 
+# Drop source RPMs — the artifact ships binary RPMs only. Some upstream
+# GitHub releases attach both .rpm and .src.rpm assets, and rpm install
+# chokes on .src.rpm at OS-build time.
+find /output/rpms -name '*.src.rpm' -print -delete
+
 # ── Validate downloaded/built RPMs ──────────────────────────────────────────
 shopt -s nullglob
 rpms=(/output/rpms/*.rpm)

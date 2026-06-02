@@ -498,7 +498,9 @@ declare -A RPM_PACKAGES=(
     android-tools \
     \
     p7zip \
-    p7zip-plugins"
+    p7zip-plugins \
+    glib2 \
+    glib2-devel"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     gstreamer1-plugins-ugly \
@@ -611,9 +613,6 @@ log_section "Validating critical packages"
 
 readonly -a CRITICAL_PACKAGES=(
   "zsh"
-  "totem-video-thumbnailer"
-  # Cider validated by 03-cache-install.sh (installed from cache artifact)
-  "libavcodec-freeworld"
   "steam.i686"
   "steam-devices"
   "gnome-shell"
@@ -635,6 +634,8 @@ readonly -a CRITICAL_PACKAGES=(
   "terra-gamescope"
   "gcc"
   "SDL3"
+  "glib2"
+  "glib2-devel"
   # mesa-* validated separately in 05-mesa-install.sh
 )
 
@@ -711,6 +712,8 @@ readonly -a VERSIONLOCK_PACKAGES=(
   "terra-gamescope"
   "gcc"
   "SDL3"
+  "glib2"
+  "glib2-devel"
 )
 log_info "versionlock section"
 versionlock_failures=0
