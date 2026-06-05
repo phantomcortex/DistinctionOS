@@ -5,7 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '05 6 */5 * *'  # 12:05am Mountain time every 5 days Ref: 'minute hour day(s) Month day-of-the-week'
+    - cron: '05 6 */10 * *'  # 12:05am Mountain time every 5 days Ref: 'minute hour day(s) Month day-of-the-week'
   push:
     branches:
       - main

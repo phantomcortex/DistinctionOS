@@ -6,7 +6,7 @@ on:
     # only rebuilds when (a) the manifest's upstream versions changed, or
     # (b) the published artifact is older than MAX_AGE_DAYS. So this cron
     # is a *check* cadence — it almost always exits without building.
-    - cron: '0 6 */5 * *'
+    - cron: '0 6 */15 * *'
   workflow_dispatch:
     inputs:
       force_rebuild:

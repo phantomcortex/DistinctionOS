@@ -484,11 +484,12 @@ declare -A RPM_PACKAGES=(
     rdfind \
     xorriso \
     optipng \
-    glib2-devel"
+    glib2-devel \
+    firejail"
 
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
     gstreamer1-plugins-ugly \
-    x264"
+    vvenc"
 
   ["terra,terra-extras"]=" \
     gstreamer1-vaapi \

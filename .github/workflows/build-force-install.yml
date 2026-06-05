@@ -4,7 +4,7 @@ on:
   schedule:
     # Every 5 days at 06:30 UTC (offset from cache to avoid contention).
     # See build-cache.yml for the rebuild-decision logic — same pattern here.
-    - cron: '30 6 */5 * *'
+    - cron: '30 6 */10 * *'
   workflow_dispatch:
     inputs:
       force_rebuild:

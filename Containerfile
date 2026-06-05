@@ -15,7 +15,7 @@ FROM ghcr.io/phantomcortex/distinctionos-cache:latest AS cache-rpms
 FROM ghcr.io/phantomcortex/distinctionos-force-install:latest AS force-install-rpms
 
 # Base Image
-FROM ghcr.io/ublue-os/bazzite-gnome:testing as DistinctionOS
+FROM ghcr.io/ublue-os/bazzite-gnome:stable as DistinctionOS
 #FROM quay.io/fedora/fedora-bootc:42
 
 ARG IMAGE_NAME="distinctionos"
