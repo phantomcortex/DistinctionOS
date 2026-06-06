@@ -1,0 +1,218 @@
+#!/usr/bin/bash
+# ============================================================================
+# DistinctionOS dnf / dnf5 guard
+# ============================================================================
+# DistinctionOS uses an immutable rpm-ostree userland. Live `dnf install`
+# transactions cannot persist across reboots, and silently corrupt the
+# overlay if attempted against a sealed /usr. This wrapper:
+#
+#   * Allows read-only verbs (search, info, list, provides, repoquery, …)
+#     so dnf remains useful as a *development / inspection* tool.
+#   * Refuses mutating verbs (install, upgrade, remove, …) with an
+#     instructive message — UNLESS a writable overlay is currently mounted
+#     on /usr (typically produced by `sudo ostree admin unlock` or
+#     `--hotfix` / `--transient`).
+#
+# Aliases in /etc/profile.d/distinction-dnf-guard.sh route `dnf` and `dnf5`
+# through this wrapper for interactive shells. Non-interactive callers that
+# invoke /usr/bin/dnf{,5} directly hit the real binaries — which will fail
+# on their own against a read-only /usr — so the guard is a UX layer, not
+# a security boundary.
+# ============================================================================
+
+set -uo pipefail
+
+readonly REAL_DNF5="/usr/bin/dnf5"
+readonly REAL_DNF="/usr/bin/dnf"
+
+# Pick whichever real binary is actually installed. Prefer dnf5.
+real_dnf=""
+if [[ -x "$REAL_DNF5" ]]; then
+    real_dnf="$REAL_DNF5"
+elif [[ -x "$REAL_DNF" ]]; then
+    real_dnf="$REAL_DNF"
+else
+    echo "distinction-dnf: neither dnf5 nor dnf binary present on the system." >&2
+    exit 127
+fi
+
+# ── Verb classification ─────────────────────────────────────────────────────
+# Read-only / inspection verbs. Anything not on this list is treated as a
+# mutating verb and gated on overlay-writability. Keep this list conservative:
+# a verb that *might* mutate state must NOT appear here.
+readonly -a READONLY_VERBS=(
+    search
+    info
+    list
+    provides
+    whatprovides
+    repoquery
+    repolist
+    repoinfo
+    repos
+    check-update
+    checkupdate
+    makecache
+    updateinfo
+    advisory
+    deplist
+    download
+    history          # history install/undo/rollback handled below
+    leaves
+    needs-restarting
+    versionlock
+    config-manager
+    debuginfo-install
+    --help
+    -h
+    --version
+    help
+)
+
+# History sub-verbs that DO mutate state and must be blocked even though
+# `history` itself is on the read-only list.
+readonly -a HISTORY_MUTATING=(
+    undo
+    redo
+    rollback
+)
+
+# Flags that don't actually perform mutation even when paired with otherwise
+# mutating verbs (e.g. `dnf install --downloadonly`). Treated as safe.
+readonly -a SAFE_OVERRIDE_FLAGS=(
+    --downloadonly
+    --assumeno
+)
+
+# ── Argument scan ───────────────────────────────────────────────────────────
+verb=""
+sub_verb=""
+for arg in "$@"; do
+    case "$arg" in
+        -*) continue ;;          # skip global flags
+        *)
+            if [[ -z "$verb" ]]; then
+                verb="$arg"
+            elif [[ -z "$sub_verb" ]]; then
+                sub_verb="$arg"
+                break
+            fi
+            ;;
+    esac
+done
+
+# If no verb provided, defer to dnf's own help / behaviour.
+if [[ -z "$verb" ]]; then
+    exec "$real_dnf" "$@"
+fi
+
+# ── Helpers ─────────────────────────────────────────────────────────────────
+contains() {
+    local needle="$1"; shift
+    local item
+    for item in "$@"; do
+        [[ "$item" == "$needle" ]] && return 0
+    done
+    return 1
+}
+
+# A writable overlay on /usr is the signal we use to decide whether the
+# admin has explicitly opted in to live package manipulation. Three checks,
+# any of which is sufficient:
+#   1. /usr is mounted with the `rw` option (overlay or otherwise).
+#   2. ostree admin status reports an unlocked deployment.
+#   3. /usr is actually writable for the current (root) user.
+overlay_is_writable() {
+    # Check 1: mount options on /usr
+    if findmnt -no OPTIONS /usr 2>/dev/null | grep -qE '(^|,)rw(,|$)'; then
+        # Confirm with the FS type — an overlay or composefs with rw is the
+        # ostree-unlock signature.
+        local fstype
+        fstype=$(findmnt -no FSTYPE /usr 2>/dev/null)
+        if [[ "$fstype" == "overlay" || "$fstype" == "overlayfs" ]]; then
+            return 0
+        fi
+    fi
+
+    # Check 2: ostree's own view of the deployment state
+    if command -v ostree >/dev/null 2>&1; then
+        if ostree admin status 2>/dev/null | grep -qiE 'unlocked: (development|hotfix|transient)'; then
+            return 0
+        fi
+    fi
+
+    # Check 3: empirical writability (root only — non-root install attempts
+    # would have failed at the dnf level anyway).
+    if [[ $EUID -eq 0 ]]; then
+        local probe="/usr/.distinctionos-dnf-rw-probe.$$"
+        if (umask 077 && : > "$probe") 2>/dev/null; then
+            rm -f "$probe" 2>/dev/null
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+deny() {
+    local attempted="$1"
+    cat >&2 <<EOF
+$(tput setaf 1 2>/dev/null)╔════════════════════════════════════════════════════════════════════╗
+║ DistinctionOS: filesystem is read-only.                            ║
+╚════════════════════════════════════════════════════════════════════╝$(tput sgr0 2>/dev/null)
+
+  dnf '${attempted}' would mutate /usr, but DistinctionOS keeps /usr
+  immutable. dnf is provided here strictly as a development /
+  inspection tool — read-only verbs work, write verbs do not.
+
+  To install software, kindly use one of the following:
+
+    • Layered packages (persistent, recommended):
+        sudo rpm-ostree install <package>
+
+    • User applications (sandboxed):
+        flatpak install <id>
+
+    • Live overlay (ephemeral, lost on reboot):
+        sudo rpm-ostree install --apply-live --allow-inactive <package>
+
+  If you genuinely require a live, mutable /usr — for development of
+  the image itself, perhaps — unlock the deployment first:
+
+        sudo ostree admin unlock                # ephemeral (lost on reboot)
+        sudo ostree admin unlock --hotfix       # survives next boot, blocks updates
+
+  After unlocking, this guard steps aside and dnf behaves normally.
+EOF
+    exit 1
+}
+
+# ── Decision ────────────────────────────────────────────────────────────────
+
+# Read-only verb? Pass straight through.
+if contains "$verb" "${READONLY_VERBS[@]}"; then
+    # Special case: history undo/redo/rollback are mutating even though
+    # `history` itself is read-only.
+    if [[ "$verb" == "history" ]] && [[ -n "$sub_verb" ]] \
+        && contains "$sub_verb" "${HISTORY_MUTATING[@]}"; then
+        if overlay_is_writable; then
+            exec "$real_dnf" "$@"
+        fi
+        deny "history $sub_verb"
+    fi
+    exec "$real_dnf" "$@"
+fi
+
+# Mutating verb with a safe override flag? Allow.
+for arg in "$@"; do
+    if contains "$arg" "${SAFE_OVERRIDE_FLAGS[@]}"; then
+        exec "$real_dnf" "$@"
+    fi
+done
+
+# Mutating verb. Permit only if overlay is writable.
+if overlay_is_writable; then
+    exec "$real_dnf" "$@"
+fi
+
+deny "$verb"

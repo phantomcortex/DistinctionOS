@@ -40,9 +40,67 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  syntax_check:
+    name: Syntax check
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+
+      - name: Check Just syntax
+        uses: ublue-os/just-action@v3
+
+      - name: Install linters
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q shellcheck yamllint
+
+      # Build scripts run inside a fresh container with `set -uo pipefail`
+      # and minimal tooling; a busted heredoc or unclosed `if` block here
+      # wastes 20+ minutes of build time before failing. Fail fast instead.
+      - name: Shellcheck build scripts
+        run: |
+          shopt -s nullglob
+          status=0
+          for f in build_files/*.sh build_files/image-info; do
+            head -1 "$f" | grep -qE '^#!.*\b(bash|sh)\b' || continue
+            echo "→ shellcheck $f"
+            shellcheck -S error -e SC1091 "$f" || status=$?
+          done
+          exit $status
+
+      # System files shipped into /etc/profile.d and /usr/bin must parse
+      # cleanly — they run on every login and a broken alias bricks shells.
+      - name: Shellcheck system shell files
+        run: |
+          shopt -s nullglob
+          status=0
+          for f in system_files/etc/profile.d/*.sh \
+                   system_files/usr/bin/rpm-ostree-search-hl \
+                   system_files/usr/bin/distinction-dnf; do
+            [ -f "$f" ] || continue
+            head -1 "$f" | grep -qE '^#!.*\b(bash|sh)\b' || continue
+            echo "→ shellcheck $f"
+            shellcheck -S error -e SC1091 -e SC2139 "$f" || status=$?
+          done
+          exit $status
+
+      - name: Yamllint workflows
+        run: |
+          yamllint -d "{extends: relaxed, rules: {line-length: disable, truthy: disable, comments: disable, comments-indentation: disable, document-start: disable, brackets: disable, indentation: disable}}" .github/workflows/
+
+      - name: Validate Containerfile (hadolint)
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: Containerfile
+          failure-threshold: error
+
   build_push:
     name: Build and push image
     runs-on: ubuntu-24.04
+    needs: syntax_check
 
     permissions:
       contents: read
@@ -221,22 +279,48 @@ jobs:
           sudo podman inspect localhost/${IMAGE_NAME}:${DEFAULT_TAG} | jq '.[0].RootFS.Layers[] | length' | \
           awk '{sum+=$1; print "Layer size: " $1/1024/1024 " MB"} END {print "Total: " sum/1024/1024 " MB"}'
 
+      - name: Install skopeo
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          if ! command -v skopeo >/dev/null 2>&1; then
+            sudo apt-get update -q
+            sudo apt-get install -y -q skopeo
+          fi
+
+      # Pushes are retried because GHCR routinely returns transient
+      # 5xx / EOF / connection-reset errors mid-push, especially for
+      # multi-hundred-MB layered images. Matches Bazzite's pattern.
       - name: Push To GHCR
-        uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         id: push
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
-          REGISTRY_USER: ${{ github.actor }}
-          REGISTRY_PASSWORD: ${{ github.token }}
+          IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          DEFAULT_TAG: ${{ env.DEFAULT_TAG }}
+          TAGS: ${{ steps.metadata.outputs.tags }}
         with:
-          registry: ${{ env.IMAGE_REGISTRY }}
-          image: ${{ env.IMAGE_NAME }}
-          tags: ${{ steps.metadata.outputs.tags }}
-          username: ${{ env.REGISTRY_USER }}
-          password: ${{ env.REGISTRY_PASSWORD }}
-          extra-args: |
-            --compression-format=gzip
-            --compression-level=6
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 20
+          command: |
+            log_sum() { echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+            log_sum '# Push to GHCR result'
+            log_sum '```'
+            DIGEST=""
+            for tag in ${TAGS}; do
+              dest="${IMAGE_REGISTRY}/${IMAGE_NAME}:${tag}"
+              skopeo copy \
+                --digestfile=/tmp/digestfile \
+                --dest-compress-format=gzip \
+                --dest-compress-level=6 \
+                "containers-storage:localhost/${IMAGE_NAME}:${DEFAULT_TAG}" \
+                "docker://${dest}"
+              log_sum "${dest}"
+              DIGEST="$(cat /tmp/digestfile)"
+            done
+            log_sum '```'
+            echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
 
       - name: Push testing image to GHCR
         if: github.ref != 'refs/heads/main' && github.event_name != 'pull_request'

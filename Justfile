@@ -85,8 +85,41 @@ sudoif command *args:
 # This will build an image 'aurora:lts' with DX and GDX enabled.
 #
 
+# Pre-build syntax gate: runs Just + shellcheck before the (expensive)
+# container build. Skip with SKIP_SYNTAX_CHECK=1 if you genuinely need to
+# build a script you know is mid-edit.
+[group('Build')]
+check-syntax:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ "${SKIP_SYNTAX_CHECK:-0}" == "1" ]]; then
+        echo "SKIP_SYNTAX_CHECK=1 — skipping syntax gate"
+        exit 0
+    fi
+
+    echo "→ just --fmt --check (Justfile)"
+    just --unstable --fmt --check -f Justfile
+
+    if command -v shellcheck >/dev/null 2>&1; then
+        shopt -s nullglob
+        status=0
+        for f in build_files/*.sh \
+                 system_files/etc/profile.d/*.sh \
+                 system_files/usr/bin/rpm-ostree-search-hl \
+                 system_files/usr/bin/distinction-dnf; do
+            [ -f "$f" ] || continue
+            head -1 "$f" | grep -qE '^#!.*\b(bash|sh)\b' || continue
+            echo "→ shellcheck $f"
+            shellcheck -S error -e SC1091 -e SC2139 "$f" || status=$?
+        done
+        exit $status
+    else
+        echo "shellcheck not installed locally — skipping shell syntax pass"
+    fi
+
 # Build the image using the specified parameters
-build $target_image=image_name $tag=default_tag:
+build $target_image=image_name $tag=default_tag: check-syntax
     #!/usr/bin/env bash
 
     BUILD_ARGS=()
