@@ -268,15 +268,22 @@ jobs:
           echo "ref=containers-storage:${DST}" >> "$GITHUB_OUTPUT"
           echo "dst=${DST}" >> "$GITHUB_OUTPUT"
 
-      - name: Login to GitHub Container Registry (root)
+      - name: Login to GitHub Container Registry
         if: github.event_name != 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
         run: |
-          # The chunked image lives in rootful container storage, so the
-          # push has to use sudo and therefore root's auth.json.
+          # Two logins because the pipeline straddles two auth scopes:
+          #   * sudo podman / sudo skopeo (the chunked image lives in
+          #     rootful containers-storage) → root's auth.json.
+          #   * cosign / oras / any rootless tool that reads
+          #     ~/.docker/config.json → runner user's config.
+          # Skipping either one fails a downstream step with
+          # "UNAUTHORIZED" instead of a useful message.
           echo "${GITHUB_TOKEN}" | sudo podman login ghcr.io \
+            -u "${GITHUB_ACTOR}" --password-stdin
+          echo "${GITHUB_TOKEN}" | docker login ghcr.io \
             -u "${GITHUB_ACTOR}" --password-stdin
 
       - name: Lowercase Registry
