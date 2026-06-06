@@ -65,7 +65,7 @@ steam-link-logs:
     #!/usr/bin/env bash
     log_file="/var/log/distinctionos/steam-linker.log"
     fallback_log="${HOME}/.local/share/distinctionos/logs/steam-linker.log"
-    
+
     if [[ -f "$log_file" ]]; then
         less +G "$log_file"
     elif [[ -f "$fallback_log" ]]; then

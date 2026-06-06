@@ -2,42 +2,6 @@
 # DistinctionOS — Developer Experience & Modding Recipes
 # ============================================================================
 
-# Install Docker CE and stage it for the next boot
-[group('DistinctionOS Development')]
-distinction-setup-docker:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    if command -v docker &>/dev/null; then
-        echo "Docker is already installed ($(docker --version))"
-        exit 0
-    fi
-
-    echo "Adding Docker CE repository..."
-    sudo tee /etc/yum.repos.d/docker-ce.repo > /dev/null <<'REPO'
-[docker-ce-stable]
-name=Docker CE Stable - Fedora $releasever
-baseurl=https://download.docker.com/linux/fedora/$releasever/$basearch/stable
-enabled=1
-gpgcheck=1
-gpgkey=https://download.docker.com/linux/fedora/gpg
-skip_if_unavailable=1
-REPO
-
-    echo "Layering Docker CE packages via rpm-ostree (reboot required)..."
-    sudo rpm-ostree install \
-        containerd.io \
-        docker-ce \
-        docker-ce-cli \
-        docker-buildx-plugin \
-        docker-compose-plugin
-
-    echo ""
-    echo "Docker CE staged. After rebooting, run:"
-    echo "  sudo systemctl enable --now docker"
-    echo "  sudo usermod -aG docker \$USER"
-    echo "  newgrp docker"
-
 # Install libvirt/KVM virtualisation stack
 [group('DistinctionOS Development')]
 distinction-setup-virt:
@@ -126,24 +90,3 @@ distinction-setup-modding:
     echo "  GIMP, Krita, Blender — available via Flatpak"
     echo "  DDS thumbnails (BC7) are pre-patched in the image (glycin)"
     echo "========================================================"
-
-# Look up a Steam AppID for use with Protontricks
-[group('DistinctionOS Modding')]
-distinction-modding-appid game="":
-    #!/usr/bin/env bash
-    GAME={{ game }}
-    if [[ -z "$GAME" ]]; then
-        echo "Usage: ujust distinction-modding-appid \"Game Name\""
-        echo "Common AppIDs:"
-        printf "  %-30s %s\n" "The Elder Scrolls V: Skyrim SE" "489830"
-        printf "  %-30s %s\n" "The Elder Scrolls V: Skyrim"    "72850"
-        printf "  %-30s %s\n" "Fallout 4"                       "377160"
-        printf "  %-30s %s\n" "Fallout: New Vegas"              "22380"
-        printf "  %-30s %s\n" "Starfield"                       "1716740"
-        printf "  %-30s %s\n" "Oblivion Remastered"             "2623190"
-        exit 0
-    fi
-    # Use Steam's search if steamcmd is available, otherwise direct to SteamDB
-    echo "Searching SteamDB for: $GAME"
-    xdg-open "https://www.steamdb.info/search/?a=app&q=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$GAME'))")" 2>/dev/null || \
-        echo "Open: https://www.steamdb.info/search/?a=app&q=${GAME// /+}"
