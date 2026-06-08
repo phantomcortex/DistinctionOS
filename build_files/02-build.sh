@@ -18,6 +18,13 @@ source /ctx/95-utility-functions.sh
 # ============================================================================
 # --allowerasing lets dnf silently remove packages to satisfy an install, which
 # can clobber required packages. Wrap dnf/dnf5 so any future use is rejected.
+#
+# Narrow exception: the freeworld codec stack (libavcodec-freeworld,
+# mesa-*-freeworld, gstreamer1-plugins-bad-freeworld) overlaps file paths
+# with the Fedora "free" variants, so a clean install requires removing the
+# free variant first. The dnf_codec_swap() function in the codec section
+# bypasses these wrappers via `command dnf5` after validating that the
+# swap is between a specific known-safe pair — see CODEC_SWAP_ALLOWLIST.
 
 dnf() {
   local arg
@@ -487,9 +494,11 @@ declare -A RPM_PACKAGES=(
     glib2-devel \
     firejail"
 
+  # vvenc and the freeworld codec stack are installed by the dedicated
+  # codec section below — they need atomic resolution against x265 and
+  # libavcodec-freeworld in the same transaction.
   ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
-    gstreamer1-plugins-ugly \
-    vvenc"
+    gstreamer1-plugins-ugly"
 
   ["terra,terra-extras"]=" \
     gstreamer1-vaapi \
@@ -510,6 +519,110 @@ for repo in "${!RPM_PACKAGES[@]}"; do
   read -ra pkg_array <<<"${RPM_PACKAGES[$repo]}"
   install_packages_resilient "$repo" "${pkg_array[@]}"
 done
+
+# ──────────────────────────────────────────────────────────────────────────
+# Codec Stack — atomic swap to RPMFusion freeworld variants
+# ──────────────────────────────────────────────────────────────────────────
+# Why this lives here, not in the force-install OCI artifact:
+#
+# libavcodec-freeworld, gstreamer1-plugins-bad-freeworld, and the
+# mesa-*-freeworld pair link against versioned symbols from x265 and vvenc
+# (e.g. x265_api_get_215, libvvenc.so.1.13). When these RPMs were snapshotted
+# in the force-install artifact — which builds on a separate schedule from
+# the main image — the captured .so files reference symbol versions that
+# no longer exist on the rolling Bazzite base, producing runtime errors:
+#
+#   ffmpeg: error while loading shared libraries: libvvenc.so.1.13
+#   ffmpeg: symbol lookup error: ... undefined symbol: x265_api_get_215
+#
+# Installing the whole freeworld codec stack in a single dnf transaction
+# against the live repos co-resolves them with their current x265/vvenc
+# dependencies — versions match by construction, no skew possible.
+
+log_section "Installing freeworld codec stack"
+
+# Narrowly-scoped escape hatch for the --allowerasing guard.
+# Calls `command dnf5` directly (bypassing the wrapper) but only after
+# validating that the swap pair is in CODEC_SWAP_ALLOWLIST. Any other use
+# of --allowerasing remains blocked by the dnf/dnf5 wrappers above.
+readonly -a CODEC_SWAP_ALLOWLIST=(
+  "ffmpeg-free|ffmpeg"
+  "libavcodec-free|libavcodec-freeworld"
+  "libavdevice-free|libavdevice-freeworld"
+  "libavfilter-free|libavfilter-freeworld"
+  "libavformat-free|libavformat-freeworld"
+  "libavutil-free|libavutil-freeworld"
+  "libpostproc-free|libpostproc-freeworld"
+  "libswresample-free|libswresample-freeworld"
+  "libswscale-free|libswscale-freeworld"
+  "mesa-va-drivers|mesa-va-drivers-freeworld"
+  "mesa-vulkan-drivers|mesa-vulkan-drivers-freeworld"
+  "gstreamer1-plugins-bad-free|gstreamer1-plugins-bad-freeworld"
+  "gstreamer1-plugins-bad-free-extras|gstreamer1-plugins-bad-freeworld-extras"
+)
+
+dnf_codec_swap() {
+  local from="$1" to="$2"
+  local pair="${from}|${to}"
+
+  local allowed=false
+  for entry in "${CODEC_SWAP_ALLOWLIST[@]}"; do
+    [[ "$entry" == "$pair" ]] && allowed=true && break
+  done
+
+  if ! $allowed; then
+    log_error "  ✗ dnf_codec_swap: '$from' → '$to' not in allowlist"
+    FAILED_PACKAGES+=("$to")
+    return 1
+  fi
+
+  # If source isn't installed, fall back to a plain install of the target.
+  # This handles bases that already ship the freeworld variant, or where
+  # the -free counterpart was never installed.
+  if ! rpm -q "$from" &>/dev/null; then
+    if command dnf5 -y install "$to" &>/dev/null; then
+      log_success "  ✓ $to (direct install — no $from present)"
+      SUCCEEDED_PACKAGES+=("$to")
+      return 0
+    fi
+    log_warning "  ✗ $to (direct install failed)"
+    FAILED_PACKAGES+=("$to")
+    return 1
+  fi
+
+  # Source installed → swap. --allowerasing lets dnf remove the source
+  # if the target's file list overlaps. The allowlist above bounds the
+  # blast radius to known-safe codec pairs.
+  if command dnf5 -y swap "$from" "$to" --allowerasing &>/dev/null; then
+    log_success "  ✓ $from → $to"
+    SUCCEEDED_PACKAGES+=("$to")
+    return 0
+  fi
+
+  log_warning "  ✗ $from → $to (swap failed)"
+  FAILED_PACKAGES+=("$to")
+  return 1
+}
+
+# Order: top-level meta-packages first (ffmpeg pulls the libav* family),
+# then GPU driver swaps, then the standalone libavcodec/gstreamer adders.
+dnf_codec_swap "ffmpeg-free"                "ffmpeg"
+dnf_codec_swap "mesa-va-drivers"            "mesa-va-drivers-freeworld"
+dnf_codec_swap "mesa-vulkan-drivers"        "mesa-vulkan-drivers-freeworld"
+dnf_codec_swap "libavcodec-free"            "libavcodec-freeworld"
+dnf_codec_swap "gstreamer1-plugins-bad-free" "gstreamer1-plugins-bad-freeworld"
+
+# vvenc and svt-av1 round out the encoder set. They have no -free counterpart
+# (RPMFusion-only), so a plain install is correct — it co-resolves with the
+# freeworld libavcodec just installed, guaranteeing matching sonames.
+log_info "Installing standalone codec libraries (vvenc, svt-av1)"
+if command dnf5 -y install vvenc vvenc-libs svt-av1-libs &>/dev/null; then
+  log_success "  ✓ vvenc, vvenc-libs, svt-av1-libs"
+  SUCCEEDED_PACKAGES+=("vvenc" "vvenc-libs" "svt-av1-libs")
+else
+  log_warning "  ✗ vvenc/svt-av1 install failed (codec encoders may be missing)"
+  FAILED_PACKAGES+=("vvenc")
+fi
 
 # ──────────────────────────────────────────────────────────────────────────
 # COPR Repository Packages
@@ -603,7 +716,8 @@ readonly -a CRITICAL_PACKAGES=(
   "gnome-shell"
   "gnome-session"
   "vulkan-headers"
-  "mesa-vulkan-drivers"
+  "mesa-vulkan-drivers-freeworld"  # post-swap: replaces mesa-vulkan-drivers
+  "mesa-va-drivers-freeworld"      # post-swap: replaces mesa-va-drivers
   "mesa-filesystem"
   "mesa-dri-drivers"
   "mesa-libGL"
@@ -613,6 +727,9 @@ readonly -a CRITICAL_PACKAGES=(
   "mesa-libEGL"
   "mesa-libEGL-devel"
   "ffmpeg"
+  "libavcodec-freeworld"           # codec stack: patent-encumbered encoders
+  "vvenc-libs"                     # H.266/VVC encoder runtime
+  "gstreamer1-plugins-bad-freeworld"
   "mutter"
   "wayland-devel"
   "ScopeBuddy"
@@ -689,7 +806,8 @@ readonly -a VERSIONLOCK_PACKAGES=(
   "gnome-shell"
   "gnome-session"
   "vulkan-headers"
-  "mesa-vulkan-drivers"
+  "mesa-vulkan-drivers-freeworld"  # post-swap name
+  "mesa-va-drivers-freeworld"      # post-swap name
   "mesa-filesystem"
   "mesa-dri-drivers"
   "mesa-libGL"
@@ -699,6 +817,10 @@ readonly -a VERSIONLOCK_PACKAGES=(
   "mesa-libEGL"
   "mesa-libEGL-devel"
   "ffmpeg"
+  "libavcodec-freeworld"
+  "vvenc"
+  "vvenc-libs"
+  "gstreamer1-plugins-bad-freeworld"
   "mutter"
   "wayland-devel"
   "ScopeBuddy"

@@ -23,10 +23,10 @@
 #   audacity-freeworld | dnf            | rpmfusion-free,rpmfusion-free-updates
 
 mutter-devel                      | dnf            | terra
-libavcodec-freeworld              | dnf            | rpmfusion-free,rpmfusion-free-updates
-gstreamer1-plugins-bad-freeworld  | dnf            | rpmfusion-free,rpmfusion-free-updates
-mesa-vulkan-drivers-freeworld     | dnf            | rpmfusion-free,rpmfusion-free-updates
-mesa-va-drivers-freeworld         | dnf            | rpmfusion-free,rpmfusion-free-updates
-vvenc-libs                        | dnf            | rpmfusion-free,rpmfusion-free-updates
+# Codec stack (libavcodec-freeworld, gstreamer1-plugins-bad-freeworld,
+# mesa-*-freeworld, vvenc-libs) is no longer cached here — those packages
+# link against versioned x265/vvenc symbols, and snapshotting them in this
+# artifact produces ABI skew against the rolling Bazzite base. They are
+# installed atomically in the same dnf transaction by build_files/02-build.sh.
 gnome-rounded-blur                | github-build   | kancko/gnome-rounded-blur
 glycin-fix-bc7                    | github-release | phantomcortex/glycin
