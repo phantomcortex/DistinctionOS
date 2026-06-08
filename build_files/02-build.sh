@@ -566,6 +566,14 @@ readonly -a CODEC_SWAP_ALLOWLIST=(
 
 dnf_codec_swap() {
   local from="$1" to="$2"
+  # Optional third arg: arch suffix for the direct-install fallback path
+  # (e.g. "x86_64"). Some F44 RPMFusion freeworld packages ship a stale i686
+  # build that requires a since-rotated x265 soname (libx265.so.215). The
+  # x86_64 build is current; constraining the install to x86_64 sidesteps
+  # the broken multilib pull on Bazzite (which enables i686 for Steam).
+  # Only applied when source isn't installed — the swap path leaves arch
+  # selection to dnf because it matches whatever arches the source had.
+  local arch_pref="${3:-}"
   local pair="${from}|${to}"
 
   local allowed=false
@@ -586,13 +594,14 @@ dnf_codec_swap() {
   # This handles bases that already ship the freeworld variant, or where
   # the -free counterpart was never installed.
   if ! rpm -q "$from" &>/dev/null; then
-    if command dnf5 -y install "$to" >/dev/null 2>"$err_file"; then
-      log_success "  ✓ $to (direct install — no $from present)"
+    local install_target="$to${arch_pref:+.$arch_pref}"
+    if command dnf5 -y install "$install_target" >/dev/null 2>"$err_file"; then
+      log_success "  ✓ $install_target (direct install — no $from present)"
       SUCCEEDED_PACKAGES+=("$to")
       rm -f "$err_file"
       return 0
     fi
-    log_warning "  ✗ $to (direct install failed; dnf says:)"
+    log_warning "  ✗ $install_target (direct install failed; dnf says:)"
     sed 's/^/      /' "$err_file" | head -5
     FAILED_PACKAGES+=("$to")
     rm -f "$err_file"
@@ -624,40 +633,59 @@ dnf_codec_swap() {
 # because of file conflicts with the bundled libs). The swap below is a
 # best-effort no-op in that common case; it only does work on bases that
 # actually shipped Fedora's `libavcodec-free`.
-dnf_codec_swap "ffmpeg-free"                "ffmpeg"             || true
-dnf_codec_swap "mesa-va-drivers"            "mesa-va-drivers-freeworld"     || true
-dnf_codec_swap "mesa-vulkan-drivers"        "mesa-vulkan-drivers-freeworld" || true
-dnf_codec_swap "libavcodec-free"            "libavcodec-freeworld" || true
+dnf_codec_swap "ffmpeg-free"         "ffmpeg"                                  || true
+dnf_codec_swap "mesa-va-drivers"     "mesa-va-drivers-freeworld"               || true
+dnf_codec_swap "mesa-vulkan-drivers" "mesa-vulkan-drivers-freeworld"           || true
+# libavcodec-freeworld constrained to x86_64: F44 RPMFusion's i686 build
+# (8.0.1-6.fc44) requires libx265.so.215, but the live x265 has moved to .216.
+# No 32-bit userland needs the patent-codec libavcodec; Steam et al. use
+# system ffmpeg-libs.i686 from base Fedora.
+dnf_codec_swap "libavcodec-free"     "libavcodec-freeworld" "x86_64"           || true
 
 # gstreamer1-plugins-bad-freeworld: additive install (NOT a swap — see comment
 # above CODEC_SWAP_ALLOWLIST). Provides x265enc, de265, rtmp. The base bad-free
 # package (which ships `va`/VAAPI) must stay installed.
-log_info "Installing gstreamer1-plugins-bad-freeworld (additive on top of bad-free)"
+#
+# Pinned to .x86_64 for the same reason as libavcodec-freeworld above —
+# the F44 i686 RPM (1.28.1-3.fc44) is stale against the current x265 ABI.
+log_info "Installing gstreamer1-plugins-bad-freeworld.x86_64 (additive on top of bad-free)"
 gst_err=$(mktemp)
-if command dnf5 -y install gstreamer1-plugins-bad-freeworld >/dev/null 2>"$gst_err"; then
-  log_success "  ✓ gstreamer1-plugins-bad-freeworld"
+if command dnf5 -y install gstreamer1-plugins-bad-freeworld.x86_64 >/dev/null 2>"$gst_err"; then
+  log_success "  ✓ gstreamer1-plugins-bad-freeworld.x86_64"
   SUCCEEDED_PACKAGES+=("gstreamer1-plugins-bad-freeworld")
 else
-  log_warning "  ✗ gstreamer1-plugins-bad-freeworld (dnf says:)"
+  log_warning "  ✗ gstreamer1-plugins-bad-freeworld.x86_64 (dnf says:)"
   sed 's/^/      /' "$gst_err" | head -5
   FAILED_PACKAGES+=("gstreamer1-plugins-bad-freeworld")
 fi
 rm -f "$gst_err"
 
 # vvenc and svt-av1 round out the encoder set. RPMFusion-only (no -free
-# counterpart), so a plain install is correct. Co-resolves with the
-# freeworld libavcodec/ffmpeg just installed.
+# counterpart). Pre-filter against rpm -q so dnf5 doesn't abort the whole
+# transaction with "Failed to resolve" when packages are already installed
+# as transitive deps of ffmpeg (which is the common case on Bazzite).
 log_info "Installing standalone codec libraries (vvenc, svt-av1)"
-vvenc_err=$(mktemp)
-if command dnf5 -y install vvenc vvenc-libs svt-av1-libs >/dev/null 2>"$vvenc_err"; then
-  log_success "  ✓ vvenc, vvenc-libs, svt-av1-libs"
+vvenc_pkgs=()
+for pkg in vvenc vvenc-libs svt-av1-libs; do
+  if ! rpm -q "$pkg" &>/dev/null; then
+    vvenc_pkgs+=("$pkg")
+  fi
+done
+if [[ ${#vvenc_pkgs[@]} -eq 0 ]]; then
+  log_success "  ✓ vvenc, vvenc-libs, svt-av1-libs (already installed via deps)"
   SUCCEEDED_PACKAGES+=("vvenc" "vvenc-libs" "svt-av1-libs")
 else
-  log_warning "  ✗ vvenc/svt-av1 install failed (dnf says:)"
-  sed 's/^/      /' "$vvenc_err" | head -5
-  FAILED_PACKAGES+=("vvenc")
+  vvenc_err=$(mktemp)
+  if command dnf5 -y install "${vvenc_pkgs[@]}" >/dev/null 2>"$vvenc_err"; then
+    log_success "  ✓ ${vvenc_pkgs[*]}"
+    SUCCEEDED_PACKAGES+=("${vvenc_pkgs[@]}")
+  else
+    log_warning "  ✗ ${vvenc_pkgs[*]} (dnf says:)"
+    sed 's/^/      /' "$vvenc_err" | head -5
+    FAILED_PACKAGES+=("${vvenc_pkgs[@]}")
+  fi
+  rm -f "$vvenc_err"
 fi
-rm -f "$vvenc_err"
 
 # ──────────────────────────────────────────────────────────────────────────
 # COPR Repository Packages
