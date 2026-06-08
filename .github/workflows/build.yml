@@ -19,10 +19,6 @@ on:
       - 'system_files/**' # modifcations to system files are usually small and don't warrant a full rebuild
   workflow_dispatch:
     inputs:
-      fresh-rechunk:
-        description: 'Clear rechunk history (forces full redownload for users)'
-        type: boolean
-        default: false
       handwritten:
         description: 'Optional handwritten changelog message for this release'
         type: string
@@ -139,6 +135,7 @@ jobs:
             type=raw,value=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}},enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value={{date 'YYYYMMDD'}},enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=testing,enable=${{ github.ref != 'refs/heads/main' && github.event_name != 'pull_request' }}
+            type=raw,value=testing.{{date 'YYYYMMDD'}},enable=${{ github.ref != 'refs/heads/main' && github.event_name != 'pull_request' }}
             type=sha,enable=${{ github.event_name == 'pull_request' }}
             type=ref,event=pr
           labels: |
@@ -171,6 +168,26 @@ jobs:
           docker-images: false
           swap-storage: true
 
+      # GHA runners ship with a small root partition and a much larger
+      # ephemeral /mnt. Default overlay-on-ext4 storage saturates root
+      # disk headroom mid-chunk on big layered images; switching
+      # /var/lib/containers to BTRFS on /mnt buys us the headroom and
+      # lets the chunker use reflinks instead of full file copies.
+      - name: Check if /mnt is mounted
+        id: check_mnt
+        run: |
+          if sudo mountpoint /mnt; then
+            echo "mnt_is_there=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "mnt_is_there=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Mount BTRFS for podman storage
+        uses: ublue-os/container-storage-action@main
+        if: ${{ steps.check_mnt.outputs.mnt_is_there == '1' }}
+        with:
+          target-dir: /var/lib/containers
+
       - name: Build image (rootful)
         id: build_image
         run: |
@@ -202,70 +219,72 @@ jobs:
             echo "No images to remove."
           fi
 
-      - name: Run Rechunker
-        id: rechunk
-        uses: hhd-dev/rechunk@v1.2.4
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        with:
-          rechunk: "ghcr.io/hhd-dev/rechunk:v1.2.3"
-          ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
-          prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
-          skip_compression: false
-          max-layers: 90
-          labels: ${{ steps.metadata.outputs.labels }} # Rechunk strips out all the labels during build, this needs to be reapplied here with newline separator
-
-      - name: Remove Rechunker image
-        run: |
-          image=$(sudo podman images -n --sort repository --format '{{.ID}} {{.Repository}}' | grep rechunk | awk '{print $1}')
-          if [ -n "${image}" ]; then
-            sudo podman rmi --force "$image"
-          else
-            echo "No image to remove"
-          fi
-
-      - name: Rechunk output
-        continue-on-error: true
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        run: |
-          if [[ "${STEPS_RECHUNK_CONCLUSION}" == "success" ]]; then
-            echo "=== Rechunk Changelog ==="
-            if [ -f "${STEPS_RECHUNK_OUTPUTS_CHANGELOG}" ]; then
-              cat "${STEPS_RECHUNK_OUTPUTS_CHANGELOG}"
-            fi
-            echo ""
-            echo "=== Rechunk Manifest ==="
-            if [ -f "${STEPS_RECHUNK_OUTPUTS_MANIFEST}" ]; then
-              cat "${STEPS_RECHUNK_OUTPUTS_MANIFEST}"
-            fi
-          else
-            echo "Rechunk conclusion: ${STEPS_RECHUNK_CONCLUSION}"
-          fi
+      # The native chunker (rpm-ostree compose build-chunked-oci) doesn't
+      # accept --label, so labels and annotations have to be baked into
+      # the raw image before chunking. metadata-action emits labels
+      # newline-separated by default; we apply each via `buildah config`.
+      - name: Apply OCI labels to raw image
+        if: github.event_name != 'pull_request'
         env:
-          STEPS_RECHUNK_CONCLUSION: ${{ steps.rechunk.conclusion }}
-          STEPS_RECHUNK_OUTPUTS_CHANGELOG: ${{ steps.rechunk.outputs.changelog }}
-          STEPS_RECHUNK_OUTPUTS_MANIFEST: ${{ steps.rechunk.outputs.manifest }}
-
-      - name: Load in podman and tag
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        run: |
-          IMAGE=$(podman pull ${STEPS_RECHUNK_OUTPUTS_REF})
-          sudo rm -rf ${STEPS_RECHUNK_OUTPUTS_LOCATION}
-          for tag in ${STEPS_METADATA_OUTPUTS_TAGS}; do
-            podman tag $IMAGE ${IMAGE_NAME}:$tag
-          done
-        env:
-          STEPS_RECHUNK_OUTPUTS_REF: ${{ steps.rechunk.outputs.ref }}
-          STEPS_RECHUNK_OUTPUTS_LOCATION: ${{ steps.rechunk.outputs.location }}
-          STEPS_METADATA_OUTPUTS_TAGS: ${{ steps.metadata.outputs.tags }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          DEFAULT_TAG: ${{ env.DEFAULT_TAG }}
+          LABELS: ${{ steps.metadata.outputs.labels }}
+        run: |
+          SRC="localhost/${IMAGE_NAME}:${DEFAULT_TAG}"
+          container=$(sudo buildah from "$SRC")
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            sudo buildah config --label "$line" --annotation "$line" "$container"
+          done <<< "${LABELS}"
+          sudo buildah commit --identity-label=false --rm "$container" "$SRC"
+
+      # Native chunker: invokes `rpm-ostree compose build-chunked-oci`
+      # from inside the freshly built image itself, against the same
+      # image as input. Produces format-version 2 chunked OCI output —
+      # smaller per-update deltas for end users than the v1 format the
+      # hhd-dev/rechunk action emits. See docs/bazzite-pipeline-investigation.md.
+      - name: Run native rechunker
+        id: rechunk
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          DEFAULT_TAG: ${{ env.DEFAULT_TAG }}
+        run: |
+          SRC="localhost/${IMAGE_NAME}:${DEFAULT_TAG}"
+          DST="localhost/${IMAGE_NAME}-chunked:${DEFAULT_TAG}"
+
+          sudo podman run --rm --privileged \
+            --volume /var/lib/containers:/var/lib/containers \
+            "$SRC" \
+            rpm-ostree compose build-chunked-oci \
+              --bootc --max-layers 127 --format-version 2 \
+              --from "$SRC" \
+              --output "containers-storage:${DST}"
+
+          # Free the raw image — it doubled the on-disk footprint and
+          # the chunked variant is now the canonical artifact.
+          sudo podman rmi --force "$SRC" || true
+
+          echo "ref=containers-storage:${DST}" >> "$GITHUB_OUTPUT"
+          echo "dst=${DST}" >> "$GITHUB_OUTPUT"
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         if: github.event_name != 'pull_request'
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: |
+          # Two logins because the pipeline straddles two auth scopes:
+          #   * sudo podman / sudo skopeo (the chunked image lives in
+          #     rootful containers-storage) → root's auth.json.
+          #   * cosign / oras / any rootless tool that reads
+          #     ~/.docker/config.json → runner user's config.
+          # Skipping either one fails a downstream step with
+          # "UNAUTHORIZED" instead of a useful message.
+          echo "${GITHUB_TOKEN}" | sudo podman login ghcr.io \
+            -u "${GITHUB_ACTOR}" --password-stdin
+          echo "${GITHUB_TOKEN}" | docker login ghcr.io \
+            -u "${GITHUB_ACTOR}" --password-stdin
 
       - name: Lowercase Registry
         id: registry_case
@@ -274,13 +293,18 @@ jobs:
           string: ${{ env.IMAGE_REGISTRY }}
 
       - name: Inspect layer sizes
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          DEFAULT_TAG: ${{ env.DEFAULT_TAG }}
         run: |
-          echo "=== Layer size analysis ==="
-          sudo podman inspect localhost/${IMAGE_NAME}:${DEFAULT_TAG} | jq '.[0].RootFS.Layers[] | length' | \
-          awk '{sum+=$1; print "Layer size: " $1/1024/1024 " MB"} END {print "Total: " sum/1024/1024 " MB"}'
+          echo "=== Layer size analysis (chunked) ==="
+          sudo podman inspect "localhost/${IMAGE_NAME}-chunked:${DEFAULT_TAG}" \
+            | jq '.[0].RootFS.Layers[] | length' \
+            | awk '{sum+=$1; print "Layer size: " $1/1024/1024 " MB"} END {print "Total: " sum/1024/1024 " MB"}'
 
       - name: Install skopeo
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request'
         run: |
           if ! command -v skopeo >/dev/null 2>&1; then
             sudo apt-get update -q
@@ -290,8 +314,9 @@ jobs:
       # Pushes are retried because GHCR routinely returns transient
       # 5xx / EOF / connection-reset errors mid-push, especially for
       # multi-hundred-MB layered images. Matches Bazzite's pattern.
+      # Note: sudo skopeo — the chunked image lives in rootful storage.
       - name: Push To GHCR
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request'
         id: push
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
@@ -310,31 +335,17 @@ jobs:
             DIGEST=""
             for tag in ${TAGS}; do
               dest="${IMAGE_REGISTRY}/${IMAGE_NAME}:${tag}"
-              skopeo copy \
+              sudo skopeo copy \
                 --digestfile=/tmp/digestfile \
                 --dest-compress-format=gzip \
                 --dest-compress-level=6 \
-                "containers-storage:localhost/${IMAGE_NAME}:${DEFAULT_TAG}" \
+                "containers-storage:localhost/${IMAGE_NAME}-chunked:${DEFAULT_TAG}" \
                 "docker://${dest}"
               log_sum "${dest}"
-              DIGEST="$(cat /tmp/digestfile)"
+              DIGEST="$(sudo cat /tmp/digestfile)"
             done
             log_sum '```'
             echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
-
-      - name: Push testing image to GHCR
-        if: github.ref != 'refs/heads/main' && github.event_name != 'pull_request'
-        env:
-          IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
-          DEFAULT_TAG: ${{ env.DEFAULT_TAG }}
-          REGISTRY_USER: ${{ github.actor }}
-          REGISTRY_PASSWORD: ${{ github.token }}
-        run: |
-          echo "${REGISTRY_PASSWORD}" | sudo podman login ghcr.io -u "${REGISTRY_USER}" --password-stdin
-          DEST="${IMAGE_REGISTRY}/${IMAGE_NAME}:testing"
-          sudo podman tag "localhost/${IMAGE_NAME}:${DEFAULT_TAG}" "$DEST"
-          sudo podman push "$DEST"
 
       # This section is optional and only needs to be enabled if you plan on distributing
       # your project for others to consume. You will need to create a public and private key
@@ -346,7 +357,7 @@ jobs:
 
       - name: Sign container image
         id: sign_container_image
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request'
         run: |
           echo "${STEPS_PUSH_OUTPUTS_REGISTRY_PATHS}"
           IMAGE_FULL="${STEPS_REGISTRY_CASE_OUTPUTS_LOWERCASE}/${IMAGE_NAME}"
@@ -361,7 +372,9 @@ jobs:
   generate_release:
     name: Generate Release
     needs: build_push
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    # main → full release (changelog.py, make_latest)
+    # testing → pre-release with minimal body (auto-cleaned by clean-prereleases.yml)
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/testing')
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -372,12 +385,14 @@ jobs:
           fetch-depth: 500  # Deep history for commit range in changelog
 
       - name: Install skopeo
+        if: github.ref == 'refs/heads/main'
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q skopeo
 
-      - name: Generate changelog
-        id: changelog
+      - name: Generate changelog (main)
+        id: changelog_main
+        if: github.ref == 'refs/heads/main'
         env:
           IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
           IMAGE_NAME: ${{ github.event.repository.name }}
@@ -403,10 +418,61 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           cat ./changelog.md >> $GITHUB_STEP_SUMMARY
 
+      # changelog.py diffs the two most recent `latest.*` tags and reads the
+      # `dev.hhd.rechunk.info` label — neither makes sense for a per-commit
+      # testing build, so we emit a minimal release body here. Tag is unique
+      # per build so the clean-prereleases job can sweep it without colliding.
+      - name: Generate changelog (testing pre-release)
+        id: changelog_testing
+        if: github.ref == 'refs/heads/testing'
+        env:
+          IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+          IMAGE_NAME: ${{ github.event.repository.name }}
+          HANDWRITTEN: ${{ github.event.inputs.handwritten || '' }}
+        run: |
+          REGISTRY="${IMAGE_REGISTRY,,}"
+          IMAGE="${IMAGE_NAME,,}"
+          SHA_SHORT="${GITHUB_SHA:0:7}"
+          STAMP="$(date -u +%Y%m%d-%H%M%S)"
+          TAG="testing-${STAMP}-${SHA_SHORT}"
+          TITLE="Testing build ${STAMP} (${SHA_SHORT})"
+
+          {
+            echo "# Testing pre-release"
+            echo
+            echo "Automated pre-release of the \`testing\` branch. Same build pipeline as \`:latest\`, but not promoted. **Auto-cleaned after a few days.**"
+            echo
+            echo "**Commit:** \`${GITHUB_SHA}\`  "
+            echo "**Image:** \`${REGISTRY}/${IMAGE}:testing\`  "
+            echo "**Dated tag:** \`${REGISTRY}/${IMAGE}:testing.$(date -u +%Y%m%d)\`"
+            echo
+            echo '## Try it'
+            echo
+            echo '```bash'
+            echo "sudo bootc switch ${REGISTRY}/${IMAGE}:testing"
+            echo '```'
+            echo
+            echo "If something breaks, roll back with \`sudo bootc rollback\`."
+            if [[ -n "${HANDWRITTEN}" ]]; then
+              echo
+              echo '## Notes'
+              echo
+              echo "${HANDWRITTEN}"
+            fi
+          } > ./changelog.md
+
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "title=${TITLE}" >> "$GITHUB_OUTPUT"
+
+          echo "## Pre-release: ${TITLE}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          cat ./changelog.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Create Release
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v2
         with:
-          name: ${{ steps.changelog.outputs.title }}
-          tag_name: ${{ steps.changelog.outputs.tag }}
+          name: ${{ steps.changelog_main.outputs.title || steps.changelog_testing.outputs.title }}
+          tag_name: ${{ steps.changelog_main.outputs.tag || steps.changelog_testing.outputs.tag }}
           body_path: ./changelog.md
-          make_latest: true
+          prerelease: ${{ github.ref != 'refs/heads/main' }}
+          make_latest: ${{ github.ref == 'refs/heads/main' }}

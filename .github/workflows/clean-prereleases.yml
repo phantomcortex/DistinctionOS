@@ -1,0 +1,93 @@
+name: Clean Pre-Releases
+
+# Sweeps out GitHub releases marked `prerelease: true` that are older than
+# PRERELEASE_MAX_AGE_DAYS. The build.yml `generate_release` job creates one
+# of these for every push to `testing`; without this sweeper they
+# accumulate forever and clutter the Releases page.
+#
+# Each release's git tag is deleted along with it (--cleanup-tag) so the
+# tag namespace stays tidy too.
+
+on:
+  schedule:
+    # Daily at 03:17 UTC. Offset from the other cron jobs (04:40 build,
+    # 00:15 clean-images) to avoid contention.
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      max_age_days:
+        description: 'Override max age in days for this run'
+        type: string
+        default: ''
+      dry_run:
+        description: 'Print what would be deleted without deleting'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  PRERELEASE_MAX_AGE_DAYS: 3
+
+jobs:
+  prune:
+    name: Delete stale pre-releases
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Delete pre-releases older than ${{ env.PRERELEASE_MAX_AGE_DAYS }} days
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          MAX_AGE_OVERRIDE: ${{ github.event.inputs.max_age_days }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          set -euo pipefail
+
+          max_age="${MAX_AGE_OVERRIDE:-${PRERELEASE_MAX_AGE_DAYS}}"
+          cutoff=$(date -u -d "${max_age} days ago" +%Y-%m-%dT%H:%M:%SZ)
+          echo "Cutoff: ${cutoff} (anything older with isPrerelease=true)"
+
+          # Fetch *all* releases (paginated by gh) and filter in jq. Limit
+          # 500 is more than enough for several months of daily testing
+          # builds; if we ever exceed it the cron firing daily will catch
+          # the overflow on subsequent runs.
+          mapfile -t stale < <(
+            gh release list --repo "${REPO}" --limit 500 \
+                --json tagName,createdAt,isPrerelease,name \
+              | jq -r --arg cutoff "${cutoff}" '
+                  .[]
+                  | select(.isPrerelease == true)
+                  | select(.createdAt < $cutoff)
+                  | .tagName
+                '
+          )
+
+          if [ "${#stale[@]}" -eq 0 ]; then
+            echo "Nothing to delete."
+            echo "::notice::No stale pre-releases."
+            exit 0
+          fi
+
+          echo "Found ${#stale[@]} stale pre-release(s):"
+          printf '  - %s\n' "${stale[@]}"
+
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "::notice::Dry run — skipping deletion."
+            exit 0
+          fi
+
+          for tag in "${stale[@]}"; do
+            echo "→ Deleting ${tag}"
+            gh release delete "${tag}" --repo "${REPO}" --yes --cleanup-tag
+          done
+
+          echo "::notice::Deleted ${#stale[@]} stale pre-release(s)."
+          {
+            echo "## Stale pre-releases deleted"
+            printf -- '- `%s`\n' "${stale[@]}"
+          } >> "${GITHUB_STEP_SUMMARY}"
