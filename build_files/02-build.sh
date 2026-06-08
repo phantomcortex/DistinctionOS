@@ -545,6 +545,11 @@ log_section "Installing freeworld codec stack"
 # Calls `command dnf5` directly (bypassing the wrapper) but only after
 # validating that the swap pair is in CODEC_SWAP_ALLOWLIST. Any other use
 # of --allowerasing remains blocked by the dnf/dnf5 wrappers above.
+#
+# Note: gstreamer1-plugins-bad-{free,freeworld} are NOT in this list — they
+# are co-installable (bad-free ships the `va`/`festival` plugins; freeworld
+# adds `x265enc`/`de265`/`rtmp`). Swapping them would silently lose `va` and
+# break VAAPI HW decode. They are handled by a plain install below.
 readonly -a CODEC_SWAP_ALLOWLIST=(
   "ffmpeg-free|ffmpeg"
   "libavcodec-free|libavcodec-freeworld"
@@ -557,8 +562,6 @@ readonly -a CODEC_SWAP_ALLOWLIST=(
   "libswscale-free|libswscale-freeworld"
   "mesa-va-drivers|mesa-va-drivers-freeworld"
   "mesa-vulkan-drivers|mesa-vulkan-drivers-freeworld"
-  "gstreamer1-plugins-bad-free|gstreamer1-plugins-bad-freeworld"
-  "gstreamer1-plugins-bad-free-extras|gstreamer1-plugins-bad-freeworld-extras"
 )
 
 dnf_codec_swap() {
@@ -576,53 +579,85 @@ dnf_codec_swap() {
     return 1
   fi
 
+  local err_file
+  err_file=$(mktemp)
+
   # If source isn't installed, fall back to a plain install of the target.
   # This handles bases that already ship the freeworld variant, or where
   # the -free counterpart was never installed.
   if ! rpm -q "$from" &>/dev/null; then
-    if command dnf5 -y install "$to" &>/dev/null; then
+    if command dnf5 -y install "$to" >/dev/null 2>"$err_file"; then
       log_success "  ✓ $to (direct install — no $from present)"
       SUCCEEDED_PACKAGES+=("$to")
+      rm -f "$err_file"
       return 0
     fi
-    log_warning "  ✗ $to (direct install failed)"
+    log_warning "  ✗ $to (direct install failed; dnf says:)"
+    sed 's/^/      /' "$err_file" | head -5
     FAILED_PACKAGES+=("$to")
+    rm -f "$err_file"
     return 1
   fi
 
   # Source installed → swap. --allowerasing lets dnf remove the source
   # if the target's file list overlaps. The allowlist above bounds the
   # blast radius to known-safe codec pairs.
-  if command dnf5 -y swap "$from" "$to" --allowerasing &>/dev/null; then
+  if command dnf5 -y swap "$from" "$to" --allowerasing >/dev/null 2>"$err_file"; then
     log_success "  ✓ $from → $to"
     SUCCEEDED_PACKAGES+=("$to")
+    rm -f "$err_file"
     return 0
   fi
 
-  log_warning "  ✗ $from → $to (swap failed)"
+  log_warning "  ✗ $from → $to (swap failed; dnf says:)"
+  sed 's/^/      /' "$err_file" | head -5
   FAILED_PACKAGES+=("$to")
+  rm -f "$err_file"
   return 1
 }
 
 # Order: top-level meta-packages first (ffmpeg pulls the libav* family),
-# then GPU driver swaps, then the standalone libavcodec/gstreamer adders.
-dnf_codec_swap "ffmpeg-free"                "ffmpeg"
-dnf_codec_swap "mesa-va-drivers"            "mesa-va-drivers-freeworld"
-dnf_codec_swap "mesa-vulkan-drivers"        "mesa-vulkan-drivers-freeworld"
-dnf_codec_swap "libavcodec-free"            "libavcodec-freeworld"
-dnf_codec_swap "gstreamer1-plugins-bad-free" "gstreamer1-plugins-bad-freeworld"
+# then GPU driver swaps. libavcodec-freeworld is a parallel-library package
+# only meaningful when the system runs Fedora's `ffmpeg-free` — Bazzite
+# ships RPMFusion's `ffmpeg` which bundles patent codecs in its own
+# libavcodec, making libavcodec-freeworld redundant (and uninstallable
+# because of file conflicts with the bundled libs). The swap below is a
+# best-effort no-op in that common case; it only does work on bases that
+# actually shipped Fedora's `libavcodec-free`.
+dnf_codec_swap "ffmpeg-free"                "ffmpeg"             || true
+dnf_codec_swap "mesa-va-drivers"            "mesa-va-drivers-freeworld"     || true
+dnf_codec_swap "mesa-vulkan-drivers"        "mesa-vulkan-drivers-freeworld" || true
+dnf_codec_swap "libavcodec-free"            "libavcodec-freeworld" || true
 
-# vvenc and svt-av1 round out the encoder set. They have no -free counterpart
-# (RPMFusion-only), so a plain install is correct — it co-resolves with the
-# freeworld libavcodec just installed, guaranteeing matching sonames.
+# gstreamer1-plugins-bad-freeworld: additive install (NOT a swap — see comment
+# above CODEC_SWAP_ALLOWLIST). Provides x265enc, de265, rtmp. The base bad-free
+# package (which ships `va`/VAAPI) must stay installed.
+log_info "Installing gstreamer1-plugins-bad-freeworld (additive on top of bad-free)"
+gst_err=$(mktemp)
+if command dnf5 -y install gstreamer1-plugins-bad-freeworld >/dev/null 2>"$gst_err"; then
+  log_success "  ✓ gstreamer1-plugins-bad-freeworld"
+  SUCCEEDED_PACKAGES+=("gstreamer1-plugins-bad-freeworld")
+else
+  log_warning "  ✗ gstreamer1-plugins-bad-freeworld (dnf says:)"
+  sed 's/^/      /' "$gst_err" | head -5
+  FAILED_PACKAGES+=("gstreamer1-plugins-bad-freeworld")
+fi
+rm -f "$gst_err"
+
+# vvenc and svt-av1 round out the encoder set. RPMFusion-only (no -free
+# counterpart), so a plain install is correct. Co-resolves with the
+# freeworld libavcodec/ffmpeg just installed.
 log_info "Installing standalone codec libraries (vvenc, svt-av1)"
-if command dnf5 -y install vvenc vvenc-libs svt-av1-libs &>/dev/null; then
+vvenc_err=$(mktemp)
+if command dnf5 -y install vvenc vvenc-libs svt-av1-libs >/dev/null 2>"$vvenc_err"; then
   log_success "  ✓ vvenc, vvenc-libs, svt-av1-libs"
   SUCCEEDED_PACKAGES+=("vvenc" "vvenc-libs" "svt-av1-libs")
 else
-  log_warning "  ✗ vvenc/svt-av1 install failed (codec encoders may be missing)"
+  log_warning "  ✗ vvenc/svt-av1 install failed (dnf says:)"
+  sed 's/^/      /' "$vvenc_err" | head -5
   FAILED_PACKAGES+=("vvenc")
 fi
+rm -f "$vvenc_err"
 
 # ──────────────────────────────────────────────────────────────────────────
 # COPR Repository Packages
@@ -727,7 +762,12 @@ readonly -a CRITICAL_PACKAGES=(
   "mesa-libEGL"
   "mesa-libEGL-devel"
   "ffmpeg"
-  "libavcodec-freeworld"           # codec stack: patent-encumbered encoders
+  # libavcodec-freeworld is intentionally NOT here: when ffmpeg is the
+  # RPMFusion freeworld variant (Bazzite default), it bundles its own
+  # libavcodec with patent codecs, making libavcodec-freeworld redundant
+  # and uninstallable due to file conflicts. The codec validator in
+  # 08-validate.sh asserts the actual encoders exist regardless of which
+  # package provides them.
   "vvenc-libs"                     # H.266/VVC encoder runtime
   "gstreamer1-plugins-bad-freeworld"
   "mutter"
@@ -817,7 +857,7 @@ readonly -a VERSIONLOCK_PACKAGES=(
   "mesa-libEGL"
   "mesa-libEGL-devel"
   "ffmpeg"
-  "libavcodec-freeworld"
+  # libavcodec-freeworld omitted — see CRITICAL_PACKAGES for rationale
   "vvenc"
   "vvenc-libs"
   "gstreamer1-plugins-bad-freeworld"

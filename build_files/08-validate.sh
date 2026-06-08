@@ -267,21 +267,21 @@ if [[ $codec_link_failed -eq 0 && -x /usr/bin/ffmpeg ]]; then
         readonly -a TIER3_ENCODERS=(h264_vaapi hevc_vaapi av1_vaapi)
 
         for enc in "${TIER1_ENCODERS[@]}"; do
-            if grep -qE "^ [VA]\.\.\.\.\. ${enc} " <<<"$ffmpeg_out"; then
+            if grep -qE "^ [VAS][.A-Z]{5} ${enc}( |$)" <<<"$ffmpeg_out"; then
                 log_success "  ✓ encoder: $enc"
             else
                 fail "encoder missing (Tier 1, hard): $enc"
             fi
         done
         for enc in "${TIER2_ENCODERS[@]}"; do
-            if grep -qE "^ [VA]\.\.\.\.\. ${enc} " <<<"$ffmpeg_out"; then
+            if grep -qE "^ [VAS][.A-Z]{5} ${enc}( |$)" <<<"$ffmpeg_out"; then
                 log_success "  ✓ encoder: $enc"
             else
                 log_warning "  ? encoder missing (Tier 2, soft): $enc"
             fi
         done
         for enc in "${TIER3_ENCODERS[@]}"; do
-            if grep -qE "^ [VA]\.\.\.\.\. ${enc} " <<<"$ffmpeg_out"; then
+            if grep -qE "^ [VAS][.A-Z]{5} ${enc}( |$)" <<<"$ffmpeg_out"; then
                 log_success "  ✓ encoder: $enc"
             else
                 fail "encoder missing (Tier 3, hard — AMD GPU encode): $enc"
