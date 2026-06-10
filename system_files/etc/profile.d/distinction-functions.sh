@@ -1,4 +1,7 @@
-#!/bin/sh 
+#!/usr/bin/bash
+# Sourced from /etc/profile (bash login) and /etc/zsh/zshrc (every zsh
+# interactive shell). Never executed under pure sh — bash/zsh-only
+# syntax (`[[ ]]`, `local`, `=~`, `disown`) is intentional.
 alias ls="eza --icons=always --classify=always --mounts"
 alias lf="eza --icons=always --classify=always --long --almost-all --sort=size --git"
 alias lfe="eza --icons=always --classify=always --long --almost-all --sort=size --git --total-size --show-symlinks"
@@ -61,9 +64,8 @@ rm() {
         local NC="\033[0m"
         echo -e "This is a directory containing $CYAN$file_count$NC files."
         echo -n "Are you quite certain you wish to delete it? [y/N] "
-        read -q "REPLY?"
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+        read -r REPLY
+        if [[ "$REPLY" =~ ^[Yy]$ ]]; then
             command rm -rf "$@"
         fi
     else
