@@ -69,7 +69,7 @@ extract() {
 rm() {
     if [[ -d "$1" ]]; then
         local file_count=$(find "$1" -type f | wc -l)
-        local CYAN="\033[031m"
+        local CYAN="\033[36m"
         local NC="\033[0m"
         echo -e "This is a directory containing $CYAN$file_count$NC files."
         echo -n "Are you quite certain you wish to delete it? [y/N] "
@@ -120,7 +120,7 @@ naut() {
         echo "Directory '$target_dir' does not exist."
         return 1
     fi
-    local CYAN="\033[031m"
+    local CYAN="\033[36m"
     local NC="\033[0m"
     nautilus "$target_dir" >/dev/null 2>&1 &
     disown
