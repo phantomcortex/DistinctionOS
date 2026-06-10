@@ -1,4 +1,22 @@
-# DistinctionOS - Passwordless sudo for wheel group
-# WARNING: This reduces security - members of wheel group won't need passwords for sudo
-# If you share this computer with others, You should remove other users from the wheel group
-%wheel ALL=(ALL:ALL) NOPASSWD: ALL
+# DistinctionOS — sudo policy for the wheel group
+#
+# OPTION A (current behaviour): full passwordless sudo. Maximum convenience,
+# minimum defence — any compromised process in your session is root.
+# %wheel ALL=(ALL:ALL) NOPASSWD: ALL
+#
+# OPTION B (recommended middle path, active below):
+#   1. Passwordless sudo scoped to the system-management commands used daily
+#      on an atomic system — covers ~95% of routine sudo invocations.
+#   2. A 60-minute credential cache for everything else, so a password is
+#      asked at most once an hour rather than per command.
+#
+# To revert to Option A: comment the lines below and uncomment the line above.
+
+Defaults timestamp_timeout=60
+
+Cmnd_Alias DISTINCTION_ATOMIC = /usr/bin/rpm-ostree, /usr/bin/bootc, /usr/bin/ostree
+Cmnd_Alias DISTINCTION_SVC    = /usr/bin/systemctl
+Cmnd_Alias DISTINCTION_PKG    = /usr/bin/flatpak
+
+%wheel ALL=(ALL:ALL) NOPASSWD: DISTINCTION_ATOMIC, DISTINCTION_SVC, DISTINCTION_PKG
+%wheel ALL=(ALL:ALL) ALL

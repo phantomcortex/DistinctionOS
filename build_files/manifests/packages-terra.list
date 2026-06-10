@@ -1,0 +1,9 @@
+# repo: terra,terra-extras
+mesa-filesystem
+mesa-va-drivers
+mesa-vulkan-drivers
+mesa-dri-drivers
+mesa-libgbm
+mesa-libEGL
+mesa-libgbm-devel
+mesa-libEGL-devel

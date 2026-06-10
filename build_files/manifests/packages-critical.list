@@ -1,0 +1,26 @@
+# Critical packages validated at the end of 02-build.sh.
+# Missing entries are reported but do not fail the build (steam excepted —
+# see the hard requirement in 02-build.sh).
+zsh
+podman
+steam.i686
+steam-devices
+gnome-shell
+gnome-session
+vulkan-headers
+mesa-vulkan-drivers
+mesa-filesystem
+mesa-dri-drivers
+mesa-libGL
+mesa-libEGL
+mesa-libgbm
+mesa-libgbm-devel
+mesa-libEGL-devel
+ffmpeg
+mutter
+wayland-devel
+ScopeBuddy
+terra-gamescope
+SDL3
+glib2
+glib2-devel

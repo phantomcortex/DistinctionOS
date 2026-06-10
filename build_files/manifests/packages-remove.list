@@ -1,0 +1,6 @@
+# Packages removed from the base image (conflicts or unwanted)
+# One package per line; '#' begins a comment.
+waydroid                                      # Not needed
+sunshine                                      # Not needed
+gnome-shell-extension-compiz-windows-effect   # Not needed
+openssh-askpass                               # Not needed

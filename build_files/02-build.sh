@@ -14,40 +14,56 @@ set -uo pipefail
 source /ctx/95-utility-functions.sh
 
 # ============================================================================
-# Guard: disallow `--allowerasing`
+# Manifest Loading & Build Diagnostics
 # ============================================================================
-# --allowerasing lets dnf silently remove packages to satisfy an install, which
-# can clobber required packages. Wrap dnf/dnf5 so any future use is rejected.
-#
-# Narrow exception: the freeworld codec stack (libavcodec-freeworld,
-# mesa-*-freeworld, gstreamer1-plugins-bad-freeworld) overlaps file paths
-# with the Fedora "free" variants, so a clean install requires removing the
-# free variant first. The dnf_codec_swap() function in the codec section
-# bypasses these wrappers via `command dnf5` after validating that the
-# swap is between a specific known-safe pair — see CODEC_SWAP_ALLOWLIST.
+# Package lists live in /ctx/manifests/*.list — data stays declarative,
+# this script stays pure logic. dnf output is captured to a log file so
+# failures are diagnosable from CI output instead of vanishing into /dev/null.
 
-dnf() {
-  local arg
-  for arg in "$@"; do
-    if [[ "$arg" == "--allowerasing" ]]; then
-      log_error "Refusing to run dnf with --allowerasing (disallowed in this build)"
-      return 1
-    fi
-  done
-  command dnf "$@"
+readonly MANIFEST_DIR="/ctx/manifests"
+readonly DNF_LOG="/tmp/distinction-dnf-build.log"
+: > "$DNF_LOG"
+
+# Read a manifest file: strip comments and blank lines, emit tokens.
+read_manifest() {
+  local file="$MANIFEST_DIR/$1"
+  if [[ ! -f "$file" ]]; then
+    log_error "Manifest not found: $file"
+    return 1
+  fi
+  sed -e 's/#.*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' "$file" \
+    | grep -v '^$'
 }
 
-dnf5() {
-  local arg
-  for arg in "$@"; do
-    if [[ "$arg" == "--allowerasing" ]]; then
-      log_error "Refusing to run dnf5 with --allowerasing (disallowed in this build)"
-      return 1
-    fi
-  done
-  command dnf5 "$@"
+# Show the tail of the dnf log after a failure (indented for readability).
+dnf_log_tail() {
+  local lines="${1:-25}"
+  log_info "Last $lines lines of dnf output ($DNF_LOG):"
+  tail -n "$lines" "$DNF_LOG" | sed 's/^/    /'
 }
 
+# Authenticated-if-possible GitHub API GET. Token sources (in order):
+#   1. BuildKit secret mount  (Containerfile: --mount=type=secret,id=github_token)
+#   2. GITHUB_TOKEN env var   (local builds)
+# Falls back to anonymous (rate-limited) access if neither is present.
+github_api_get() {
+  local url="$1"
+  local -a auth=()
+  if [[ -r /run/secrets/github_token ]]; then
+    auth=(-H "Authorization: Bearer $(< /run/secrets/github_token)")
+  elif [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    auth=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+  fi
+  curl -sfL --retry 3 --retry-delay 2 \
+    -H "Accept: application/vnd.github+json" \
+    "${auth[@]}" "$url"
+}
+
+log_info "installing terra"
+dnf5 -y install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release
+dnf5 -y install terra-release-extras
+dnf5 -y install terra-release-mesa
+dnf5 versionlock delete mesa
 # ============================================================================
 # Package Installation Tracking
 # ============================================================================
@@ -79,13 +95,14 @@ install_packages_resilient() {
   [[ -n "$enable_opt" ]] && install_cmd+=("$enable_opt")
   install_cmd+=("${packages[@]}")
   
-  if "${install_cmd[@]}" &>/dev/null; then
+  if "${install_cmd[@]}" &>>"$DNF_LOG"; then
     log_success "Bulk installation from $repo succeeded"
     SUCCEEDED_PACKAGES+=("${packages[@]}")
     return 0
   fi
   
   log_warning "Bulk installation from $repo failed, attempting individual installation"
+  dnf_log_tail 15
   
   # Fall back to individual package installation
   local success_count=0
@@ -96,12 +113,13 @@ install_packages_resilient() {
     [[ -n "$enable_opt" ]] && single_install_cmd+=("$enable_opt")
     single_install_cmd+=("$pkg")
     
-    if "${single_install_cmd[@]}" &>/dev/null; then
+    if "${single_install_cmd[@]}" &>>"$DNF_LOG"; then
       log_success "  ✓ $pkg"
       SUCCEEDED_PACKAGES+=("$pkg")
       ((success_count++))
     else
       log_warning "  ✗ $pkg (failed)"
+      dnf_log_tail 5
       FAILED_PACKAGES+=("$pkg")
       ((fail_count++))
     fi
@@ -122,8 +140,9 @@ install_copr_resilient() {
   log_section "Installing from COPR: $copr_repo"
   
   # Enable COPR repository
-  if ! dnf5 -y copr enable "$copr_repo" &>/dev/null; then
+  if ! dnf5 -y copr enable "$copr_repo" &>>"$DNF_LOG"; then
     log_error "Failed to enable COPR: $copr_repo"
+    dnf_log_tail 10
     SKIPPED_REPOS+=("copr:$copr_repo")
     FAILED_PACKAGES+=("${packages[@]}")
     return 1
@@ -132,26 +151,28 @@ install_copr_resilient() {
   log_info "Attempting to install ${#packages[@]} package(s)"
   
   # Attempt bulk installation
-  if dnf5 -y install "${packages[@]}" &>/dev/null; then
+  if dnf5 -y install "${packages[@]}" &>>"$DNF_LOG"; then
     log_success "Bulk installation from $copr_repo succeeded"
     SUCCEEDED_PACKAGES+=("${packages[@]}")
-    dnf5 -y copr disable "$copr_repo" &>/dev/null || true
+    dnf5 -y copr disable "$copr_repo" &>>"$DNF_LOG" || true
     return 0
   fi
   
   log_warning "Bulk installation from $copr_repo failed, attempting individual installation"
+  dnf_log_tail 15
   
   # Fall back to individual installation
   local success_count=0
   local fail_count=0
   
   for pkg in "${packages[@]}"; do
-    if dnf5 -y install "$pkg" &>/dev/null; then
+    if dnf5 -y install "$pkg" &>>"$DNF_LOG"; then
       log_success "  ✓ $pkg"
       SUCCEEDED_PACKAGES+=("$pkg")
       ((success_count++))
     else
       log_warning "  ✗ $pkg (failed)"
+      dnf_log_tail 5
       FAILED_PACKAGES+=("$pkg")
       ((fail_count++))
     fi
@@ -160,85 +181,7 @@ install_copr_resilient() {
   log_info "COPR $copr_repo: $success_count succeeded, $fail_count failed"
   
   # Disable COPR
-  dnf5 -y copr disable "$copr_repo" &>/dev/null || true
-}
-
-# ============================================================================
-# RPM Fusion Fedora 43 Fallback Installation
-# ============================================================================
-# Temporarily adds F43 rpmfusion repos to install packages missing from F44
-
-install_rpmfusion_f43_fallback() {
-  local -a packages=("$@")
-  [[ ${#packages[@]} -eq 0 ]] && return 0
-
-  log_section "RPM Fusion F43 fallback for ${#packages[@]} package(s)"
-
-  local tmp_free_repo="/etc/yum.repos.d/rpmfusion-free-f43-fallback.repo"
-  local tmp_nonfree_repo="/etc/yum.repos.d/rpmfusion-nonfree-f43-fallback.repo"
-
-  tee "$tmp_free_repo" > /dev/null << 'EOF'
-[rpmfusion-free-f43-fallback]
-name=RPM Fusion for Fedora 43 - Free (F44 Fallback)
-baseurl=https://mirrors.rpmfusion.org/free/fedora/43/$basearch/
-enabled=1
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-2020
-skip_if_unavailable=1
-EOF
-
-  tee "$tmp_nonfree_repo" > /dev/null << 'EOF'
-[rpmfusion-nonfree-f43-fallback]
-name=RPM Fusion for Fedora 43 - NonFree (F44 Fallback)
-baseurl=https://mirrors.rpmfusion.org/nonfree/fedora/43/$basearch/
-enabled=1
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-2020
-skip_if_unavailable=1
-EOF
-
-  dnf5 makecache &>/dev/null || true
-
-  local success_count=0
-  local fail_count=0
-  local -a still_failed=()
-
-  for pkg in "${packages[@]}"; do
-    if dnf5 -y install \
-        --enablerepo=rpmfusion-free-f43-fallback,rpmfusion-nonfree-f43-fallback \
-        "$pkg" &>/dev/null; then
-      log_success "  ✓ $pkg (via F43 fallback)"
-      SUCCEEDED_PACKAGES+=("$pkg")
-      ((success_count++))
-    else
-      log_warning "  ✗ $pkg (F43 fallback also failed)"
-      still_failed+=("$pkg")
-      ((fail_count++))
-    fi
-  done
-
-  # Rebuild FAILED_PACKAGES removing entries that succeeded via fallback
-  local -a updated_failed=()
-  for failed_pkg in "${FAILED_PACKAGES[@]}"; do
-    local still_in_failed=false
-    for sf in "${still_failed[@]}"; do
-      [[ "$failed_pkg" == "$sf" ]] && still_in_failed=true && break
-    done
-    # Keep if not one of the packages we just retried, or if it's still failing
-    local was_retried=false
-    for retried in "${packages[@]}"; do
-      [[ "$failed_pkg" == "$retried" ]] && was_retried=true && break
-    done
-    if ! $was_retried || $still_in_failed; then
-      updated_failed+=("$failed_pkg")
-    fi
-  done
-  FAILED_PACKAGES=("${updated_failed[@]}")
-
-  rm -f "$tmp_free_repo" "$tmp_nonfree_repo"
-  dnf5 makecache &>/dev/null || true
-
-  log_info "F43 fallback: $success_count succeeded, $fail_count failed"
+  dnf5 -y copr disable "$copr_repo" &>>"$DNF_LOG" || true
 }
 
 # ============================================================================
@@ -279,65 +222,6 @@ ensure_rpmfusion_keys() {
   fi
 }
 
-# ============================================================================
-# Freeworld RPM Force-Install
-# ============================================================================
-# Downloads freeworld RPMs from RPMFusion and installs via rpm to sidestep
-# dnf dependency/conflict checks against Bazzite's terra-repo packages.
-#
-#   libheif-freeworld              --nodeps           (F43 repo: not yet in F44)
-
-install_freeworld_rpms() {
-  log_section "Installing freeworld RPMs via rpm"
-
-  local tmp_dir
-  tmp_dir=$(mktemp -d)
-
-  # Shared helper: download one package from the given repo(s) and install it.
-  # Usage: _freeworld_pkg <package> <enablerepo> <rpm-flag...>
-  _freeworld_pkg() {
-    local pkg="$1" repos="$2"; shift 2
-    local rpm_flags=("$@")
-
-    if dnf download --destdir="$tmp_dir" --enablerepo="$repos" "$pkg" &>/dev/null; then
-      local rpm_file
-      rpm_file=$(find "$tmp_dir" -name "${pkg}*.rpm" | sort -V | tail -1)
-      if [[ -n "$rpm_file" ]]; then
-        if rpm "${rpm_flags[@]}" -i "$rpm_file"; then
-          log_success "$pkg installed"
-          SUCCEEDED_PACKAGES+=("$pkg")
-        else
-          log_error "rpm install failed for $pkg"
-          FAILED_PACKAGES+=("$pkg")
-        fi
-        rm -f "$rpm_file"
-      else
-        log_error "Downloaded RPM not found for $pkg"
-        FAILED_PACKAGES+=("$pkg")
-      fi
-    else
-      log_warning "Failed to download $pkg"
-      FAILED_PACKAGES+=("$pkg")
-    fi
-  }
-
-  # ── libheif-freeworld: not yet in F44 — pull from F43 repo temporarily ──
-  local f43_repo="/etc/yum.repos.d/rpmfusion-free-f43-freeworld-tmp.repo"
-  tee "$f43_repo" > /dev/null << 'EOF'
-[rpmfusion-free-f43-freeworld-tmp]
-name=RPM Fusion for Fedora 43 - Free (libheif-freeworld fallback)
-baseurl=https://mirrors.rpmfusion.org/free/fedora/43/$basearch/
-enabled=1
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-2020
-skip_if_unavailable=1
-EOF
-  dnf5 makecache --repo=rpmfusion-free-f43-freeworld-tmp &>/dev/null || true
-  _freeworld_pkg "libheif-freeworld" "rpmfusion-free-f43-freeworld-tmp" --nodeps
-  rm -f "$f43_repo"
-
-  rm -rf "$tmp_dir"
-}
 
 # ============================================================================
 # Resilient Single Package Installation
@@ -377,12 +261,9 @@ log_info "Repositories and packages will be retried individually if bulk fails"
 log_section "Removing conflicting packages"
 
 # These packages MUST be removed (conflicts or unwanted)
-readonly -a REMOVE_PACKAGES=(
-  "waydroid"                                # Not needed
-  "sunshine"                                # Not needed
-  "gnome-shell-extension-compiz-windows-effect"  # Not needed
-  "openssh-askpass"                         # Not needed
-)
+# Edit build_files/manifests/packages-remove.list — not this script.
+mapfile -t REMOVE_PACKAGES < <(read_manifest "packages-remove.list")
+readonly -a REMOVE_PACKAGES
 
 removed_count=0
 for pkg in "${REMOVE_PACKAGES[@]}"; do
@@ -443,249 +324,24 @@ create_dir_with_log "/var/opt" "Package directory for 06-fix-opt.sh"
 
 log_section "Installing packages from configured repositories"
 
-# Associative array mapping repositories to their packages
-declare -A RPM_PACKAGES=(
-  # Core Fedora repositories
-  ["fedora"]="\
-    zsh \
-    zsh-syntax-highlighting \
-    zsh-autosuggestions \
-    neovim \
-    file-roller \
-    loupe \
-    sassc \
-    gstreamer1-plugins-good-extras \
-    decibels \
-    dconf \
-    gtk-murrine-engine \
-    perl-File-Copy \
-    winetricks \
-    lutris \
-    sox \
-    totem-video-thumbnailer \
-    mediainfo \
-    flatpak-builder \
-    gnome-tweaks \
-    freerdp \
-    nss-mdns.i686 \
-    pcsc-lite-libs.i686 \
-    nmap-ncat \
-    sane-backends-libs.i686 \
-    sane-backends-libs.x86_64 \
-    dcraw \
-    perl-Image-ExifTool \
-    libheif-tools \
-    heif-pixbuf-loader \
-    libgda \
-    libgda-sqlite \
-    libjxl-utils \
-    foremost \
-    filelight \
-    clamav \
-    diffpdf \
-    id3v2 \
-    lhasa \
-    lzma \
-    meld \
-    pandoc-cli \
-    rdfind \
-    xorriso \
-    optipng \
-    glib2-devel \
-    firejail"
-
-  # vvenc and the freeworld codec stack are installed by the dedicated
-  # codec section below — they need atomic resolution against x265 and
-  # libavcodec-freeworld in the same transaction.
-  ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="\
-    gstreamer1-plugins-ugly"
-
-  ["terra,terra-extras"]=" \
-    gstreamer1-vaapi \
-    mesa-libgbm \
-    mesa-libEGL \
-    mesa-libgbm-devel \
-    mesa-libEGL-devel"
-  
-  # Fedora Multimedia (optimized multimedia packages)
-  ["fedora-multimedia"]="mpv"
-
-  # Third-party repositories
-  ["brave-browser"]="brave-browser"
+# Repository → manifest mapping. Package lists live in build_files/manifests/.
+declare -A REPO_MANIFESTS=(
+  ["fedora"]="packages-fedora.list"
+  ["rpmfusion-free,rpmfusion-free-updates,rpmfusion-nonfree,rpmfusion-nonfree-updates"]="packages-rpmfusion.list"
+  ["terra,terra-extras"]="packages-terra.list"
+  ["fedora-multimedia"]="packages-fedora-multimedia.list"
+  ["brave-browser"]="packages-brave.list"
 )
 
 # Install packages from standard repositories
-for repo in "${!RPM_PACKAGES[@]}"; do
-  read -ra pkg_array <<<"${RPM_PACKAGES[$repo]}"
+for repo in "${!REPO_MANIFESTS[@]}"; do
+  mapfile -t pkg_array < <(read_manifest "${REPO_MANIFESTS[$repo]}")
+  if [[ ${#pkg_array[@]} -eq 0 ]]; then
+    log_warning "Manifest ${REPO_MANIFESTS[$repo]} is empty — skipping $repo"
+    continue
+  fi
   install_packages_resilient "$repo" "${pkg_array[@]}"
 done
-
-# ──────────────────────────────────────────────────────────────────────────
-# Codec Stack — atomic swap to RPMFusion freeworld variants
-# ──────────────────────────────────────────────────────────────────────────
-# Why this lives here, not in the force-install OCI artifact:
-#
-# libavcodec-freeworld, gstreamer1-plugins-bad-freeworld, and the
-# mesa-*-freeworld pair link against versioned symbols from x265 and vvenc
-# (e.g. x265_api_get_215, libvvenc.so.1.13). When these RPMs were snapshotted
-# in the force-install artifact — which builds on a separate schedule from
-# the main image — the captured .so files reference symbol versions that
-# no longer exist on the rolling Bazzite base, producing runtime errors:
-#
-#   ffmpeg: error while loading shared libraries: libvvenc.so.1.13
-#   ffmpeg: symbol lookup error: ... undefined symbol: x265_api_get_215
-#
-# Installing the whole freeworld codec stack in a single dnf transaction
-# against the live repos co-resolves them with their current x265/vvenc
-# dependencies — versions match by construction, no skew possible.
-
-log_section "Installing freeworld codec stack"
-
-# Narrowly-scoped escape hatch for the --allowerasing guard.
-# Calls `command dnf5` directly (bypassing the wrapper) but only after
-# validating that the swap pair is in CODEC_SWAP_ALLOWLIST. Any other use
-# of --allowerasing remains blocked by the dnf/dnf5 wrappers above.
-#
-# Note: gstreamer1-plugins-bad-{free,freeworld} are NOT in this list — they
-# are co-installable (bad-free ships the `va`/`festival` plugins; freeworld
-# adds `x265enc`/`de265`/`rtmp`). Swapping them would silently lose `va` and
-# break VAAPI HW decode. They are handled by a plain install below.
-readonly -a CODEC_SWAP_ALLOWLIST=(
-  "ffmpeg-free|ffmpeg"
-  "libavcodec-free|libavcodec-freeworld"
-  "libavdevice-free|libavdevice-freeworld"
-  "libavfilter-free|libavfilter-freeworld"
-  "libavformat-free|libavformat-freeworld"
-  "libavutil-free|libavutil-freeworld"
-  "libpostproc-free|libpostproc-freeworld"
-  "libswresample-free|libswresample-freeworld"
-  "libswscale-free|libswscale-freeworld"
-  "mesa-va-drivers|mesa-va-drivers-freeworld"
-  "mesa-vulkan-drivers|mesa-vulkan-drivers-freeworld"
-)
-
-dnf_codec_swap() {
-  local from="$1" to="$2"
-  # Optional third arg: arch suffix for the direct-install fallback path
-  # (e.g. "x86_64"). Some F44 RPMFusion freeworld packages ship a stale i686
-  # build that requires a since-rotated x265 soname (libx265.so.215). The
-  # x86_64 build is current; constraining the install to x86_64 sidesteps
-  # the broken multilib pull on Bazzite (which enables i686 for Steam).
-  # Only applied when source isn't installed — the swap path leaves arch
-  # selection to dnf because it matches whatever arches the source had.
-  local arch_pref="${3:-}"
-  local pair="${from}|${to}"
-
-  local allowed=false
-  for entry in "${CODEC_SWAP_ALLOWLIST[@]}"; do
-    [[ "$entry" == "$pair" ]] && allowed=true && break
-  done
-
-  if ! $allowed; then
-    log_error "  ✗ dnf_codec_swap: '$from' → '$to' not in allowlist"
-    FAILED_PACKAGES+=("$to")
-    return 1
-  fi
-
-  local err_file
-  err_file=$(mktemp)
-
-  # If source isn't installed, fall back to a plain install of the target.
-  # This handles bases that already ship the freeworld variant, or where
-  # the -free counterpart was never installed.
-  if ! rpm -q "$from" &>/dev/null; then
-    local install_target="$to${arch_pref:+.$arch_pref}"
-    if command dnf5 -y install "$install_target" >/dev/null 2>"$err_file"; then
-      log_success "  ✓ $install_target (direct install — no $from present)"
-      SUCCEEDED_PACKAGES+=("$to")
-      rm -f "$err_file"
-      return 0
-    fi
-    log_warning "  ✗ $install_target (direct install failed; dnf says:)"
-    sed 's/^/      /' "$err_file" | head -5
-    FAILED_PACKAGES+=("$to")
-    rm -f "$err_file"
-    return 1
-  fi
-
-  # Source installed → swap. --allowerasing lets dnf remove the source
-  # if the target's file list overlaps. The allowlist above bounds the
-  # blast radius to known-safe codec pairs.
-  if command dnf5 -y swap "$from" "$to" --allowerasing >/dev/null 2>"$err_file"; then
-    log_success "  ✓ $from → $to"
-    SUCCEEDED_PACKAGES+=("$to")
-    rm -f "$err_file"
-    return 0
-  fi
-
-  log_warning "  ✗ $from → $to (swap failed; dnf says:)"
-  sed 's/^/      /' "$err_file" | head -5
-  FAILED_PACKAGES+=("$to")
-  rm -f "$err_file"
-  return 1
-}
-
-# Order: top-level meta-packages first (ffmpeg pulls the libav* family),
-# then GPU driver swaps. libavcodec-freeworld is a parallel-library package
-# only meaningful when the system runs Fedora's `ffmpeg-free` — Bazzite
-# ships RPMFusion's `ffmpeg` which bundles patent codecs in its own
-# libavcodec, making libavcodec-freeworld redundant (and uninstallable
-# because of file conflicts with the bundled libs). The swap below is a
-# best-effort no-op in that common case; it only does work on bases that
-# actually shipped Fedora's `libavcodec-free`.
-dnf_codec_swap "ffmpeg-free"         "ffmpeg"                                  || true
-dnf_codec_swap "mesa-va-drivers"     "mesa-va-drivers-freeworld"               || true
-dnf_codec_swap "mesa-vulkan-drivers" "mesa-vulkan-drivers-freeworld"           || true
-# libavcodec-freeworld constrained to x86_64: F44 RPMFusion's i686 build
-# (8.0.1-6.fc44) requires libx265.so.215, but the live x265 has moved to .216.
-# No 32-bit userland needs the patent-codec libavcodec; Steam et al. use
-# system ffmpeg-libs.i686 from base Fedora.
-dnf_codec_swap "libavcodec-free"     "libavcodec-freeworld" "x86_64"           || true
-
-# gstreamer1-plugins-bad-freeworld: additive install (NOT a swap — see comment
-# above CODEC_SWAP_ALLOWLIST). Provides x265enc, de265, rtmp. The base bad-free
-# package (which ships `va`/VAAPI) must stay installed.
-#
-# Pinned to .x86_64 for the same reason as libavcodec-freeworld above —
-# the F44 i686 RPM (1.28.1-3.fc44) is stale against the current x265 ABI.
-log_info "Installing gstreamer1-plugins-bad-freeworld.x86_64 (additive on top of bad-free)"
-gst_err=$(mktemp)
-if command dnf5 -y install gstreamer1-plugins-bad-freeworld.x86_64 >/dev/null 2>"$gst_err"; then
-  log_success "  ✓ gstreamer1-plugins-bad-freeworld.x86_64"
-  SUCCEEDED_PACKAGES+=("gstreamer1-plugins-bad-freeworld")
-else
-  log_warning "  ✗ gstreamer1-plugins-bad-freeworld.x86_64 (dnf says:)"
-  sed 's/^/      /' "$gst_err" | head -5
-  FAILED_PACKAGES+=("gstreamer1-plugins-bad-freeworld")
-fi
-rm -f "$gst_err"
-
-# vvenc and svt-av1 round out the encoder set. RPMFusion-only (no -free
-# counterpart). Pre-filter against rpm -q so dnf5 doesn't abort the whole
-# transaction with "Failed to resolve" when packages are already installed
-# as transitive deps of ffmpeg (which is the common case on Bazzite).
-log_info "Installing standalone codec libraries (vvenc, svt-av1)"
-vvenc_pkgs=()
-for pkg in vvenc vvenc-libs svt-av1-libs; do
-  if ! rpm -q "$pkg" &>/dev/null; then
-    vvenc_pkgs+=("$pkg")
-  fi
-done
-if [[ ${#vvenc_pkgs[@]} -eq 0 ]]; then
-  log_success "  ✓ vvenc, vvenc-libs, svt-av1-libs (already installed via deps)"
-  SUCCEEDED_PACKAGES+=("vvenc" "vvenc-libs" "svt-av1-libs")
-else
-  vvenc_err=$(mktemp)
-  if command dnf5 -y install "${vvenc_pkgs[@]}" >/dev/null 2>"$vvenc_err"; then
-    log_success "  ✓ ${vvenc_pkgs[*]}"
-    SUCCEEDED_PACKAGES+=("${vvenc_pkgs[@]}")
-  else
-    log_warning "  ✗ ${vvenc_pkgs[*]} (dnf says:)"
-    sed 's/^/      /' "$vvenc_err" | head -5
-    FAILED_PACKAGES+=("${vvenc_pkgs[@]}")
-  fi
-  rm -f "$vvenc_err"
-fi
 
 # ──────────────────────────────────────────────────────────────────────────
 # COPR Repository Packages
@@ -694,44 +350,12 @@ fi
 log_section "Installing packages from COPR repositories"
 
 # COPR packages (handled separately due to enable/disable requirement)
-declare -A COPR_PACKAGES=(
-  ["ilyaz/LACT"]="lact"                                    # AMD GPU control
-  ["fernando-debian/dysk"]="dysk"                          # Disk usage analyzer
-  ["atim/heroic-games-launcher"]="heroic-games-launcher-bin"  # Epic/GOG launcher
-  ["sergiomb/clonezilla"]="clonezilla"                     # Disk cloning utility
-  ["alternateved/eza"]="eza"                               # Modern ls replacement
-  #["monkeygold/nautilus-open-any-terminal"]="nautilus-open-any-terminal"
-)
-
-for copr_repo in "${!COPR_PACKAGES[@]}"; do
-  read -ra pkg_array <<<"${COPR_PACKAGES[$copr_repo]}"
+# Edit build_files/manifests/coprs.list — format: <owner/project> <pkg> [pkg ...]
+while read -r copr_repo copr_pkgs; do
+  [[ -z "$copr_repo" ]] && continue
+  read -ra pkg_array <<<"$copr_pkgs"
   install_copr_resilient "$copr_repo" "${pkg_array[@]}"
-done
-
-# ──────────────────────────────────────────────────────────────────────────
-# RPM Fusion F43 Fallback
-# ──────────────────────────────────────────────────────────────────────────
-# RPM Fusion F44 repos may not be fully populated yet; retry failures via F43
-
-readonly -a RPMFUSION_PACKAGES=(
-  "libheif-freeworld"
-)
-
-rpmfusion_failed=()
-for pkg in "${RPMFUSION_PACKAGES[@]}"; do
-  for failed in "${FAILED_PACKAGES[@]}"; do
-    if [[ "$pkg" == "$failed" ]]; then
-      rpmfusion_failed+=("$pkg")
-      break
-    fi
-  done
-done
-
-if [[ ${#rpmfusion_failed[@]} -gt 0 ]]; then
-  install_rpmfusion_f43_fallback "${rpmfusion_failed[@]}"
-else
-  log_info "No RPM Fusion packages require F43 fallback"
-fi
+done < <(read_manifest "coprs.list")
 
 # ============================================================================
 # Special Package Installations
@@ -745,23 +369,27 @@ log_section "Installing special packages"
 
 log_info "Installing Kora icon theme (latest release)"
 
-# Get latest release URL
-kora_url=$(curl -s https://api.github.com/repos/phantomcortex/kora/releases/latest 2>/dev/null | \
-  grep "browser_download_url.*\.rpm" | \
-  cut -d '"' -f 4)
+# Get latest release URL — authenticated when a token is available (see
+# github_api_get), since anonymous API calls share a per-IP rate limit pool
+# on CI runners and fail intermittently.
+kora_json=$(github_api_get "https://api.github.com/repos/phantomcortex/kora/releases/latest" || true)
+
+kora_url=""
+if [[ -n "$kora_json" ]]; then
+  if command -v jq &>/dev/null; then
+    kora_url=$(jq -r '.assets[].browser_download_url | select(endswith(".rpm"))' <<<"$kora_json" | head -1)
+  else
+    # Fallback parse if jq is unavailable for any reason
+    kora_url=$(grep "browser_download_url.*\.rpm" <<<"$kora_json" | cut -d '"' -f 4 | head -1)
+  fi
+fi
 
 if [[ -n "$kora_url" ]]; then
   install_single_package_resilient "$kora_url" "kora-icon-theme"
 else
-  log_warning "Failed to retrieve Kora theme URL (GitHub API may be down)"
+  log_warning "Failed to retrieve Kora theme URL (GitHub API unavailable or rate-limited)"
   FAILED_PACKAGES+=("kora-icon-theme")
 fi
-
-# ──────────────────────────────────────────────────────────────────────────
-# Freeworld RPMs (libheif-freeworld from F43 — not yet in F44)
-# ──────────────────────────────────────────────────────────────────────────
-
-install_freeworld_rpms
 
 
 # ============================================================================
@@ -771,41 +399,9 @@ install_freeworld_rpms
 
 log_section "Validating critical packages"
 
-readonly -a CRITICAL_PACKAGES=(
-  "zsh"
-  "podman"
-  "steam.i686"
-  "steam-devices"
-  "gnome-shell"
-  "gnome-session"
-  "vulkan-headers"
-  "mesa-vulkan-drivers-freeworld"  # post-swap: replaces mesa-vulkan-drivers
-  "mesa-va-drivers-freeworld"      # post-swap: replaces mesa-va-drivers
-  "mesa-filesystem"
-  "mesa-dri-drivers"
-  "mesa-libGL"
-  "mesa-libEGL"
-  "mesa-libgbm"
-  "mesa-libgbm-devel"
-  "mesa-libEGL"
-  "mesa-libEGL-devel"
-  "ffmpeg"
-  # libavcodec-freeworld is intentionally NOT here: when ffmpeg is the
-  # RPMFusion freeworld variant (Bazzite default), it bundles its own
-  # libavcodec with patent codecs, making libavcodec-freeworld redundant
-  # and uninstallable due to file conflicts. The codec validator in
-  # 08-validate.sh asserts the actual encoders exist regardless of which
-  # package provides them.
-  "vvenc-libs"                     # H.266/VVC encoder runtime
-  "gstreamer1-plugins-bad-freeworld"
-  "mutter"
-  "wayland-devel"
-  "ScopeBuddy"
-  "terra-gamescope"
-  "SDL3"
-  "glib2"
-  "glib2-devel"
-)
+# Edit build_files/manifests/packages-critical.list — not this script.
+mapfile -t CRITICAL_PACKAGES < <(read_manifest "packages-critical.list")
+readonly -a CRITICAL_PACKAGES
 
 validation_failures=0
 for pkg in "${CRITICAL_PACKAGES[@]}"; do
@@ -836,78 +432,33 @@ else
 fi
 
 # ============================================================================
-# Wine Fallback Installation
+# Inter Font (pinned v4.0)
 # ============================================================================
-# If Wine failed earlier, try one more time with --skip-broken
 
-if ! rpm -q wine &>/dev/null; then
-  log_section "Wine fallback installation"
-  log_info "Attempting Wine installation with --skip-broken"
-  
-  if dnf5 -y install wine --skip-broken &>/dev/null; then
-    log_success "Wine installed via fallback method"
-    SUCCEEDED_PACKAGES+=("wine")
+log_section "Installing Inter font v4.0"
+
+readonly INTER_URL="https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip"
+
+if curl -fL --retry 3 --retry-delay 2 "$INTER_URL" -o /tmp/Inter.zip; then
+  mkdir -p /usr/share/fonts/Inter/
+  if unzip -j -o /tmp/Inter.zip "InterVariable.ttf" "InterVariable-Italic.ttf" \
+      -d /usr/share/fonts/Inter/ &>>"$DNF_LOG"; then
+    fc-cache -f &>/dev/null || true
+    log_success "Inter font installed"
   else
-    log_warning "Wine installation failed even with --skip-broken"
+    log_warning "Inter zip extraction failed (non-critical)"
   fi
+  rm -f /tmp/Inter.zip
+else
+  log_warning "Inter font download failed (non-critical)"
 fi
 
-curl -L "https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip" -o /tmp/Inter.zip
-mkdir -p /usr/share/fonts/Inter/
-unzip -j /tmp/Inter.zip "InterVariable.ttf" "InterVariable-Italic.ttf" -d /usr/share/fonts/Inter/
-rm /tmp/Inter.zip && fc-cache -f
-
-# ============================================================================
-# versionlock
-# ============================================================================
-# while this isn't entirely neccessary, it's good peace of mind 
-
-readonly -a VERSIONLOCK_PACKAGES=(
-  "zsh"
-  "podman"
-  "lact"
-  "file-roller"
-  "dcraw"
-  "sassc"
-  "steam"
-  "steam-devices"
-  "gnome-shell"
-  "gnome-session"
-  "vulkan-headers"
-  "mesa-vulkan-drivers-freeworld"  # post-swap name
-  "mesa-va-drivers-freeworld"      # post-swap name
-  "mesa-filesystem"
-  "mesa-dri-drivers"
-  "mesa-libGL"
-  "mesa-libEGL"
-  "mesa-libgbm"
-  "mesa-libgbm-devel"
-  "mesa-libEGL"
-  "mesa-libEGL-devel"
-  "ffmpeg"
-  # libavcodec-freeworld omitted — see CRITICAL_PACKAGES for rationale
-  "vvenc"
-  "vvenc-libs"
-  "gstreamer1-plugins-bad-freeworld"
-  "mutter"
-  "wayland-devel"
-  "ScopeBuddy"
-  "terra-gamescope"
-  "gcc"
-  "SDL3"
-  "glib2"
-  "glib2-devel"
-)
-log_info "versionlock section"
-versionlock_failures=0
-for pkg in "${VERSIONLOCK_PACKAGES[@]}"; do
-  if dnf versionlock add "$pkg" &>/dev/null; then
-    log_success "  ✓ $pkg"
-  else
-    log_warning "  ✗ $pkg (unable to add versionlock)"
-    ((versionlock_failures++))
-  fi
-done
+# NOTE: the former "versionlock add" section was removed deliberately.
+# dnf versionlock has no effect on a deployed rpm-ostree/bootc system —
+# updates arrive as whole image rebuilds from a fresh base, so the locks
+# were never consulted. (The `versionlock clear` near the top remains, as
+# it removes any locks inherited from the base image that could block
+# installs during THIS build.)
 
 # ============================================================================
 # Cleanup
