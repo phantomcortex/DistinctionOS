@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/usr/bin/bash
 set -euo pipefail
 
 # ============================================================================
@@ -8,9 +8,9 @@ set -euo pipefail
 # Source utility functions
 source /ctx/95-utility-functions.sh
 
-for pkg in kernel kernel-core kernel-modules kernel-devel-matched; do 
-  rpm --erase $pkg --nodeps
-done 
+for pkg in kernel kernel-core kernel-modules kernel-devel-matched; do
+  rpm --erase "$pkg" --nodeps
+done
 
 pushd /usr/lib/kernel/install.d 
 printf '%s\n' '#!/bin/sh' 'exit 0' > 05-rpmostree.install 

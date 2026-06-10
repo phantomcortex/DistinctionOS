@@ -276,11 +276,6 @@ log_info "Removing Bazzite dnf wrapper"
 
 log_header "System configuration phase complete"
 
-log_info "Configuration summary:"
-echo "  • Default shell: ZSH"
-echo "  • Just recipes: Integrated"
-echo "  • Applications: Customized"
-echo "  • System caches: Updated"
-echo "  • Unwanted files: Removed"
+log_success "System configuration complete"
 
 exit 0

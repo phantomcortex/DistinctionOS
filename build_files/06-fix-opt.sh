@@ -28,12 +28,12 @@ for dir in /var/opt/*/; do
   [ -d "$dir" ] || continue
   dirname=$(basename "$dir")
   
-  echo "  Processing: $dirname"
+  log_info "Processing: $dirname"
   mv "$dir" "/usr/lib/opt/$dirname"
   echo "L+ /var/opt/$dirname - - - - /usr/lib/opt/$dirname" >> /usr/lib/tmpfiles.d/distinction-opt-fix.conf
 done
 
 log_success "/opt persistence configured"
-echo "  ℹ Packages in /opt will persist across reboots via tmpfiles.d"
+log_info "Packages in /opt will persist across reboots via tmpfiles.d"
 
 exit 0
