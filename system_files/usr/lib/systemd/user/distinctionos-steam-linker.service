@@ -1,6 +1,6 @@
 [Unit]
 Description=DistinctionOS Steam Library Symlinker
-Documentation=https://github.com/yourusername/DistinctionOS
+Documentation=https://github.com/phantomcortex/DistinctionOS
 After=default.target
 
 # Only run if Steam appears to be installed

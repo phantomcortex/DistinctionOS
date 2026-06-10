@@ -111,6 +111,25 @@ else
 fi
 
 # ──────────────────────────────────────────────────────────────────────────
+# Nautilus Display Name
+# ──────────────────────────────────────────────────────────────────────────
+# Preference: show the file manager as "Nautilus" rather than the upstream
+# "Files" in en-US locales. Patching the shipped .desktop here means we
+# don't have to maintain a 320-line full-file override under system_files/
+# that drifts against upstream translations on every nautilus release.
+# Localised Name[xx]= entries are left alone (they remain the localised
+# word for "Files"), matching the prior override's behaviour.
+
+readonly NAUTILUS_DESKTOP="/usr/share/applications/org.gnome.Nautilus.desktop"
+if [[ -f "$NAUTILUS_DESKTOP" ]]; then
+  log_info "Renaming Nautilus to 'Nautilus' (C-locale)"
+  sed -i 's/^Name=Files$/Name=Nautilus/' "$NAUTILUS_DESKTOP"
+  log_success "Nautilus display name updated"
+else
+  log_info "Nautilus not installed, skipping display-name override"
+fi
+
+# ──────────────────────────────────────────────────────────────────────────
 # Winetricks Debug Output Suppression
 # ──────────────────────────────────────────────────────────────────────────
 # Issue: Winetricks GUI produces excessive Wine debug messages

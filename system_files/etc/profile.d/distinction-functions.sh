@@ -13,19 +13,7 @@ mkcd() {
     
     if mkdir -p "$1"; then
         cd "$1" || return 1
-        
-        # Shell-specific colour handling
-        case "$SHELL_TYPE" in
-            zsh)
-                print -P "%F{cyan}✓%f Entered: %F{cyan}$1%f"
-                ;;
-            bash)
-                echo -e "\033[36m\033[0m Entered: \033[36m$1\033[0m"
-                ;;
-            *)
-                printf "\033[36m\033[0m Entered: \033[36m%s\033[0m\n" "$1"
-                ;;
-        esac
+        printf "\033[36m\033[0m Entered: \033[36m%s\033[0m\n" "$1"
     else
         echo "Failed to create directory: $1" >&2
         return 1
