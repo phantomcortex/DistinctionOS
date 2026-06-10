@@ -1,0 +1,152 @@
+name: Build OCI artifact (internal)
+
+# Internal reusable workflow. Shared body of build-cache.yml and
+# build-force-install.yml — those workflows are thin callers that pass
+# the artifact-specific inputs (image, builder context, version-check
+# tag) and inherit secrets. Not meant to be triggered directly; invoke a
+# caller workflow instead.
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: 'Full registry path of the artifact to publish (no tag).'
+        type: string
+        required: true
+      builder_dir:
+        description: 'Directory containing the artifact Containerfile.'
+        type: string
+        required: true
+      version_check_tag:
+        description: 'Local docker tag for the version-check stage build.'
+        type: string
+        required: true
+      max_age_days:
+        description: 'Rebuild if the existing artifact is older than this many days.'
+        type: number
+        default: 15
+      force_rebuild:
+        description: 'Rebuild even if versions match and age <= max_age_days.'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Install tooling
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q skopeo jq
+
+      - name: Log in to GHCR
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Inspect published artifact
+        id: current
+        env:
+          IMAGE: ${{ inputs.image }}
+        run: |
+          if skopeo inspect "docker://${IMAGE}:latest" > current.json 2>/dev/null; then
+            jq -S -c '.Labels["dev.distinctionos.versions"] // "{}" | fromjson? // {}' current.json > current-versions.json
+            jq -r '.Created' current.json > current-created.txt
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Current artifact:"
+            echo "  Created: $(cat current-created.txt)"
+            echo "  Versions: $(cat current-versions.json)"
+          else
+            echo '{}' > current-versions.json
+            echo '1970-01-01T00:00:00Z' > current-created.txt
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No artifact published at ${IMAGE}:latest yet"
+          fi
+
+      - name: Query upstream versions
+        id: upstream
+        env:
+          BUILDER_DIR: ${{ inputs.builder_dir }}
+          CHECK_TAG: ${{ inputs.version_check_tag }}
+        run: |
+          docker build \
+            --target version-check \
+            -t "${CHECK_TAG}" \
+            -f "${BUILDER_DIR}/Containerfile" \
+            "${BUILDER_DIR}"
+          docker run --rm "${CHECK_TAG}" > upstream-versions.json
+          echo "Upstream versions: $(cat upstream-versions.json)"
+
+      - name: Decide whether to rebuild
+        id: decide
+        env:
+          MAX_AGE_DAYS: ${{ inputs.max_age_days }}
+        run: |
+          BUILD=false
+          REASON=""
+
+          if [[ "${{ inputs.force_rebuild }}" == "true" ]]; then
+            BUILD=true; REASON="force_rebuild input is true"
+          elif [[ "${{ steps.current.outputs.found }}" == "false" ]]; then
+            BUILD=true; REASON="no existing artifact"
+          elif ! diff -q current-versions.json upstream-versions.json >/dev/null 2>&1; then
+            BUILD=true; REASON="upstream versions changed"
+            echo "Diff (current → upstream):"
+            diff -u current-versions.json upstream-versions.json || true
+          else
+            NOW=$(date +%s)
+            CREATED=$(date -d "$(cat current-created.txt)" +%s)
+            AGE_DAYS=$(( (NOW - CREATED) / 86400 ))
+            if [[ $AGE_DAYS -gt $MAX_AGE_DAYS ]]; then
+              BUILD=true; REASON="artifact is ${AGE_DAYS}d old (max ${MAX_AGE_DAYS}d)"
+            else
+              REASON="artifact is ${AGE_DAYS}d old, versions match; skipping"
+            fi
+          fi
+
+          echo "build=${BUILD}" >> "$GITHUB_OUTPUT"
+          echo "reason=${REASON}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Decision: build=${BUILD} (${REASON})"
+
+      - name: Prepare build metadata
+        if: steps.decide.outputs.build == 'true'
+        id: meta
+        run: |
+          VERSIONS=$(jq -c '.' upstream-versions.json)
+          DATE=$(date -u +%Y%m%d)
+          echo "versions=${VERSIONS}" >> "$GITHUB_OUTPUT"
+          echo "date=${DATE}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        if: steps.decide.outputs.build == 'true'
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
+
+      - name: Build and push artifact
+        if: steps.decide.outputs.build == 'true'
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
+        with:
+          context: ${{ inputs.builder_dir }}
+          file: ${{ inputs.builder_dir }}/Containerfile
+          target: artifact
+          push: true
+          tags: |
+            ${{ inputs.image }}:latest
+            ${{ inputs.image }}:${{ steps.meta.outputs.date }}
+          labels: |
+            dev.distinctionos.versions=${{ steps.meta.outputs.versions }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Report skip
+        if: steps.decide.outputs.build == 'false'
+        run: echo "::notice::No rebuild needed — ${{ steps.decide.outputs.reason }}"
