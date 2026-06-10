@@ -21,4 +21,3 @@ popd
 dnf5 -y copr enable bieszczaders/kernel-cachyos-lto
 dnf5 -y install kernel-cachyos-lto kernel-cachyos-lto-devel-matched
 dnf5 -y copr disable bieszczaders/kernel-cachyos-lto
-dnf5 versionlock add kernel-cachyos-lto

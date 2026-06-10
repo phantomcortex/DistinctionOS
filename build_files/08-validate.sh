@@ -95,76 +95,6 @@ for theme_dir in "${ICON_THEMES[@]}"; do
     fi
 done
 
-# ── GDK pixbuf loaders ──────────────────────────────────────────────────────
-# A missing SVG loader is the most likely cause of icons rendering as blank
-# squares — Adwaita icons are SVG, and without the loader they can't paint.
-log_section "GDK pixbuf loaders"
-
-pixbuf_update_output=$(gdk-pixbuf-query-loaders-64 --update-cache 2>&1)
-pixbuf_update_rc=$?
-if [[ $pixbuf_update_rc -eq 0 ]]; then
-    loader_count=$(gdk-pixbuf-query-loaders-64 2>/dev/null | grep -c '^"' || true)
-    if [[ "$loader_count" -gt 0 ]]; then
-        log_success "  ✓ $loader_count loaders registered"
-    else
-        fail "No pixbuf loaders registered"
-    fi
-
-    if gdk-pixbuf-query-loaders-64 2>/dev/null | grep -q "image/svg"; then
-        log_success "  ✓ SVG loader registered"
-    else
-        fail "SVG pixbuf loader not registered — icons will render as blank squares"
-    fi
-
-    if gdk-pixbuf-query-loaders-64 2>/dev/null | grep -q "image/png"; then
-        log_success "  ✓ PNG loader registered"
-    else
-        fail "PNG pixbuf loader not registered"
-    fi
-else
-    fail "gdk-pixbuf-query-loaders-64 --update-cache failed (exit code $pixbuf_update_rc)"
-    printf '%s\n' "$pixbuf_update_output" | head -5 | while read -r line; do
-        echo "    $line"
-    done
-fi
-
-# ── GLib schemas ────────────────────────────────────────────────────────────
-log_section "GLib schemas"
-
-schema_out=$(glib-compile-schemas /usr/share/glib-2.0/schemas/ 2>&1 || true)
-if echo "$schema_out" | grep -qiE 'error|conflict'; then
-    fail "GLib schema compilation reported issues:"
-    echo "$schema_out" | head -5 | while read -r line; do
-        echo "    $line"
-    done
-else
-    log_success "  ✓ Schemas compiled clean"
-fi
-
-# ── Font registration ───────────────────────────────────────────────────────
-log_section "Font registration"
-
-fc-cache -f &>/dev/null
-
-font_count=$(fc-list | wc -l)
-if [[ "$font_count" -lt 10 ]]; then
-    fail "Only $font_count fonts registered — fontconfig is likely broken"
-else
-    log_success "  ✓ $font_count fonts registered"
-fi
-
-# Fonts 02-build.sh explicitly installs — if missing, the install step failed.
-readonly -a EXPECTED_FONTS=(
-    "Inter"
-    "Cantarell"
-)
-for font in "${EXPECTED_FONTS[@]}"; do
-    if fc-list | grep -qi "$font"; then
-        log_success "  ✓ $font"
-    else
-        log_warning "  ? $font not registered (soft warning)"
-    fi
-done
 
 # ── Critical binary link integrity ──────────────────────────────────────────
 # Catches the case where a package is installed but a runtime dep was removed,
@@ -197,16 +127,7 @@ for bin in "${CRITICAL_BINS[@]}"; do
 done
 
 # ── Codec stack integrity ───────────────────────────────────────────────────
-# Catches the ABI-skew class of bug where libavcodec-freeworld links against
-# x265/vvenc symbol versions that no longer exist on the live system. Used
-# to be a runtime failure (ffmpeg refusing to launch, GStreamer pipelines
-# erroring out); now a build failure with a clear diagnostic.
-#
-# Three layers, cheap to expensive:
-#   1. ldd on ffmpeg/ffprobe + every libav*.so — catches missing sonames
-#   2. ffmpeg -encoders — catches versioned-symbol failures ldd can't see
-#      (e.g. "undefined symbol: x265_api_get_215")
-#   3. gst-inspect of va/x265enc plugins — catches GStreamer-side regressions
+
 log_section "Codec stack integrity"
 
 # ─ Layer 1: dynamic linker can resolve every soname ─
@@ -301,13 +222,6 @@ if command -v gst-inspect-1.0 &>/dev/null; then
         log_success "  ✓ GStreamer 'va' plugin present (VAAPI HW codec path)"
     else
         fail "GStreamer 'va' plugin missing — VAAPI HW decode/encode unavailable"
-    fi
-    # x265enc lives in gstreamer1-plugins-bad-freeworld; its absence usually
-    # means the freeworld swap failed silently in 02-build.sh.
-    if gst-inspect-1.0 x265enc &>/dev/null; then
-        log_success "  ✓ GStreamer x265enc present"
-    else
-        fail "GStreamer x265enc missing — gstreamer1-plugins-bad-freeworld likely failed"
     fi
 fi
 

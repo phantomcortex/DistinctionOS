@@ -87,29 +87,6 @@ else
   log_error "Universal Blue justfile not found at $UBLUE_JUSTFILE"
 fi
 
-# Hide incompatible Bazzite just recipes by prefixing with underscore
-# Reason: Certain Bazzite recipes conflict with DistinctionOS configuration
-log_section "Hiding incompatible Bazzite recipes"
-
-readonly -a INCOMPATIBLE_RECIPES=(
-  "install-coolercontrol"  # Conflicts with our thermal management
-  #"install-openrgb"        # Conflicts with our RGB control setup
-)
-
-for recipe in "${INCOMPATIBLE_RECIPES[@]}"; do
-  log_info "Hiding recipe: $recipe"
-  
-  # Find which just file contains this recipe
-  recipe_file=$(grep -l "^$recipe:" /usr/share/ublue-os/just/*.just 2>/dev/null || true)
-  
-  if [[ -n "$recipe_file" ]]; then
-    # Prefix recipe name with underscore to hide it
-    sed -i "s/^$recipe:/_$recipe:/" "$recipe_file"
-    log_success "Recipe '$recipe' hidden"
-  else
-    log_warning "Recipe '$recipe' not found in any just file"
-  fi
-done
 
 # ============================================================================
 # Application Customization
@@ -171,9 +148,6 @@ fi
 # Refresh system caches after modifications
 
 log_section "Updating system caches"
-
-#some of the steps here are excessively error prone, thus breaking the build constantly
-set +eu
 
 # Icon cache refresh (required after Kora theme installation)
 log_info "Updating icon cache"
@@ -250,7 +224,7 @@ for desktop_file in "${WINE_DESKTOP_FILES[@]}"; do
   desktop_path="/usr/share/applications/$desktop_file"
   if [[ -e "$desktop_path" ]]; then
     rm -f "$desktop_path"
-    ((wine_removed++))
+    wine_removed=$((wine_removed + 1))
   fi
 done
 
@@ -284,7 +258,7 @@ for file_path in "${!BAZZITE_FILES[@]}"; do
     log_info "Removing: $file_path"
     log_info "  Reason: $reason"
     rm -f "$file_path"
-    ((bazzite_removed++))
+    bazzite_removed=$((bazzite_removed + 1))
   fi
 done
 
