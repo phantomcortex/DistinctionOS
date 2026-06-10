@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 # =============================================================================
 # GNOME Shell Extensions — Intelligent Installer

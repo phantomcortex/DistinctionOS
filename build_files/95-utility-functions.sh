@@ -242,21 +242,6 @@ run_silent_with_log() {
 # Counter Functions
 # ============================================================================
 
-# Initialize a counter variable
-# Usage: counter_init
-# Returns: 0
-counter_init() {
-  echo "0"
-}
-
-# Increment a counter
-# Usage: count=$(counter_increment "$count")
-# Returns: incremented value
-counter_increment() {
-  local current="${1:-0}"
-  echo $((current + 1))
-}
-
 # Display counter result with appropriate singular/plural
 # Usage: counter_display "$count" "item" "items" "action"
 # Example: counter_display "$removed" "file" "files" "removed"
@@ -301,6 +286,32 @@ get_kernel_version() {
   dnf5 repoquery --installed --queryformat='%{evr}.%{arch}' kernel 2>/dev/null | head -1
 }
 
+# ============================================================================
+# Guard: disallow `--allowerasing`
+# ============================================================================
+# --allowerasing lets dnf silently remove packages to satisfy an install, which
+# can clobber required packages. Wrap dnf/dnf5 so any future use is rejected.
+dnf() {
+  local arg
+  for arg in "$@"; do
+    if [[ "$arg" == "--allowerasing" ]]; then
+      log_error "Refusing to run dnf with --allowerasing (disallowed in this build)"
+      return 1
+    fi
+  done
+  command dnf "$@"
+}
+
+dnf5() {
+  local arg
+  for arg in "$@"; do
+    if [[ "$arg" == "--allowerasing" ]]; then
+      log_error "Refusing to run dnf5 with --allowerasing (disallowed in this build)"
+      return 1
+    fi
+  done
+  command dnf5 "$@"
+}
 # ============================================================================
 # Script Lifecycle Functions
 # ============================================================================

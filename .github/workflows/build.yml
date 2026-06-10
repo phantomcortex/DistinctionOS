@@ -16,7 +16,9 @@ on:
       - '**/claude.md'
       - 'repo_files/**'
       - 'docs/**'
-      - 'system_files/**' # modifcations to system files are usually small and don't warrant a full rebuild
+      # NOTE: system_files/** deliberately NOT ignored — those files are
+      # COPY'd into the image, so changes to them MUST trigger a rebuild
+      # or they sit undeployed until the next scheduled build.
   workflow_dispatch:
     inputs:
       handwritten:
@@ -195,9 +197,16 @@ jobs:
             | jq -r '.Labels["org.opencontainers.image.version"] // empty' \
             | grep -oP '^\d+' || echo "44")
           VERSION_DATE=$(date -u +%Y%m%d)
+          # GITHUB_TOKEN as a build secret: lets build scripts make
+          # authenticated GitHub API calls (e.g. Kora release lookup) without
+          # the anonymous per-IP rate limit shared across GHA runners.
+          # Secret mounts never persist in image layers, unlike --build-arg.
+          install -m 0600 /dev/null /tmp/.ghtoken
+          printf '%s' "${{ secrets.GITHUB_TOKEN }}" > /tmp/.ghtoken
           # Builds image in root store as root, to be picked up by Rechunker
           sudo buildah bud \
             --format docker \
+            --secret id=github_token,src=/tmp/.ghtoken \
             --tag "localhost/${IMAGE_NAME}:${{ env.DEFAULT_TAG }}" \
             --build-arg IMAGE_NAME="${IMAGE_NAME}" \
             --build-arg IMAGE_VENDOR="${{ github.repository_owner }}" \
@@ -206,6 +215,7 @@ jobs:
             --build-arg VERSION_DATE="${VERSION_DATE}" \
             --file Containerfile \
             .
+          rm -f /tmp/.ghtoken
 
       - name: Remove source images
         run: |

@@ -23,10 +23,6 @@
 #   audacity-freeworld | dnf            | rpmfusion-free,rpmfusion-free-updates
 
 mutter-devel                      | dnf            | terra
-libavcodec-freeworld              | dnf            | rpmfusion-free,rpmfusion-free-updates
 gstreamer1-plugins-bad-freeworld  | dnf            | rpmfusion-free,rpmfusion-free-updates
-mesa-vulkan-drivers-freeworld     | dnf            | rpmfusion-free,rpmfusion-free-updates
-mesa-va-drivers-freeworld         | dnf            | rpmfusion-free,rpmfusion-free-updates
-vvenc-libs                        | dnf            | rpmfusion-free,rpmfusion-free-updates
 gnome-rounded-blur                | github-build   | kancko/gnome-rounded-blur
 glycin-fix-bc7                    | github-release | phantomcortex/glycin

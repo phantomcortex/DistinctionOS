@@ -1,4 +1,7 @@
-#!/bin/sh 
+#!/usr/bin/bash
+# Sourced from /etc/profile (bash login) and /etc/zsh/zshrc (every zsh
+# interactive shell). Never executed under pure sh — bash/zsh-only
+# syntax (`[[ ]]`, `local`, `=~`, `disown`) is intentional.
 alias ls="eza --icons=always --classify=always --mounts"
 alias lf="eza --icons=always --classify=always --long --almost-all --sort=size --git"
 alias lfe="eza --icons=always --classify=always --long --almost-all --sort=size --git --total-size --show-symlinks"
@@ -13,19 +16,7 @@ mkcd() {
     
     if mkdir -p "$1"; then
         cd "$1" || return 1
-        
-        # Shell-specific colour handling
-        case "$SHELL_TYPE" in
-            zsh)
-                print -P "%F{cyan}✓%f Entered: %F{cyan}$1%f"
-                ;;
-            bash)
-                echo -e "\033[36m\033[0m Entered: \033[36m$1\033[0m"
-                ;;
-            *)
-                printf "\033[36m\033[0m Entered: \033[36m%s\033[0m\n" "$1"
-                ;;
-        esac
+        printf "\033[36m\033[0m Entered: \033[36m%s\033[0m\n" "$1"
     else
         echo "Failed to create directory: $1" >&2
         return 1
@@ -69,13 +60,12 @@ extract() {
 rm() {
     if [[ -d "$1" ]]; then
         local file_count=$(find "$1" -type f | wc -l)
-        local CYAN="\033[031m"
+        local CYAN="\033[36m"
         local NC="\033[0m"
         echo -e "This is a directory containing $CYAN$file_count$NC files."
         echo -n "Are you quite certain you wish to delete it? [y/N] "
-        read -q "REPLY?"
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+        read -r REPLY
+        if [[ "$REPLY" =~ ^[Yy]$ ]]; then
             command rm -rf "$@"
         fi
     else
@@ -120,7 +110,7 @@ naut() {
         echo "Directory '$target_dir' does not exist."
         return 1
     fi
-    local CYAN="\033[031m"
+    local CYAN="\033[36m"
     local NC="\033[0m"
     nautilus "$target_dir" >/dev/null 2>&1 &
     disown

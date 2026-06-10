@@ -42,8 +42,7 @@ DistinctionOS/
 │   ├── 06-fix-opt.sh            # /opt persistence configuration
 │   ├── 07-config.sh             # System services and misc config
 │   ├── 08-validate.sh           # Post-install environment sanity checks
-│   ├── 95-utility-functions.sh  # Shared logging/utility library (sourced by all)
-│   └── wine-installer.sh        # Custom Wine builds (inactive)
+│   └── 95-utility-functions.sh  # Shared logging/utility library (sourced by all)
 │
 ├── system_files/             # Static files overlaid onto the image at build time
 │   ├── usr/
