@@ -59,10 +59,6 @@ github_api_get() {
     "${auth[@]}" "$url"
 }
 
-log_info "installing terra"
-dnf5 -y install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release
-dnf5 -y install terra-release-extras
-dnf5 -y install terra-release-mesa
 dnf5 versionlock delete mesa
 # ============================================================================
 # Package Installation Tracking
