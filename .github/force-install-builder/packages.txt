@@ -25,4 +25,6 @@
 mutter-devel                      | dnf            | terra
 gstreamer1-plugins-bad-freeworld  | dnf            | rpmfusion-free,rpmfusion-free-updates
 gnome-rounded-blur                | github-build   | kancko/gnome-rounded-blur
+# glycin-libs.i686 is required by steam 
+glycin-libs.i686                  | dnf            | fedora
 glycin-fix-bc7                    | github-release | phantomcortex/glycin
