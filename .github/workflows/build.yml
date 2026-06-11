@@ -246,6 +246,15 @@ jobs:
             [ -z "$line" ] && continue
             sudo buildah config --label "$line" --annotation "$line" "$container"
           done <<< "${LABELS}"
+
+          # The native chunker doesn't emit dev.hhd.rechunk.info the way the
+          # old hhd-dev/rechunk action did, so changelog.py loses its package
+          # list. Rebuild that label from the image's RPM database here.
+          pkgs_json=$(sudo buildah run "$container" -- \
+            rpm -qa --qf '%{NAME}\t%{VERSION}-%{RELEASE}\n' \
+            | python3 -c 'import sys, json; print(json.dumps({"packages": dict(l.split("\t", 1) for l in sys.stdin.read().splitlines() if "\t" in l)}))')
+          sudo buildah config --label "dev.hhd.rechunk.info=${pkgs_json}" "$container"
+
           sudo buildah commit --identity-label=false --rm "$container" "$SRC"
 
       # Native chunker: invokes `rpm-ostree compose build-chunked-oci`
