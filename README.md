@@ -36,6 +36,7 @@ This installs Flatpaks, Homebrew packages, ZSH, and NvChad in a single command.
 | Component | Description |
 |-----------|-------------|
 | **Glycin BC7 Patch** | DDS texture thumbnails for BC4/5/6H/BC7 formats not covered by upstream |
+| **GStreamer XWM Plugin** | Native GStreamer codec for transparent `.xwm` and `.fuz` playback in any GStreamer-backed player |
 | **Steam Linker** | Systemd service unifying all Steam library locations under `~/Games/Steamlibrary/` |
 | **ZSH System-Wide** | Oh My Zsh + Powerlevel10k configured at the system level |
 | **GNOME Extensions** | Pre-installed: Dash to Dock, Burn My Windows, TopHat, and more |
@@ -62,6 +63,10 @@ ujust steam-link-status    # Current state
 ```
 
 See [docs/steam-linker.md](./docs/steam-linker.md).
+
+### GStreamer XWM Plugin
+
+`gstreamer-plugin-xwm` registers native GStreamer elements for Bethesda's `.xwm` (xWMA) and `.fuz` (xWMA wrapped in a lip-sync container) formats. Any GStreamer-backed audio player — Decibels, Rhythmbox, Amberol, etc. — picks up the formats automatically through normal codec discovery. The FUZ demuxer strips the lip-sync header before handing the embedded xWMA stream to the decoder.
 
 ## Post-Install Recipes
 
