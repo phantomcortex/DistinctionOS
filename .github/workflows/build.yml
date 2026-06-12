@@ -25,6 +25,11 @@ on:
         description: 'Optional handwritten changelog message for this release'
         type: string
         default: ''
+      dry_run:
+        description: 'Validation run — build only, no push (off=normal, build=stop after build, chunk=stop after rechunk)'
+        type: choice
+        options: ['off', 'build', 'chunk']
+        default: 'off'
 env:
   IMAGE_DESC: "My Customized Bazzite Image"
   IMAGE_KEYWORDS: "bootc,ublue,universal-blue"
@@ -246,6 +251,15 @@ jobs:
             [ -z "$line" ] && continue
             sudo buildah config --label "$line" --annotation "$line" "$container"
           done <<< "${LABELS}"
+
+          # The native chunker doesn't emit dev.hhd.rechunk.info the way the
+          # old hhd-dev/rechunk action did, so changelog.py loses its package
+          # list. Rebuild that label from the image's RPM database here.
+          pkgs_json=$(sudo buildah run "$container" -- \
+            rpm -qa --qf '%{NAME}\t%{VERSION}-%{RELEASE}\n' \
+            | python3 -c 'import sys, json; print(json.dumps({"packages": dict(l.split("\t", 1) for l in sys.stdin.read().splitlines() if "\t" in l)}))')
+          sudo buildah config --label "dev.hhd.rechunk.info=${pkgs_json}" "$container"
+
           sudo buildah commit --identity-label=false --rm "$container" "$SRC"
 
       # Native chunker: invokes `rpm-ostree compose build-chunked-oci`
@@ -255,7 +269,7 @@ jobs:
       # hhd-dev/rechunk action emits. See docs/bazzite-pipeline-investigation.md.
       - name: Run native rechunker
         id: rechunk
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && inputs.dry_run != 'build'
         env:
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
           DEFAULT_TAG: ${{ env.DEFAULT_TAG }}
@@ -303,7 +317,7 @@ jobs:
           string: ${{ env.IMAGE_REGISTRY }}
 
       - name: Inspect layer sizes
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && inputs.dry_run != 'build'
         env:
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
           DEFAULT_TAG: ${{ env.DEFAULT_TAG }}
@@ -326,7 +340,7 @@ jobs:
       # multi-hundred-MB layered images. Matches Bazzite's pattern.
       # Note: sudo skopeo — the chunked image lives in rootful storage.
       - name: Push To GHCR
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && (inputs.dry_run == '' || inputs.dry_run == 'off')
         id: push
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
@@ -367,7 +381,7 @@ jobs:
 
       - name: Sign container image
         id: sign_container_image
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && (inputs.dry_run == '' || inputs.dry_run == 'off')
         run: |
           echo "${STEPS_PUSH_OUTPUTS_REGISTRY_PATHS}"
           IMAGE_FULL="${STEPS_REGISTRY_CASE_OUTPUTS_LOWERCASE}/${IMAGE_NAME}"
@@ -384,7 +398,7 @@ jobs:
     needs: build_push
     # main → full release (changelog.py, make_latest)
     # testing → pre-release with minimal body (auto-cleaned by clean-prereleases.yml)
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/testing')
+    if: github.event_name != 'pull_request' && (inputs.dry_run == '' || inputs.dry_run == 'off') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/testing')
     runs-on: ubuntu-24.04
     permissions:
       contents: write
