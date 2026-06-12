@@ -37,7 +37,6 @@ This installs Flatpaks, Homebrew packages, ZSH, and NvChad in a single command.
 |-----------|-------------|
 | **Glycin BC7 Patch** | DDS texture thumbnails for BC4/5/6H/BC7 formats not covered by upstream |
 | **Steam Linker** | Systemd service unifying all Steam library locations under `~/Games/Steamlibrary/` |
-| **XWM Player** | Transparent playback of Bethesda game audio formats (`.xwm`, `.fuz`) |
 | **ZSH System-Wide** | Oh My Zsh + Powerlevel10k configured at the system level |
 | **GNOME Extensions** | Pre-installed: Dash to Dock, Burn My Windows, TopHat, and more |
 | **Brave Browser** | Ships as the default browser |
@@ -63,12 +62,6 @@ ujust steam-link-status    # Current state
 ```
 
 See [docs/steam-linker.md](./docs/steam-linker.md).
-
-### XWM Player
-
-`/usr/bin/xwm-player` converts `.xwm` (xWMA) and `.fuz` (Bethesda voice container) to WAV on the fly via FFmpeg and opens the result in the configured audio player. MIME types are registered for transparent file-manager double-click. Flatpak-aware; defaults to `org.gnome.Decibels`. FUZ handling strips the lip-sync header before passing the embedded xWMA to FFmpeg.
-
-See [docs/xwm-player.md](./docs/xwm-player.md).
 
 ## Post-Install Recipes
 
@@ -96,7 +89,6 @@ cosign verify --key cosign.pub ghcr.io/phantomcortex/distinctionos:latest
 | [Developer Guide](./docs/developer.md) | Build architecture, script reference, contributing |
 | [ujust Recipes](./docs/ujust-recipes.md) | All `ujust` commands and their purpose |
 | [Steam Linker](./docs/steam-linker.md) | Game library symlink manager |
-| [XWM Player](./docs/xwm-player.md) | Bethesda audio format player |
 
 ## Acknowledgements
 

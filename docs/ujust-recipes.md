@@ -180,13 +180,6 @@ When the TPM auto-unlock system is redesigned:
 | `distinction-update` | Trigger `rpm-ostree upgrade` with TPM-awareness |
 | `distinction-status` | Quick overview of OS, TPM, Steam Linker health |
 
-### XWM Player
-
-| Recipe | Purpose |
-|--------|---------|
-| `distinction-xwm-cleanup` | Remove XWM Player temp files (wraps `xwm-player --cleanup`) |
-| `distinction-xwm-logs` | View XWM Player log |
-
 ---
 
 ## Adding a New Recipe

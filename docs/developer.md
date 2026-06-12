@@ -46,13 +46,12 @@ DistinctionOS/
 │
 ├── system_files/             # Static files overlaid onto the image at build time
 │   ├── usr/
-│   │   ├── bin/              # Custom executables (xwm-player, xiso, advmv, advcp, etc.)
+│   │   ├── bin/              # Custom executables (xiso, advmv, advcp, etc.)
 │   │   ├── lib/systemd/user/ # User SystemD services
 │   │   ├── share/distinctionos/  # DistinctionOS project files
 │   │   │   ├── just/         # ujust recipe files
 │   │   │   ├── lib/          # Housekeeper shared library
-│   │   │   ├── steam-linker/ # Steam Linker script and config
-│   │   │   └── xwm-player/   # XWM Player config and handlers
+│   │   │   └── steam-linker/ # Steam Linker script and config
 │   │   ├── share/fonts/      # Bundled Nerd Fonts
 │   │   ├── share/icons/      # Cursor themes
 │   │   ├── share/themes/     # GTK theme (adw-gtk3-dark)
@@ -80,7 +79,6 @@ DistinctionOS/
 │   ├── developer.md          # This file
 │   ├── claude.md             # AI assistant context
 │   ├── steam-linker.md       # Steam Linker housekeeper
-│   ├── xwm-player.md         # XWM Player
 │   └── ujust-recipes.md      # ujust recipe reference
 │
 ├── .github/workflows/        # CI/CD automation
