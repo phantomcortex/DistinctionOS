@@ -50,6 +50,14 @@ while IFS='|' read -r name source arg || [[ -n "$name" ]]; do
                 echo "    no .rpm assets found in latest release of $arg" >&2
                 exit 1
             fi
+            # When multiple dist variants are present, keep only those matching
+            # the host Fedora release (e.g. .fc44.) to avoid installing fc45
+            # packages inside the fc44 build container.
+            fedora_ver=$(rpm -E '%{fedora}' 2>/dev/null || true)
+            if [[ -n "$fedora_ver" && ${#urls[@]} -gt 1 ]]; then
+                mapfile -t filtered < <(printf '%s\n' "${urls[@]}" | grep "\.fc${fedora_ver}\.")
+                [[ ${#filtered[@]} -gt 0 ]] && urls=("${filtered[@]}")
+            fi
             for url in "${urls[@]}"; do
                 curl -fL "$url" -o "/output/rpms/$(basename "$url")"
             done
