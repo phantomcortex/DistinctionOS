@@ -28,6 +28,7 @@
 #   glycin-libs        | github-release | phantomcortex/glycin
 #   crossover          | url            | http://crossover.codeweavers.com/redirect/crossover.rpm
 
-audacity-freeworld | dnf            | rpmfusion-free,rpmfusion-free-updates
-Cider              | dnf            | cidercollective
-crossover          | url            | http://crossover.codeweavers.com/redirect/crossover.rpm
+audacity-freeworld   | dnf            | rpmfusion-free,rpmfusion-free-updates
+Cider                | dnf            | cidercollective
+crossover            | url            | http://crossover.codeweavers.com/redirect/crossover.rpm
+gstreamer-plugin-xwm | github-release | phantomcortex/gstreamer-plugin-xwm
