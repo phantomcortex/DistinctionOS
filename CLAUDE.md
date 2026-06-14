@@ -18,6 +18,11 @@ GHCR. Single maintainer (phantomcortex). Deep context lives in skills under
   `shell-conventions` skill.
 - **Keep docs and build telling the same story.** If you change the
   Containerfile or build sequence, update README.md in the same commit.
+- **Update `docs/` in the same commit.** After any commit that changes
+  behaviour, build sequence, or project direction, update the relevant file
+  under `docs/` (and `docs/roadmap.md` for goal changes). Stale docs are the
+  default failure mode here — treat the doc update as part of the change, not
+  a follow-up.
 
 ## Commands
 
