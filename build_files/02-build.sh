@@ -307,6 +307,33 @@ else
 fi
 
 # ============================================================================
+# Targeted Package Upgrades
+# ============================================================================
+# Force specific package groups to their latest available version, independent
+# of what the base image ships. mesa and flatpak are upgraded unconditionally;
+# gstreamer upgrades are best-effort (--skip-broken) to avoid dep conflicts.
+
+log_section "Targeted package upgrades"
+
+for upgrade_glob in 'mesa*' 'flatpak'; do
+  log_info "Upgrading: $upgrade_glob"
+  if dnf5 -y upgrade "$upgrade_glob" &>>"$DNF_LOG"; then
+    log_success "$upgrade_glob upgraded"
+  else
+    log_warning "$upgrade_glob upgrade failed (non-critical)"
+    dnf_log_tail 10
+  fi
+done
+
+log_info "Upgrading: gstreamer1* (best-effort, --skip-broken)"
+if dnf5 -y --skip-broken upgrade 'gstreamer1*' &>>"$DNF_LOG"; then
+  log_success "gstreamer1* upgraded"
+else
+  log_warning "gstreamer1* upgrade had issues (non-critical)"
+  dnf_log_tail 10
+fi
+
+# ============================================================================
 # Create Required Directories
 # ============================================================================
 

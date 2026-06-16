@@ -142,6 +142,26 @@ while IFS='|' read -r name source arg || [[ -n "$name" ]]; do
             # Track commit SHA as the upstream version (matches check-versions.sh).
             ver="${commit_sha:0:12}"
             ;;
+        srpm-rebuild)
+            # ARG = binary-reponame:pkgname
+            # Source repo is derived as ${repo}-source (standard RPMFusion/Fedora naming).
+            repo="${arg%%:*}"
+            pkg="${arg#*:}"
+
+            work=$(mktemp -d)
+            dnf download --source --enablerepo="${repo}-source" \
+                --destdir="$work" "$pkg"
+            srpm=$(ls "$work"/*.src.rpm | head -1)
+
+            ver=$(rpm -qp --queryformat='%{evr}' "$srpm")
+
+            dnf builddep -y "$srpm"
+            rpmbuild --rebuild --define "_rpmdir $work/out" "$srpm"
+
+            find "$work/out" -name '*.rpm' ! -name '*.src.rpm' \
+                -exec cp {} /output/rpms/ \;
+            rm -rf "$work"
+            ;;
         *)
             echo "    unknown source type: $source" >&2
             exit 1

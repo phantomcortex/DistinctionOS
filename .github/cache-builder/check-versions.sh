@@ -42,6 +42,13 @@ while IFS='|' read -r name source arg || [[ -n "$name" ]]; do
             ver=$(git ls-remote "https://github.com/$repo" "$ref" 2>/dev/null \
                   | head -1 | cut -f1 | cut -c1-12 || echo "")
             ;;
+        srpm-rebuild)
+            repo="${arg%%:*}"
+            pkg="${arg#*:}"
+            ver=$(dnf repoquery --quiet --queryformat='%{evr}' \
+                  --enablerepo="${repo}-source" --source "$pkg" 2>/dev/null \
+                  | sort -V | tail -1 || echo "")
+            ;;
         *)
             echo "Unknown source type for $name: $source" >&2
             ;;

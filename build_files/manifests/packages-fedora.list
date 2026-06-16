@@ -45,5 +45,6 @@ rdfind
 xorriso
 optipng
 glib2-devel
+bzip2-devel
 firejail
 jq                  # JSON parsing (used by the build itself for GitHub API)

@@ -1,6 +1,5 @@
 # COPR repositories and their packages.
 # Format: <owner/project>  <package> [package ...]
-ilyaz/LACT                    lact                        # AMD GPU control
 fernando-debian/dysk          dysk                        # Disk usage analyzer
 atim/heroic-games-launcher    heroic-games-launcher-bin   # Epic/GOG launcher
 sergiomb/clonezilla           clonezilla                  # Disk cloning utility

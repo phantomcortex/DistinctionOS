@@ -1,4 +1,5 @@
 # repo: terra,terra-extras
+lact                    # AMD GPU control (moved from COPR ilyaz/LACT)
 mesa-filesystem
 mesa-va-drivers
 mesa-vulkan-drivers
