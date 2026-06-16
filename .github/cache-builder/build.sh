@@ -156,6 +156,8 @@ while IFS='|' read -r name source arg || [[ -n "$name" ]]; do
             ver=$(rpm -qp --queryformat='%{evr}' "$srpm")
 
             dnf builddep -y "$srpm"
+            # vvenc-devel's cmake config references /usr/bin/vvencapp which only the binary package ships
+            dnf install -y vvenc 2>/dev/null || true
             rpmbuild --rebuild --define "_rpmdir $work/out" "$srpm"
 
             find "$work/out" -name '*.rpm' ! -name '*.src.rpm' \
