@@ -15,6 +15,12 @@ in the same commit as the change they describe.
 
 ## Long-Term Goals
 
+- [ ] **file-roller BSA/BA2 support.** Bethesda's BSA (Oblivion/Skyrim) and BA2
+  (Fallout 4/Starfield) archive formats are widely encountered by modders but
+  are invisible to GNOME's archive manager. A plugin or fork would let users
+  browse and extract mod archives natively without resorting to command-line
+  tools or Windows-only utilities.
+
 - [ ] **Nautilus fork.** Nautilus frequently freezes while loading/generating
   thumbnails — a regression that has persisted since at least GNOME 46. A
   downstream fork would let us fix this and other long-standing papercuts

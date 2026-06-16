@@ -39,3 +39,15 @@ GHCR. Single maintainer (phantomcortex). Deep context lives in skills under
 - Third-party git clones in 05-remote-grabber.sh must be commit-pinned
   (`url#sha`).
 - `dnf versionlock add` is a no-op on ostree images — do not reintroduce it.
+
+## Subprojects
+
+These repos are co-maintained with DistinctionOS and built into the image:
+
+| Repo | Path | Purpose |
+|------|------|---------|
+| `gstreamer-plugin-xwm` | `../gstreamer-plugin-xwm` | GStreamer typefinder + demuxer for `.xwm` (xWMA) and `.fuz` (Bethesda FUZ) audio |
+| `glycin` (fork) | `../glycin` | glycin image-loader fork with BC7 texture support |
+
+Each subproject has its own `CLAUDE.md` with build instructions. When working
+across repos, read the target repo's `CLAUDE.md` first.
