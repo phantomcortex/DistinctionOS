@@ -326,7 +326,7 @@ for upgrade_glob in 'mesa*' 'flatpak'; do
 done
 
 log_info "Upgrading: gstreamer1* (best-effort, --skip-broken)"
-if dnf5 -y --skip-broken upgrade 'gstreamer1*' &>>"$DNF_LOG"; then
+if dnf5 -y upgrade 'gstreamer1*' &>>"$DNF_LOG"; then
   log_success "gstreamer1* upgraded"
 else
   log_warning "gstreamer1* upgrade had issues (non-critical)"
