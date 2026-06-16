@@ -12,8 +12,9 @@ on:
       - '**'
     paths-ignore:
       - '.github/**'
+      - '.claude/**'
       - '**/README.md'
-      - '**/claude.md'
+      - '**/CLAUDE.md'
       - 'repo_files/**'
       - 'docs/**'
       # NOTE: system_files/** deliberately NOT ignored — those files are
