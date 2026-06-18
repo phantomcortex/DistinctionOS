@@ -3,7 +3,6 @@ zsh
 zsh-syntax-highlighting
 zsh-autosuggestions
 neovim
-file-roller
 loupe
 sassc
 gstreamer1-plugins-good-extras
