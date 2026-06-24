@@ -36,4 +36,13 @@ done
 log_success "/opt persistence configured"
 log_info "Packages in /opt will persist across reboots via tmpfiles.d"
 
+# CrossOver writes its activation license to etc/ at runtime.
+# Redirect etc/ to /var so writes survive the immutable layer.
+if [ -d /usr/lib/opt/cxoffice ]; then
+  log_info "CrossOver: redirecting etc/ to /var/cxoffice-etc (mutable)"
+  mv /usr/lib/opt/cxoffice/etc /usr/lib/opt/cxoffice-etc.defaults
+  ln -sf /var/cxoffice-etc /usr/lib/opt/cxoffice/etc
+  echo "C /var/cxoffice-etc - - - - /usr/lib/opt/cxoffice-etc.defaults" >> /usr/lib/tmpfiles.d/distinction-opt-fix.conf
+fi
+
 exit 0
