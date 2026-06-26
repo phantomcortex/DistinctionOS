@@ -8,7 +8,6 @@ sassc
 gstreamer1-plugins-good-extras
 gstreamer1-vaapi
 decibels
-dconf
 gtk-murrine-engine
 perl-File-Copy
 winetricks
@@ -31,9 +30,6 @@ heif-pixbuf-loader
 libgda
 libgda-sqlite
 libjxl-utils
-foremost
-filelight
-clamav
 diffpdf
 id3v2
 lhasa

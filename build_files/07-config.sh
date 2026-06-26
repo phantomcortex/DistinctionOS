@@ -96,21 +96,6 @@ fi
 log_section "Customizing application configurations"
 
 # ──────────────────────────────────────────────────────────────────────────
-# Cider Music Player Icon Fix
-# ──────────────────────────────────────────────────────────────────────────
-# Issue: Cider doesn't respect icon themes properly
-# Solution: Hard-code path to Kora theme icon
-
-readonly CIDER_DESKTOP="/usr/share/applications/Cider.desktop"
-if [[ -f "$CIDER_DESKTOP" ]]; then
-  log_info "Fixing Cider icon path"
-  sed -i 's@Icon=Cider@Icon=/usr/share/icons/kora/apps/scalable/cider.svg@g' "$CIDER_DESKTOP"
-  log_success "Cider icon path updated"
-else
-  log_info "Cider not installed, skipping icon fix"
-fi
-
-# ──────────────────────────────────────────────────────────────────────────
 # Nautilus Display Name
 # ──────────────────────────────────────────────────────────────────────────
 # Preference: show the file manager as "Nautilus" rather than the upstream
