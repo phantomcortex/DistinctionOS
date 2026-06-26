@@ -62,7 +62,6 @@ readonly -a READONLY_VERBS=(
     needs-restarting
     versionlock
     config-manager
-    debuginfo-install
     --help
     -h
     --version
@@ -84,12 +83,55 @@ readonly -a SAFE_OVERRIDE_FLAGS=(
     --assumeno
 )
 
+# Global options that consume the FOLLOWING argument as their value when given
+# in space-separated form (e.g. `--releasever 41`). Without this, that value is
+# mistaken for the verb and a harmless query gets gated as a mutation. The
+# `--opt=value` form needs no entry here — it starts with `-` and is skipped.
+readonly -a VALUE_TAKING_OPTS=(
+    -c --config
+    --installroot
+    --releasever
+    --setopt
+    -x --exclude
+    --enablerepo --disablerepo
+    --repo --repoid --repofrompath
+    -d --debuglevel
+    -e --errorlevel
+    --forcearch
+    --destdir --downloaddir
+    --comment
+    --advisory --advisories
+    --color
+)
+
+# ── Helpers ─────────────────────────────────────────────────────────────────
+contains() {
+    local needle="$1"; shift
+    local item
+    for item in "$@"; do
+        [[ "$item" == "$needle" ]] && return 0
+    done
+    return 1
+}
+
 # ── Argument scan ───────────────────────────────────────────────────────────
+# Find the verb (and sub-verb) while stepping over global options. The
+# `--opt=value` form is self-contained; an option that takes a space-separated
+# value has that value skipped (VALUE_TAKING_OPTS) so it isn't read as the verb.
 verb=""
 sub_verb=""
+skip_next=false
 for arg in "$@"; do
+    if [[ "$skip_next" == true ]]; then
+        skip_next=false
+        continue
+    fi
     case "$arg" in
-        -*) continue ;;          # skip global flags
+        --*=*) continue ;;       # self-contained --opt=value
+        -*)
+            contains "$arg" "${VALUE_TAKING_OPTS[@]}" && skip_next=true
+            continue
+            ;;
         *)
             if [[ -z "$verb" ]]; then
                 verb="$arg"
@@ -105,16 +147,6 @@ done
 if [[ -z "$verb" ]]; then
     exec "$real_dnf" "$@"
 fi
-
-# ── Helpers ─────────────────────────────────────────────────────────────────
-contains() {
-    local needle="$1"; shift
-    local item
-    for item in "$@"; do
-        [[ "$item" == "$needle" ]] && return 0
-    done
-    return 1
-}
 
 # A writable overlay on /usr is the signal we use to decide whether the
 # admin has explicitly opted in to live package manipulation. Three checks,

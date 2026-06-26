@@ -58,7 +58,6 @@ github_api_get() {
     "${auth[@]}" "$url"
 }
 
-dnf5 versionlock delete mesa
 # ============================================================================
 # Package Installation Tracking
 # ============================================================================
@@ -283,7 +282,7 @@ log_section "Configuring additional repositories"
 # Note: CrossOver is pre-built into the distinctionos-cache OCI artifact
 # (see .github/cache-builder/packages.txt) and installed by 03-cache-install.sh.
 
-log_info "CLEAR VERSIONLOCK"
+log_info "Clearing inherited versionlocks from base image"
 dnf5 versionlock clear
 
 # ──────────────────────────────────────────────────────────────────────────
