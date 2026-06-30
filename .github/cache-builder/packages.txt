@@ -30,6 +30,7 @@
 
 audacity-freeworld   | dnf            | rpmfusion-free,rpmfusion-free-updates
 libheif-freeworld    | srpm-rebuild   | rpmfusion-free-updates:libheif-freeworld
+Cider                | dnf            | cidercollective
 crossover            | url            | http://crossover.codeweavers.com/redirect/crossover.rpm
 gstreamer-plugin-xwm | github-release | phantomcortex/gstreamer-plugin-xwm
 bsa-ba2-tool         | github-release | phantomcortex/Rust-BSA-BA2-Handler

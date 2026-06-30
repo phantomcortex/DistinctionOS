@@ -7,6 +7,7 @@ set -uo pipefail
 # Purpose: Install system packages with resilient "best-effort" approach
 # Strategy: Attempt bulk installation, fall back to individual installation on failure
 # Note: Build continues even if some packages fail (repository outages, etc.)
+# repository outages have occured with openzfs, crossover, and Cider
 # ============================================================================
 
 # Source utility functions
@@ -279,8 +280,9 @@ counter_display "$removed_count" "package" "packages" "removed"
 
 log_section "Configuring additional repositories"
 
-# Note: CrossOver is pre-built into the distinctionos-cache OCI artifact
-# (see .github/cache-builder/packages.txt) and installed by 03-cache-install.sh.
+# Note: Cider (cidercollective repo) and CrossOver are no longer installed
+# here — they are pre-built into the distinctionos-cache OCI artifact (see
+# .github/cache-builder/packages.txt) and installed by 03-cache-install.sh.
 
 log_info "Clearing inherited versionlocks from base image"
 dnf5 versionlock clear

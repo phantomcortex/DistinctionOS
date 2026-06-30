@@ -11,7 +11,10 @@ on:
       - main
       - '**'
     paths-ignore:
-      - '.github/**'
+      - '.github/workflows/**'
+      - '.github/force-install-builder/**'
+      - '.github/dependabot.yml'
+      - '.github/renovate.json5'
       - '.claude/**'
       - '**/README.md'
       - '**/CLAUDE.md'
@@ -44,6 +47,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build_cache:
+    name: Refresh cache artifact
+    # Skip on PRs — the push step inside the cache builder always pushes to
+    # GHCR, which requires write access that fork PRs don't have.
+    if: github.event_name != 'pull_request'
+    uses: ./.github/workflows/build-cache.yml
+    with:
+      force_rebuild: false
+    secrets: inherit
+
   syntax_check:
     name: Syntax check
     runs-on: ubuntu-24.04
@@ -104,7 +117,7 @@ jobs:
   build_push:
     name: Build and push image
     runs-on: ubuntu-24.04
-    needs: syntax_check
+    needs: [syntax_check, build_cache]
 
     permissions:
       contents: read
