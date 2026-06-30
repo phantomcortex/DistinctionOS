@@ -49,9 +49,6 @@ concurrency:
 jobs:
   build_cache:
     name: Refresh cache artifact
-    # Skip on PRs — the push step inside the cache builder always pushes to
-    # GHCR, which requires write access that fork PRs don't have.
-    if: github.event_name != 'pull_request'
     uses: ./.github/workflows/build-cache.yml
     with:
       force_rebuild: false
