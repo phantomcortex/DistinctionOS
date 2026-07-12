@@ -47,20 +47,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build_cache:
-    name: Refresh cache artifact
-    uses: ./.github/workflows/_build-oci-artifact.yml
-    with:
-      image: ghcr.io/phantomcortex/distinctionos-cache
-      builder_dir: .github/cache-builder
-      version_check_tag: cache-version-check
-      max_age_days: 15
-      force_rebuild: false
-    secrets: inherit
-    permissions:
-      contents: read
-      packages: write
-
   syntax_check:
     name: Syntax check
     runs-on: ubuntu-24.04
