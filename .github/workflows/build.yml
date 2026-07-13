@@ -107,7 +107,7 @@ jobs:
   build_push:
     name: Build and push image
     runs-on: ubuntu-24.04
-    needs: [syntax_check, build_cache]
+    needs: [syntax_check]
 
     permissions:
       contents: read
