@@ -306,31 +306,141 @@ else
 fi
 
 # ============================================================================
-# Targeted Package Upgrades
+# Targeted Package Upgrades (Three-Pass Strategy)
 # ============================================================================
-# Force specific package groups to their latest available version, independent
-# of what the base image ships. mesa and flatpak are upgraded unconditionally;
-# gstreamer upgrades are best-effort (--skip-broken) to avoid dep conflicts.
+# Pass 1: Security & bugfix releases (auto-selected by DNF)
+# Pass 2: [Skipped] - for manual intervention if needed
+# Pass 3: Hand-selected packages known to be safe and non-conflicting
+#
+# Rationale: Some packages (glycin, file-roller, mutter, mutter-devel, gnome-shell)
+# are excluded due to potential for destabilization. The three-pass approach gives
+# finer control while still capturing most updates.
 
-log_section "Targeted package upgrades"
+log_section "Targeted package upgrades (three-pass strategy)"
 
-for upgrade_glob in 'mesa*' 'flatpak'; do
-  log_info "Upgrading: $upgrade_glob"
-  if dnf5 -y upgrade "$upgrade_glob" &>>"$DNF_LOG"; then
-    log_success "$upgrade_glob upgraded"
-  else
-    log_warning "$upgrade_glob upgrade failed (non-critical)"
-    dnf_log_tail 10
-  fi
-done
+# ──────────────────────────────────────────────────────────────────────────
+# PASS 1: Security & Bugfix Releases
+# ──────────────────────────────────────────────────────────────────────────
 
-log_info "Upgrading: gstreamer1* (best-effort, --skip-broken)"
-if dnf5 -y upgrade 'gstreamer1*' &>>"$DNF_LOG"; then
-  log_success "gstreamer1* upgraded"
+log_info "PASS 1: Upgrading --bugfix and --security releases"
+if dnf5 -y upgrade --bugfix --security &>>"$DNF_LOG"; then
+  log_success "Security and bugfix upgrades applied"
 else
-  log_warning "gstreamer1* upgrade had issues (non-critical)"
-  dnf_log_tail 10
+  log_warning "Security/bugfix upgrade had issues (continuing anyway)"
+  dnf_log_tail 15
 fi
+
+# ──────────────────────────────────────────────────────────────────────────
+# PASS 2: [Reserved for manual/intermediate upgrades - skipped in automated builds]
+# ──────────────────────────────────────────────────────────────────────────
+
+# ──────────────────────────────────────────────────────────────────────────
+# PASS 3: Hand-Selected Safe Packages (low risk, tested together)
+# ──────────────────────────────────────────────────────────────────────────
+# These packages were selected from available updates as safe to upgrade:
+#  - Development tools: cargo, rust, rustc, git, git-core, vim, neovim, gdb
+#  - Core utilities: coreutils, less, perl-*, openssh
+#  - Media/codecs: gstreamer1*, mesa*, wayland, enchant2, hunspell
+#  - Libraries: c-ares, cjson, librabbitmq, libnghttp3, llvm-libs, libwayland*
+#  - Build/system: kernel-headers, hwdata, p11-kit*, pam*, p11-kit-trust
+#
+# Explicitly EXCLUDED due to stability concerns:
+#  - glycin* (graphics)
+#  - file-roller (archive manager)
+#  - mutter, mutter-devel (window manager)
+#  - gnome-shell (desktop shell)
+#  - webkit2gtk* (web rendering engine - complex deps)
+#  - javascriptcoregtk* (JS engine - complex deps)
+#  - libvpl (Intel media - may conflict with mesa)
+#  - systemd-standalone-sysusers (critical system boundary)
+#  - geoclue2, gssdp, gupnp (location/UPnP - network-adjacent)
+
+log_info "PASS 3: Upgrading hand-selected safe packages"
+
+# Array of packages deemed safe for upgrade in this build
+readonly SAFE_UPGRADE_PKGS=(
+  # Development toolchain
+  cargo
+  rust
+  rust-std-static
+  clippy
+  git
+  git-core
+  git-core-doc
+  vim-common
+  vim-data
+  vim-enhanced
+  vim-filesystem
+  vim-minimal
+  xxd
+  neovim
+  gdb
+  gdb-headless
+  # System utilities and core libraries
+  coreutils
+  coreutils-common
+  less
+  less-color
+  perl-Git
+  perl-Socket
+  perl-URI
+  openssh
+  openssh-clients
+  # Multimedia and graphics (excluding webkit/js engines and problematic packages)
+  gstreamer1
+  gstreamer1-plugins-base
+  gstreamer1-plugins-good
+  gstreamer1-plugins-bad-free-libs
+  mesa-dri-drivers
+  mesa-filesystem
+  mesa-libEGL
+  mesa-libGL
+  mesa-libGL-devel
+  mesa-libgbm
+  mesa-libgbm-devel
+  mesa-vulkan-drivers
+  enchant2
+  hunspell
+  hunspell-filesystem
+  libwayland-client
+  libwayland-cursor
+  libwayland-egl
+  libwayland-server
+  wayland-devel
+  # Libraries
+  c-ares
+  cjson
+  librabbitmq
+  libnghttp3
+  llvm-filesystem
+  llvm-libs
+  libmodulemd
+  # System packages
+  kernel-headers
+  hwdata
+  p11-kit
+  p11-kit-client
+  p11-kit-trust
+  pam
+  pam-libs
+  # Misc tools
+  fzf
+  mtr
+  acl
+  bluez-libs
+  libacl
+  libattr
+  7zip
+)
+
+if dnf5 -y upgrade "${SAFE_UPGRADE_PKGS[@]}" &>>"$DNF_LOG"; then
+  log_success "PASS 3: Hand-selected safe packages upgraded successfully"
+else
+  log_warning "PASS 3: Some hand-selected packages had upgrade issues (continuing anyway)"
+  dnf_log_tail 15
+fi
+
+log_info "Targeted upgrade strategy complete (3 passes)"
 
 # ============================================================================
 # Create Required Directories
