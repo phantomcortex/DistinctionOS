@@ -27,13 +27,24 @@ export KERNELDIR="/lib/modules/${KERNEL_VERSION}/build"
 log_info "Kernel build directory: $KERNELDIR"
 
 # ============================================================================
+# Module Dependency Generation
+# ============================================================================
+# The kernel-install hooks that would normally trigger depmod are stubbed
+# out by 00-kernel.sh, so it must be run explicitly before dracut.
+
+log_section "Generating module dependencies"
+log_info "Running depmod for $KERNEL_VERSION"
+depmod -a "$KERNEL_VERSION"
+log_success "Module dependencies generated"
+
+# ============================================================================
 # Initramfs Regeneration
 # ============================================================================
 # Rebuild initramfs to include new kernel modules
 
 log_section "Regenerating initramfs with new modules"
 
- 
+
 export DRACUT_NO_XATTR=1
 log_info "Running dracut to rebuild initramfs"
 if /usr/bin/dracut \

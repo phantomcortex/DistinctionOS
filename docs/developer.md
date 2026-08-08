@@ -4,14 +4,14 @@
 
 **Build System**: Fully operational with automated CI/CD via GitHub Actions  
 **Base System**: Bazzite (Fedora Atomic Desktop)  
-**Last Updated**: 2026-05-28  
-**Kernel**: CachyOS LTO (replaces stock Fedora kernel)  
+**Last Updated**: 2026-08-08  
+**Kernel**: CachyOS (replaces stock Fedora kernel)  
 
 ### Active Features
 - Automated image builds every 5 days
 - Rechunker optimization for efficient updates
 - Image signing with Cosign
-- CachyOS LTO kernel for optimized performance
+- CachyOS kernel for optimized performance
 - Custom Mesa stack with freeworld codec support
 - ZSH system-wide shell configuration
 - Just recipe system for user-space tooling
@@ -33,7 +33,7 @@
 ```
 DistinctionOS/
 ├── build_files/              # Build-time execution scripts (numerically ordered)
-│   ├── 00-kernel.sh             # CachyOS LTO kernel installation
+│   ├── 00-kernel.sh             # CachyOS kernel installation
 │   ├── 01-kernel-modules.sh     # Initramfs regeneration
 │   ├── 02-build.sh              # Package management (RPM, repos, keys)
 │   ├── 03-cache-install.sh      # Install pre-cached RPMs from cache OCI artifact
@@ -111,12 +111,12 @@ flowchart TD
     Mesa --> B0[0. kernel.sh]
 
     B0 --> B0A[Remove stock kernel packages]
-    B0A --> B0B[Install CachyOS LTO kernel via COPR]
-    B0B --> B0C[Version-lock kernel]
-    B0C --> B1
+    B0A --> B0B[Install CachyOS kernel via COPR]
+    B0B --> B1
 
     B1[1. kernel-modules.sh] --> B1A[Detect installed kernel version]
-    B1A --> B1B[Regenerate initramfs with dracut]
+    B1A --> B1D[Run depmod]
+    B1D --> B1B[Regenerate initramfs with dracut]
     B1B --> B2
 
     B2[2. build.sh] --> B2A[Remove unwanted Bazzite packages]
@@ -217,21 +217,21 @@ flowchart TD
 ## Script Detailed Reference
 
 ### 0. `00-kernel.sh`
-**Purpose**: Replace the stock Bazzite/Fedora kernel with CachyOS LTO  
+**Purpose**: Replace the stock Bazzite/Fedora kernel with CachyOS  
 **Execution Stage**: Build-time (first script)  
 **Key Functions**:
 - Removes stock kernel packages (`kernel`, `kernel-core`, `kernel-modules`, `kernel-devel-matched`)
 - Stubs out rpm-ostree and dracut install hooks so they don't conflict
-- Installs `kernel-cachyos-lto` and `kernel-cachyos-lto-devel-matched` from the `bieszczaders/kernel-cachyos-lto` COPR
-- Version-locks the kernel to prevent unintended upgrades
+- Installs `kernel-cachyos` and `kernel-cachyos-devel-matched` from the `bieszczaders/kernel-cachyos` COPR
 
 ---
 
 ### 1. `01-kernel-modules.sh`
-**Purpose**: Regenerate the initramfs for the newly installed CachyOS kernel  
+**Purpose**: Regenerate module dependencies and initramfs for the newly installed CachyOS kernel  
 **Execution Stage**: Build-time (second script, immediately after kernel install)  
 **Key Functions**:
 - Detects the installed kernel version from `/usr/lib/modules/`
+- Runs `depmod -a` explicitly — the kernel-install hooks that would normally do this are stubbed out by `00-kernel.sh`
 - Runs dracut with `--zstd`, `--reproducible`, and `--add ostree` flags for ostree compatibility
 
 ---
@@ -740,7 +740,7 @@ podman run -it localhost/distinctionos:test /bin/bash
 
 - [✅] Rechunker support for efficient updates
 - [✅] ZSH system-wide shell configuration
-- [✅] CachyOS LTO kernel as default (`00-kernel.sh`)
+- [✅] CachyOS kernel as default (`00-kernel.sh`)
 - [✅] Custom Mesa stack with freeworld codecs (`05-mesa-install.sh` + weekly build workflow)
 - [✅] Steam Linker housekeeper
 - [✅] XWM Player for Bethesda audio format support
@@ -814,7 +814,7 @@ When submitting changes:
 
 ---
 
-**Document Version**: 2.1  
-**Last Updated**: 2026-05-28  
-**Major Changes**: Updated script sequence (00–06), fixed directory names (underscores), removed ZFS, added CachyOS kernel and Mesa OCI sections, removed non-existent firstrun/tpm-monitor references, updated roadmap  
+**Document Version**: 2.2  
+**Last Updated**: 2026-08-08  
+**Major Changes**: Re-enabled CachyOS kernel (non-LTO variant), added explicit `depmod` step to `01-kernel-modules.sh` to fix initramfs regeneration failure  
 **Maintainer**: phantomcortex
