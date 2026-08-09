@@ -585,6 +585,30 @@ else
   log_warning "Inter font download failed (non-critical)"
 fi
 
+# ============================================================================
+# 0xProto Nerd Font (pinned v3.4.0)
+# ============================================================================
+# terra44 only carries the latest build (3.5.0-1.fc44); 3.5 introduces line-
+# spacing issues, so this font is pulled from upstream instead of the terra
+# manifest to pin it to 3.4.0.
+
+log_section "Installing 0xProto Nerd Font v3.4.0"
+
+readonly OXPROTO_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/0xProto.zip"
+
+if curl -fL --retry 3 --retry-delay 2 "$OXPROTO_URL" -o /tmp/0xProto.zip; then
+  mkdir -p /usr/share/fonts/0xProtoNerdFont/
+  if unzip -j -o /tmp/0xProto.zip "*.ttf" -d /usr/share/fonts/0xProtoNerdFont/ &>>"$DNF_LOG"; then
+    fc-cache -f &>/dev/null || true
+    log_success "0xProto Nerd Font v3.4.0 installed (pinned)"
+  else
+    log_warning "0xProto Nerd Font zip extraction failed (non-critical)"
+  fi
+  rm -f /tmp/0xProto.zip
+else
+  log_warning "0xProto Nerd Font download failed (non-critical)"
+fi
+
 # NOTE: the former "versionlock add" section was removed deliberately.
 # dnf versionlock has no effect on a deployed rpm-ostree/bootc system —
 # updates arrive as whole image rebuilds from a fresh base, so the locks
