@@ -36,10 +36,7 @@ COPY system_files/ /
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
-    --mount=type=tmpfs,dst=/tmp \ 
-    echo -e "\033[31mKERNEL INSTALLER >>>>\033[0m" && \
-    /ctx/00-kernel.sh && \
-    /ctx/01-kernel-modules.sh && \
+    --mount=type=tmpfs,dst=/tmp \
     echo -e "\033[31mBUILD SCRIPT >>>>\033[0m" && \
     /ctx/02-build.sh && \
     echo -e "\033[31mCACHE INSTALL >>>>\033[0m" && \
