@@ -26,7 +26,7 @@ while IFS='|' read -r name source arg || [[ -n "$name" ]]; do
         dnf)
             enablerepo=()
             [[ -n "$arg" ]] && enablerepo=(--enablerepo="$arg")
-            dnf download --destdir=/output/rpms "${enablerepo[@]}" "$name"
+            dnf download --arch x86_64 --destdir=/output/rpms "${enablerepo[@]}" "$name"
             ver=$(dnf repoquery --quiet --queryformat='%{evr}' "${enablerepo[@]}" "$name" \
                   | sort -V | tail -1)
             ;;
