@@ -34,7 +34,7 @@ readonly LOG_FILE="${TMP_DIR}/installation.log"
 EXTENSIONS=(
     # ── Git (flat repos — extension.js lives at repo root) ──────────────────
     "git  | pip-on-top@rafostar.github.com                  | https://github.com/Rafostar/gnome-shell-extension-pip-on-top.git"
-    "git  | clipboard-indicator@tudmotu.com                  | https://github.com/Tudmotu/gnome-shell-extension-clipboard-indicator.git"
+    #"git  | clipboard-indicator@tudmotu.com                  | https://github.com/Tudmotu/gnome-shell-extension-clipboard-indicator.git"
     "git  | date-menu-formatter@marcinjakubowski.github.com  | https://github.com/marcinjakubowski/date-menu-formatter.git"
     "git  | quick-settings-avatar@d-go                      | https://github.com/d-go/quick-settings-avatar.git"
 
@@ -42,11 +42,11 @@ EXTENSIONS=(
     # ── ZIP (pre-built release archives) ────────────────────────────────────
     "zip  | burn-my-windows@schneegans.github.com           | https://github.com/Schneegans/Burn-My-Windows/releases/download/v47/burn-my-windows@schneegans.github.com.zip"
     "zip  | gnome-ui-tune@itstime.tech                      | https://github.com/axxapy/gnome-ui-tune/releases/download/v1.11.0/gnome-ui-tune@itstime.tech.shell-extension.zip"
-    "zip  | tophat@fflewddur.github.io                      | https://github.com/fflewddur/tophat/releases/download/v23/tophat@fflewddur.github.io.v23.shell-extension.zip"
+    #"zip  | tophat@fflewddur.github.io                      | https://github.com/fflewddur/tophat/releases/download/v23/tophat@fflewddur.github.io.v23.shell-extension.zip"
     "zip  | copyous@boerdereinar.dev                        | https://github.com/boerdereinar/copyous/releases/download/v2.0.1/copyous@boerdereinar.dev.zip"
 
     # ── Makefile (default: DESTDIR=/ PREFIX=/usr) ───────────────────────────
-    "make | dash-to-dock@phantomcortex                      | https://github.com/phantomcortex/dash-to-dock.git"
+    #"make | dash-to-dock@micxgx.gmail.com                      | https://github.com/micheleg/dash-to-dock.git"
 
     # ── gnome-extensions pack (sources auto-detected from repo layout) ───────
     # "pack | blur-my-shell@aunetx                          | https://github.com/phantomcortex/blur-my-shell.git"

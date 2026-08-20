@@ -4,4 +4,3 @@ fernando-debian/dysk          dysk                        # Disk usage analyzer
 atim/heroic-games-launcher    heroic-games-launcher-bin   # Epic/GOG launcher
 sergiomb/clonezilla           clonezilla                  # Disk cloning utility
 alternateved/eza              eza                         # Modern ls replacement
-#monkeygold/nautilus-open-any-terminal  nautilus-open-any-terminal

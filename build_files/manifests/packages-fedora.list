@@ -15,7 +15,6 @@ lutris
 sox
 totem-video-thumbnailer
 mediainfo
-flatpak-builder
 gnome-tweaks
 freerdp
 nss-mdns.i686
@@ -34,7 +33,6 @@ diffpdf
 id3v2
 lhasa
 lzma
-meld
 pandoc-cli
 rdfind
 xorriso
@@ -43,3 +41,5 @@ glib2-devel
 bzip2-devel
 firejail
 jq                  # JSON parsing (used by the build itself for GitHub API)
+gnome-shell-extension-just-perfection
+gnome-shell-extension-dash-to-dock
