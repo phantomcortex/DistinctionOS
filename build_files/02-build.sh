@@ -360,20 +360,12 @@ log_info "PASS 3: Upgrading hand-selected safe packages"
 # Array of packages deemed safe for upgrade in this build
 readonly SAFE_UPGRADE_PKGS=(
   # Development toolchain
-  cargo
-  rust
-  rust-std-static
-  clippy
-  git
-  git-core
-  git-core-doc
   vim-common
   vim-data
   vim-enhanced
   vim-filesystem
   vim-minimal
   xxd
-  neovim
   gdb
   gdb-headless
   # System utilities and core libraries
@@ -395,28 +387,18 @@ readonly SAFE_UPGRADE_PKGS=(
   mesa-filesystem
   mesa-libEGL
   mesa-libGL
-  mesa-libGL-devel
   mesa-libgbm
-  mesa-libgbm-devel
-  mesa-vulkan-drivers
   enchant2
   hunspell
   hunspell-filesystem
-  libwayland-client
-  libwayland-cursor
-  libwayland-egl
-  libwayland-server
-  wayland-devel
   # Libraries
   c-ares
   cjson
   librabbitmq
-  libnghttp3
   llvm-filesystem
   llvm-libs
   libmodulemd
   # System packages
-  kernel-headers
   hwdata
   p11-kit
   p11-kit-client

@@ -49,7 +49,7 @@ EXTENSIONS=(
     #"make | dash-to-dock@micxgx.gmail.com                      | https://github.com/micheleg/dash-to-dock.git"
 
     # ── gnome-extensions pack (sources auto-detected from repo layout) ───────
-    # "pack | blur-my-shell@aunetx                          | https://github.com/phantomcortex/blur-my-shell.git"
+    "make | blur-my-shell@aunetx                          | https://github.com/aunetx/blur-my-shell.git"
     
     "auto  | azwallpaper@azwallpaper.gitlab.com             | https://gitlab.com/AndrewZaech/azwallpaper.git"
 )

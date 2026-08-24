@@ -3,19 +3,16 @@
 # see the hard requirement in 02-build.sh).
 zsh
 podman
-steam.i686
+steam
 steam-devices
 gnome-shell
 gnome-session
-vulkan-headers
 mesa-vulkan-drivers
 mesa-filesystem
 mesa-dri-drivers
 mesa-libGL
 mesa-libEGL
 mesa-libgbm
-mesa-libgbm-devel
-mesa-libEGL-devel
 ffmpeg
 mutter
 wayland-devel

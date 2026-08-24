@@ -6,8 +6,6 @@ mesa-vulkan-drivers
 mesa-dri-drivers
 mesa-libgbm
 mesa-libEGL
-mesa-libgbm-devel
-mesa-libEGL-devel
 # 0xproto-nerd-fonts: pinned to 3.4.0 via GitHub download in 02-build.sh (terra44's 3.5.0 has line-spacing issues)
 firacode-nerd-fonts
 recursive-nerd-fonts

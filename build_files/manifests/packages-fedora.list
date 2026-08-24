@@ -11,11 +11,8 @@ decibels
 gtk-murrine-engine
 perl-File-Copy
 winetricks
-lutris
 sox
-totem-video-thumbnailer
 mediainfo
-gnome-tweaks
 freerdp
 nss-mdns.i686
 pcsc-lite-libs.i686
@@ -43,3 +40,6 @@ firejail
 jq                  # JSON parsing (used by the build itself for GitHub API)
 gnome-shell-extension-just-perfection
 gnome-shell-extension-dash-to-dock
+gnome-shell-extension-appindicator
+gnome-shell-extension-caffeine
+gnome-shell-extension-user-theme

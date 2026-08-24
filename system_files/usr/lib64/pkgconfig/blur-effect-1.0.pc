@@ -1,9 +1,0 @@
-prefix=/usr/local
-includedir=${prefix}/include
-libdir=${prefix}/lib64
-
-Name: gnome-rounded-blur
-Description: Library providing Blur.BlurEffect with corner radius support
-Version: 1.0.0
-Libs: -L${prefix}/lib64 -lblur-effect-1.0
-Cflags: -I${includedir}/blur-effect-1.0
