@@ -40,13 +40,13 @@ EXTENSIONS=(
 
 
     # ── ZIP (pre-built release archives) ────────────────────────────────────
-    "zip  | burn-my-windows@schneegans.github.com           | https://github.com/Schneegans/Burn-My-Windows/releases/download/v47/burn-my-windows@schneegans.github.com.zip"
-    "zip  | gnome-ui-tune@itstime.tech                      | https://github.com/axxapy/gnome-ui-tune/releases/download/v1.11.0/gnome-ui-tune@itstime.tech.shell-extension.zip"
+    "zip  | burn-my-windows@schneegans.github.com           | https://github.com/Schneegans/Burn-My-Windows/releases/download/v48/burn-my-windows@schneegans.github.com.zip"
+    "zip  | gnome-ui-tune@itstime.tech                      | https://github.com/axxapy/gnome-ui-tune/releases/download/v1.12.0/gnome-ui-tune@itstime.tech.shell-extension.zip"
     #"zip  | tophat@fflewddur.github.io                      | https://github.com/fflewddur/tophat/releases/download/v23/tophat@fflewddur.github.io.v23.shell-extension.zip"
     "zip  | copyous@boerdereinar.dev                        | https://github.com/boerdereinar/copyous/releases/download/v2.0.1/copyous@boerdereinar.dev.zip"
 
     # ── Makefile (default: DESTDIR=/ PREFIX=/usr) ───────────────────────────
-    #"make | dash-to-dock@micxgx.gmail.com                      | https://github.com/micheleg/dash-to-dock.git"
+    "make | dash-to-dock@micxgx.gmail.com                      | https://github.com/micheleg/dash-to-dock.git"
 
     # ── gnome-extensions pack (sources auto-detected from repo layout) ───────
     #"make | blur-my-shell@aunetx                          | https://github.com/aunetx/blur-my-shell.git"
