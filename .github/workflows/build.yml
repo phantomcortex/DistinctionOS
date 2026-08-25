@@ -20,9 +20,6 @@ on:
       - '**/CLAUDE.md'
       - 'repo_files/**'
       - 'docs/**'
-      # NOTE: system_files/** deliberately NOT ignored — those files are
-      # COPY'd into the image, so changes to them MUST trigger a rebuild
-      # or they sit undeployed until the next scheduled build.
   workflow_dispatch:
     inputs:
       handwritten:

@@ -8,7 +8,7 @@ on:
     # (inspect → decide) before rebuilding regardless of cron, so this
     # is just the "look and probably skip" heartbeat. `max_age_days`
     # below is the real freshness ceiling.
-    - cron: '0 6 */15 * *'
+    - cron: '0 6 */30 * *'
   workflow_dispatch:
     inputs:
       force_rebuild:

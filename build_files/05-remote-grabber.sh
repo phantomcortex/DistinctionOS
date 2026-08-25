@@ -49,7 +49,7 @@ EXTENSIONS=(
     #"make | dash-to-dock@micxgx.gmail.com                      | https://github.com/micheleg/dash-to-dock.git"
 
     # ── gnome-extensions pack (sources auto-detected from repo layout) ───────
-    "make | blur-my-shell@aunetx                          | https://github.com/aunetx/blur-my-shell.git"
+    #"make | blur-my-shell@aunetx                          | https://github.com/aunetx/blur-my-shell.git"
     
     "auto  | azwallpaper@azwallpaper.gitlab.com             | https://gitlab.com/AndrewZaech/azwallpaper.git"
 )
@@ -445,6 +445,60 @@ cleanup_temporary_files() {
     log_success "Cleanup completed"
 }
 
+custom_blur-my-shell() {
+  local NAME="blur-my-shell"
+  local UUID="blur-my-shell@aunetx"
+  local AUTHOR="aunetx"
+  local REPO_DIR="$TMP_DIR/$NAME"
+  local TARGET_DIR="$EXTENSIONS_DIR/$UUID"
+  local BUILD_DIR="$REPO_DIR/build"
+  local ZIP_FILE="$BUILD_DIR/$UUID.shell-extension.zip"
+
+  log_info "Installing blur-my-shell"
+
+  if [[ -d "$REPO_DIR" ]]; then
+    rm -rf "$REPO_DIR"
+  fi
+  if ! git clone --quiet --depth 1 "https://github.com/$AUTHOR/$NAME.git" "$REPO_DIR"; then
+    log_error "Failed to clone $NAME"
+    return 1
+  fi
+
+  pushd $REPO_DIR 
+  make || log_error "make may have have failed"
+  
+   # Verify zip was produced
+  if [[ ! -f "$ZIP_FILE" ]]; then
+    log_error "Expected zip not found at $ZIP_FILE"
+    log_error "Build directory contents: $(ls -1 "$BUILD_DIR" 2>/dev/null || echo '(empty)')"
+    return 1
+  fi
+
+  # Extract to system extensions directory
+  rm -rf "$TARGET_DIR"
+  mkdir -p "$TARGET_DIR"
+  if ! unzip -o "$ZIP_FILE" -d "$TARGET_DIR"; then
+    log_error "Failed to unzip $ZIP_FILE to $TARGET_DIR"
+    return 1
+  fi
+
+  # Compile schemas
+  if [[ -d "$TARGET_DIR/schemas" ]]; then
+    if [[ "$(glib-compile-schemas "$TARGET_DIR/schemas/")" == "No schema files found: doing nothing." ]]; then
+      log_warning "GCS failed. \nFind schema and compile"
+      find $TARGET_DIR -iname '*.xml' -exec glib-compile-schemas {} \;
+    else
+      log_success "GCS passed."
+    fi
+  else
+    echo "Output does not match."
+  fi
+  glib-compile-schemas "$TARGET_DIR/schemas/"
+  glib-compile-schemas "$TARGET_DIR/" 2>>"$LOG_FILE" || true
+
+  log_success "Successfully installed $UUID"
+  ###########################################
+}
 main() {
     trap cleanup_temporary_files EXIT
 
@@ -455,7 +509,8 @@ main() {
 
     remove_listed_extensions
     install_all_extensions || had_errors=1
-    remove_git_directories
+    remove_git_directories 
+    custom_blur-my-shell
     patch_extension_compatibility
 
     # gnome-rounded-blur and its build-time mutter-devel dep now ship via

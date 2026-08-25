@@ -31,15 +31,15 @@ id3v2
 lhasa
 lzma
 pandoc-cli
-rdfind
 xorriso
 optipng
 glib2-devel
 bzip2-devel
-firejail
 jq                  # JSON parsing (used by the build itself for GitHub API)
 gnome-shell-extension-just-perfection
 gnome-shell-extension-dash-to-dock
 gnome-shell-extension-appindicator
 gnome-shell-extension-caffeine
 gnome-shell-extension-user-theme
+terminus-fonts
+terminus-fonts-console

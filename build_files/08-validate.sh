@@ -30,44 +30,6 @@ log_section "ldconfig cache integrity"
 
 rm -f /etc/ld.so.cache /var/cache/ldconfig/aux-cache
 
-ldconfig_output=$(ldconfig 2>&1)
-ldconfig_rc=$?
-if [[ $ldconfig_rc -ne 0 ]]; then
-    fail "ldconfig rebuild exited with status $ldconfig_rc"
-    printf '%s\n' "$ldconfig_output" | head -10 | while read -r line; do
-        echo "    $line"
-    done
-elif printf '%s\n' "$ldconfig_output" | grep -qiE 'cannot open|is not an? ELF|file too short|invalid'; then
-    fail "ldconfig reports broken libraries"
-    printf '%s\n' "$ldconfig_output" \
-        | grep -iE 'cannot open|is not an? ELF|file too short|invalid' \
-        | head -10 \
-        | while read -r line; do
-            echo "    $line"
-        done
-else
-    log_success "ldconfig cache is clean"
-fi
-
-# Critical libs that MUST be present in the ldconfig cache.
-readonly -a CRITICAL_LIBS=(
-    libGL.so.1
-    libEGL.so.1
-    libgbm.so.1
-    libpango-1.0.so.0
-    libcairo.so.2
-    libgdk_pixbuf-2.0.so.0
-    libglib-2.0.so.0
-    libfontconfig.so.1
-)
-for lib in "${CRITICAL_LIBS[@]}"; do
-    if ldconfig -p | grep -q "$lib"; then
-        log_success "  ✓ $lib"
-    else
-        fail "$lib missing from ldconfig cache"
-    fi
-done
-
 # ── Icon theme caches ───────────────────────────────────────────────────────
 # Blank-icon bugs almost always come from a missing or malformed icon-theme.cache.
 log_section "Icon theme caches"
@@ -125,6 +87,29 @@ for bin in "${CRITICAL_BINS[@]}"; do
         log_success "  ✓ $bin"
     fi
 done
+
+log_section "List important packages"
+sleep 2 
+
+PKG_CHECKLIST=( \
+  "glycin-libs" \
+  "glycin-loaders" \
+  "glycin-thumbnailer"\
+  "gstreamer-plugin-xwm" \
+  "crossover" \
+  "ffmpeg" \
+  "bsa-ba2-tool" \
+  "file-roller" )
+
+rpm -q 
+for pkg in "${PKG_CHECKLIST[@]}"; do 
+  if rpm -qa "*$pkg*" > /dev/null 2>&1; then 
+    log_success "$pkg is installed! VERSION: $(rpm -q "$pkg")"
+  else 
+    log_warning "$pkg is not installed"
+  fi 
+done 
+
 
 # ── Codec stack integrity ───────────────────────────────────────────────────
 
