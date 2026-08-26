@@ -216,24 +216,6 @@ flowchart TD
 
 ## Script Detailed Reference
 
-### 0. `00-kernel.sh`
-**Purpose**: Replace the stock Bazzite/Fedora kernel with CachyOS  
-**Execution Stage**: Build-time (first script)  
-**Key Functions**:
-- Removes stock kernel packages (`kernel`, `kernel-core`, `kernel-modules`, `kernel-devel-matched`)
-- Stubs out rpm-ostree and dracut install hooks so they don't conflict
-- Installs `kernel-cachyos` and `kernel-cachyos-devel-matched` from the `bieszczaders/kernel-cachyos` COPR
-
----
-
-### 1. `01-kernel-modules.sh`
-**Purpose**: Regenerate module dependencies and initramfs for the newly installed CachyOS kernel  
-**Execution Stage**: Build-time (second script, immediately after kernel install)  
-**Key Functions**:
-- Detects the installed kernel version from `/usr/lib/modules/`
-- Runs `depmod -a` explicitly — the kernel-install hooks that would normally do this are stubbed out by `00-kernel.sh`
-- Runs dracut with `--zstd`, `--reproducible`, and `--add ostree` flags for ostree compatibility
-
 ---
 
 ### 2. `02-build.sh`
@@ -248,6 +230,13 @@ flowchart TD
 **Resilience Strategy**:
 - Repository outages (openzfs, CrossOver, Cider have had incidents) no longer fail the build
 - Failed packages are logged but the build continues
+
+**Short packagelist and why each is installed:**
+- Crossover: Cause I support wine development by supporting the main developer of wine: codeweavers.
+- libheif-freeworld: gnome-image-viewer can't open heic files without this.
+- sassc & gtk-murrine-engine: many themes can often require it.
+- dcraw: allows for thumbnail generation on image-raw photos from dslr's.
+
 
 ---
 
@@ -278,27 +267,6 @@ L+ /var/opt/crossover - - - - /usr/lib/opt/crossover
 
 ---
 
-### 7. `07-config.sh`
-**Purpose**: System service configuration, application customization, and cleanup  
-**Execution Stage**: Build-time (seventh script — runs after all package installs so app customizations like the Cider icon fix act on cache-installed packages, and cache refreshes capture everything)  
-**Key Functions**:
-- Configure default shell (ZSH for new users and root)
-- Setup SystemD services (currently disabled during testing)
-- Integrate Just recipes and hide incompatible Bazzite recipes
-- Customize application .desktop files (Cider icon, Winetricks debug suppression)
-- Update system caches (icon, desktop, glib schemas, MIME)
-- Remove unwanted application shortcuts (Waydroid, Wine utilities)
-- Cleanup Bazzite remnants
-
-**Enhanced Features** (2025-10-27 Refactoring):
-- Complete reorganization into six major sections
-- Comprehensive color-coded logging throughout
-- Associative array for Bazzite file removal with documented reasons
-- Counters for removal operations with clear summaries
-- Extensive inline documentation explaining WHY operations are performed
-- Visual subsection separators for related tasks
-- Configuration summary at completion
-
 **Major Sections**:
 1. Shell Configuration
 2. SystemD Service Configuration
@@ -307,52 +275,7 @@ L+ /var/opt/crossover - - - - /usr/lib/opt/crossover
 5. System Cache Updates
 6. Cleanup (Applications & Bazzite Remnants)
 
-**Common Tasks**:
-```bash
-# Enable a service
-systemctl enable service-name.service
 
-# Disable a service
-systemctl disable unwanted-service.service
-
-# Mask a service (prevent activation)
-systemctl mask problematic-service.service
-
-# Add files to cleanup with documented reasons
-declare -A CLEANUP_FILES=(
-  ["/path/to/file"]="Reason for removal"
-)
-```
-
----
-
-### `05-mesa-install.sh` (⚠️ not in the current build sequence)
-**Note**: This script is **not present** in `build_files/` and the Containerfile has no `mesa-rpms` stage — this section is stale and retained only for historical reference. The numbered `05` slot is now `05-remote-grabber.sh` (below).
-**Purpose**: Install the pre-built custom Mesa stack from the `mesa-rpms` OCI artifact stage  
-**Execution Stage**: (historical)  
-**Key Functions**:
-- Reads RPMs from `/var/tmp/mesa-rpms/` (populated by `COPY --from=mesa-rpms` in Containerfile)
-- Installs all packages with `rpm --force --nodeps` to override conflicting Bazzite mesa packages
-- Guarantees version coherency — all packages come from a single Fedora SRPM
-
-**Mesa OCI Build**:
-- Built weekly by `.github/workflows/build-mesa.yml`
-- Fedora SRPM + freeworld codec patches
-- Packages: `mesa-filesystem`, `mesa-libGL`, `mesa-libgbm`, `mesa-dri-drivers`, `mesa-vulkan-drivers`, `mesa-va-drivers`, `mesa-libOpenCL`
-
----
-
-### 5. `05-remote-grabber.sh`
-**Purpose**: Manage GNOME Shell extensions in the system image   
-**Key Functions**:
-- Download specified GNOME Shell extensions
-- Compile gschemas for extensions
-- Enable extensions system-wide
-
-**Advantages**:
-- Extensions available immediately after installation
-- No manual installation required
-- Version control for extension consistency
 
 ---
 
@@ -470,50 +393,6 @@ All build scripts should follow this structure:
 - Document workarounds with issue descriptions
 - Explain rationale for future maintainers
 
-#### Error Handling Patterns
-
-```bash
-# File existence checks
-if [[ -f "$file_path" ]]; then
-  log_info "Processing file"
-  # ... operation
-  log_success "File processed"
-else
-  log_warning "File not found, skipping"
-fi
-
-# Command success validation
-if command_here; then
-  log_success "Operation successful"
-else
-  log_error "Operation failed"
-  exit 1  # Exit on critical failures only
-fi
-
-# Non-critical operations
-if optional_command || true; then
-  log_success "Optional operation completed"
-else
-  log_warning "Optional operation failed (non-critical)"
-fi
-```
-
-#### Variable Conventions
-
-```bash
-# Constants (readonly, UPPERCASE)
-readonly COLOR_RESET='\033[0m'
-readonly KERNEL_VERSION="5.14.0"
-
-# Arrays (readonly where appropriate)
-readonly -a REMOVE_PACKAGES=(...)
-declare -A PACKAGE_REPOS=(...)
-
-# Local variables (lowercase with underscores)
-local package_count=0
-local file_path="/path/to/file"
-```
-
 #### Validation Patterns
 
 ```bash
@@ -546,22 +425,6 @@ done
 log_success "Removed $removed_count item(s)"
 ```
 
-### Script Length Guidelines
-
-- **Minimal scripts** (fix-opt.sh, mesa-install.sh): ~35-50 lines
-  - Brief logging, essential operations only
-  - Clear section headers, minimal validation
-  
-- **Standard scripts** (kernel-modules.sh): ~200-250 lines
-  - Full logging system, comprehensive error handling
-  - Detailed documentation, validation at key points
-  
-- **Complex scripts** (build.sh, config.sh): ~300-400 lines
-  - Extensive documentation and inline comments
-  - Multiple major sections with subsections
-  - Comprehensive validation and error handling
-
-**Note**: Length is acceptable when driven by documentation and error handling, not code duplication.
 
 ---
 
@@ -603,17 +466,6 @@ echo "com.example.Application" >> repo_files/flatpaks
 **Alternative**: Direct installation via Just recipe
 ```bash
 ujust distinction-install-flatpaks
-```
-
-### Adding Homebrew Packages
-
-**Edit**: `repo_files/brews` (stored in GitHub repository)
-
-```bash
-# Add package name to the list
-echo "package-name" >> repo_files/brews
-
-# Users will receive this on next distinction-install run
 ```
 
 ### Adding GNOME Shell Extensions
@@ -740,8 +592,6 @@ podman run -it localhost/distinctionos:test /bin/bash
 
 - [✅] Rechunker support for efficient updates
 - [✅] ZSH system-wide shell configuration
-- [✅] CachyOS kernel as default (`00-kernel.sh`)
-- [✅] Custom Mesa stack with freeworld codecs (`05-mesa-install.sh` + weekly build workflow)
 - [✅] Steam Linker housekeeper
 - [✅] XWM Player for Bethesda audio format support
 - [✅] Build script refactoring — utility library, resilient package installation, color-coded logging
