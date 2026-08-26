@@ -177,6 +177,7 @@ done < "$MANIFEST"
 # GitHub releases attach both .rpm and .src.rpm assets, and rpm install
 # chokes on .src.rpm at OS-build time.
 find /output/rpms -name '*.src.rpm' -print -delete
+find /output/rpms -name "*debug*" -print -delete
 
 # ── Validate downloaded/built RPMs ──────────────────────────────────────────
 shopt -s nullglob
@@ -205,6 +206,8 @@ if [[ ${#rpms[@]} -gt 0 ]]; then
 fi
 
 # ── Write versions manifest ─────────────────────────────────────────────────
+
+
 output=$(jq -n '{}')
 for k in "${!VERSIONS[@]}"; do
     output=$(printf '%s\n' "$output" | jq --arg k "$k" --arg v "${VERSIONS[$k]}" '. + {($k): $v}')
