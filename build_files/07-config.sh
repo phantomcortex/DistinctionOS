@@ -290,14 +290,6 @@ fi
 log_info "Removing Bazzite dnf wrapper"
 [[ -f /usr/bin/dnf ]] && rm /usr/bin/dnf
 
-# Sep 4 2026: rpm database seems to get 'malformed'
-# "error: INSERT INTO 'Dirnames' VALUES(?, ?, ?): 11: database disk image is malformed"
-#
-set +e 
-rpm --rebuilddb 
-mv /usr/share/rpm /tmp/rpm 
-rpmdb=$(find /usr/share/ -maxdepth 1 -type d -name 'rpmrebuilddb.**')
-mv $rpmdb /usr/share/rpm 
 # ============================================================================
 # Configuration Complete
 # ============================================================================
