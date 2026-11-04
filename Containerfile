@@ -53,8 +53,8 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/08-validate.sh && \
     echo -e "\033[31mIMAGE INFO >>>>\033[0m" && \
     /ctx/image-info && \
-    echo -e "\033[31mOSTREE COMMIT\033[0m" && \
-    ostree container commit
+    echo -e "\033[31mCLEAN STAGING >>>>\033[0m" && \
+    rm -rf /var/tmp/cache-rpms /var/tmp/force-install-rpms
 
 
     
