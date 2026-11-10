@@ -494,7 +494,7 @@ jobs:
           cat ./changelog.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create Release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v2
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v2
         with:
           name: ${{ steps.changelog_main.outputs.title || steps.changelog_testing.outputs.title }}
           tag_name: ${{ steps.changelog_main.outputs.tag || steps.changelog_testing.outputs.tag }}
